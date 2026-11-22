@@ -187,6 +187,17 @@
   pre.code .ty{color:var(--violet);}
   pre.code .cm{color:var(--ink-faint); font-style:italic;}
   pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
   .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
   .struct-note code{white-space:nowrap;}
 </style>
@@ -199,15 +210,24 @@
     <p class="prose">A forma mais direta de guardar uma sequência: um vetor comum, de capacidade fixa, onde os elementos ocupam posições contíguas <code>0, 1, 2, …</code> sem buracos. Acessar qualquer posição por índice é O(1) — mas inserir ou remover no meio exige <strong>deslocar fisicamente</strong> todo mundo depois dela, uma posição de cada vez. É esse custo de deslocamento que a lista encadeada, mais adiante nesta trilha, existe para evitar.</p>
   </header>
 
-  <section class="struct-block" aria-label="Declaração da struct em C">
-    <span class="tag">Como isso é declarado em C</span>
-    <pre class="code"><code><span class="kw">#define</span> CAPACIDADE <span class="nm">8</span>
+  <section class="struct-block" data-lang="c" aria-label="Declaração da estrutura em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">Como isso é declarado</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+    <pre class="code so-c" aria-label="C"><code><span class="kw">#define</span> CAPACIDADE <span class="nm">8</span>
 
 <span class="kw">typedef struct</span> {
     <span class="ty">int</span> dados[CAPACIDADE];  <span class="cm">/* o vetor: posições contíguas 0..CAPACIDADE-1 */</span>
     <span class="ty">int</span> tamanho;            <span class="cm">/* quantas posições estão em uso (a linha tracejada) */</span>
 } ListaSequencial;</code></pre>
-    <p class="struct-note">A lista inteira é uma única <code>struct</code>: o vetor <code>dados</code> (as caixas) e o contador <code>tamanho</code> (a linha tracejada que separa o ocupado do livre). Inserir ou remover no meio mexe em <code>dados[i]</code> um a um e, no fim, atualiza <code>tamanho</code>.</p>
+    <pre class="code so-py" aria-label="Python"><code>CAPACIDADE = <span class="nm">8</span>
+
+<span class="kw">class</span> <span class="ty">ListaSequencial</span>:
+    <span class="kw">def</span> __init__(self):
+        self.dados = [<span class="nm">None</span>] * CAPACIDADE  <span class="cm"># o vetor: posições 0..CAPACIDADE-1</span>
+        self.tamanho = <span class="nm">0</span>                  <span class="cm"># quantas posições estão em uso (a linha tracejada)</span></code></pre>
+    </div>
+    <p class="struct-note so-c">A lista inteira é uma única <code>struct</code>: o vetor <code>dados</code> (as caixas) e o contador <code>tamanho</code> (a linha tracejada que separa o ocupado do livre). Inserir ou remover no meio mexe em <code>dados[i]</code> um a um e, no fim, atualiza <code>tamanho</code>.</p>
+    <p class="struct-note so-py">Em Python, a mesma ideia vira uma classe: <code>dados</code> é uma lista criada já com <code>CAPACIDADE</code> posições e <code>tamanho</code> conta quantas estão ocupadas. Usamos tamanho fixo de propósito, para enxergar o deslocamento; a <code>list</code> nativa faz isso escondido (e cresce sozinha).</p>
   </section>
 
 
@@ -687,4 +707,15 @@
 })();
 </script>
 
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
 </body></html>

@@ -212,8 +212,9 @@ slides:[
 {t:'O problema da fila no vetor', h:`
 <p class="lead">Numa fila em vetor simples, cada <code>dequeue</code> deixa um buraco no início. Ou você desloca todo mundo (O(n)), ou desperdiça espaço até a fila "acabar" mesmo com casas livres.</p>
 <p>A fila circular resolve com aritmética modular: depois da última casa vem a primeira.</p>
-<pre>rear  = (rear + 1)  % CAP   // depois de enfileirar
-front = (front + 1) % CAP   // depois de desenfileirar</pre>
+<div class="duo"><pre data-l="c">rear  = (rear + 1)  % CAP;   // depois de enfileirar
+front = (front + 1) % CAP;   // depois de desenfileirar</pre><pre data-l="py">rear  = (rear + 1)  % CAP    # depois de enfileirar
+front = (front + 1) % CAP    # depois de desenfileirar</pre></div>
 <div class="analogia"><b>Analogia</b>Os assentos de uma roda-gigante: as pessoas entram e saem sempre no mesmo ponto, mas a roda gira, então nenhum assento fica permanentemente vazio.</div>
 <div class="objetivos"><b>Ao final deste módulo você vai</b><ul><li>implementar enqueue e dequeue em O(1);</li><li>resolver a ambiguidade "vazia ou cheia";</li><li>calcular posições com módulo.</li></ul></div>`},
 {t:'front == rear: vazia ou cheia?', h:`

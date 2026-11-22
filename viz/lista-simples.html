@@ -211,6 +211,17 @@
   pre.code .ty{color:var(--violet);}
   pre.code .cm{color:var(--ink-faint); font-style:italic;}
   pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
   .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
   .struct-note code{white-space:nowrap;}
 </style>
@@ -223,15 +234,24 @@
     <p class="prose">Uma lista encadeada é uma sequência de nós espalhados pela memória, cada um guardando um valor e um <strong>ponteiro</strong> para o próximo — não existe posição fixa nem acesso direto por índice como num array: para chegar ao décimo nó é preciso passar pelos nove anteriores. Em troca, inserir ou remover no início custa apenas trocar um ponteiro, O(1), não importa o tamanho da lista. Repare também numa pegadinha clássica: como cada nó só aponta para <em>frente</em>, remover do <strong>fim</strong> ainda exige percorrer tudo para achar o penúltimo nó — o preço de não ter uma lista duplamente encadeada.</p>
   </header>
 
-  <section class="struct-block" aria-label="Declaração da struct em C">
-    <span class="tag">Como isso é declarado em C</span>
-    <pre class="code"><code><span class="kw">typedef struct</span> <span class="ty">No</span> {
+  <section class="struct-block" data-lang="c" aria-label="Declaração da estrutura em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">Como isso é declarado</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+    <pre class="code so-c" aria-label="C"><code><span class="kw">typedef struct</span> <span class="ty">No</span> {
     <span class="ty">int</span> valor;        <span class="cm">/* o dado guardado no nó */</span>
     <span class="kw">struct</span> <span class="ty">No</span> *next;  <span class="cm">/* endereço do próximo nó (NULL = fim da lista) */</span>
 } No;
 
 <span class="ty">No</span> *head = <span class="nm">NULL</span>;      <span class="cm">/* lista vazia: head não aponta para nada */</span></code></pre>
-    <p class="struct-note">Cada nó guarda um <code>valor</code> e um ponteiro <code>next</code> para o nó seguinte; o último aponta para <code>NULL</code>. A lista toda é só o ponteiro <code>head</code> — quem perde o <code>head</code> perde a lista. Cada nó novo vem de um <code>malloc(sizeof(No))</code>.</p>
+    <pre class="code so-py" aria-label="Python"><code><span class="kw">class</span> <span class="ty">No</span>:
+    <span class="kw">def</span> __init__(self, valor):
+        self.valor = valor  <span class="cm"># o dado guardado no nó</span>
+        self.next = <span class="nm">None</span>    <span class="cm"># referência ao próximo nó (None = fim da lista)</span>
+
+head = <span class="nm">None</span>                 <span class="cm"># lista vazia: head não aponta para nada</span></code></pre>
+    </div>
+    <p class="struct-note so-c">Cada nó guarda um <code>valor</code> e um ponteiro <code>next</code> para o nó seguinte; o último aponta para <code>NULL</code>. A lista toda é só o ponteiro <code>head</code> — quem perde o <code>head</code> perde a lista. Cada nó novo vem de um <code>malloc(sizeof(No))</code>.</p>
+    <p class="struct-note so-py">Em Python não há <code>malloc</code> nem ponteiros explícitos: <code>No(7)</code> cria o nó e toda variável já é uma referência. <code>None</code> faz o papel de <code>NULL</code>, e o coletor de lixo libera o nó quando ninguém mais aponta para ele.</p>
   </section>
 
 
@@ -955,4 +975,15 @@
 })();
 </script>
 
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
 </body></html>

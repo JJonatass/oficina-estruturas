@@ -556,21 +556,28 @@ slides:[
 <div class="analogia"><b>Analogia</b>Uma corrente de clipes: para chegar ao quinto clipe, você passa pelos quatro primeiros. Mas para colocar um clipe novo na frente, basta engatar um só.</div>`},
 {t:'Inserir e remover', h:`
 <h3>Inserir no início: O(1)</h3>
-<pre>novo-&gt;prox = head;
-head = novo;</pre>
+<div class="duo"><pre data-l="c">novo-&gt;prox = head;
+head = novo;</pre><pre data-l="py">novo.prox = head
+head = novo</pre></div>
 <p>A ordem importa: se você fizer <code>head = novo</code> primeiro, perde o resto da lista.</p>
 <h3>Remover por valor: O(n)</h3>
 <p>Ande com dois ponteiros, <code>ant</code> e <code>at</code>. Quando <code>at</code> achar o valor, faça <code>ant-&gt;prox = at-&gt;prox</code> e libere <code>at</code>. Se o valor estiver na cabeça, não há <code>ant</code>: atualize <code>head</code>.</p>
 <div class="alerta"><b>Remover o último é O(n)</b>, mesmo guardando um ponteiro <code>tail</code>: para atualizar o penúltimo, você precisa encontrá-lo, e não dá para andar para trás.</div>`},
 {t:'Reverter com três ponteiros', h:`
-<pre>ant = NULL; at = head;
+<div class="duo"><pre data-l="c">ant = NULL; at = head;
 while (at) {
     prox = at-&gt;prox;  // 1. guarda o resto
     at-&gt;prox = ant;   // 2. vira a seta
     ant = at;         // 3. avança os dois
     at = prox;
 }
-head = ant;</pre>
+head = ant;</pre><pre data-l="py">ant, at = None, head
+while at:
+    prox = at.prox    # 1. guarda o resto
+    at.prox = ant     # 2. vira a seta
+    ant = at          # 3. avança os dois
+    at = prox
+head = ant</pre></div>
 <p>Cada nó tem sua seta invertida exatamente uma vez: O(n) de tempo e O(1) de memória extra.</p>
 <div class="free">Esse algoritmo é pergunta clássica de entrevista. No visualizador, use <b>⇄ Reverter lista</b> e acompanhe os três ponteiros.</div>`}
 ],
@@ -753,11 +760,15 @@ slides:[
 <li>percorrer a lista de trás para frente.</li></ul></div>
 <div class="analogia"><b>Analogia</b>Os vagões de um trem com engates nas duas pontas: dá para andar para a frente ou para trás, e soltar um vagão do meio só exige mexer nos dois vizinhos.</div>`},
 {t:'Remover um nó qualquer em O(1)', h:`
-<pre>if (n-&gt;prev) n-&gt;prev-&gt;prox = n-&gt;prox;
+<div class="duo"><pre data-l="c">if (n-&gt;prev) n-&gt;prev-&gt;prox = n-&gt;prox;
 else         head = n-&gt;prox;
 if (n-&gt;prox) n-&gt;prox-&gt;prev = n-&gt;prev;
 else         tail = n-&gt;prev;
-free(n);</pre>
+free(n);</pre><pre data-l="py">if n.prev: n.prev.prox = n.prox
+else:      head = n.prox
+if n.prox: n.prox.prev = n.prev
+else:      tail = n.prev
+# sem free: o coletor de lixo libera n</pre></div>
 <p>Quatro ponteiros possíveis mudam, mas nenhum laço: se você já tem o endereço do nó, a remoção é constante. Isso não vale para <b>achar</b> o nó por valor, que continua O(n).</p>
 <div class="alerta"><b>Erro comum.</b> Esquecer os casos de borda: remover a cabeça (sem <code>prev</code>), a cauda (sem <code>prox</code>) ou o único nó (os dois).</div>`},
 {t:'Onde isso aparece de verdade', h:`

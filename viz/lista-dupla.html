@@ -206,6 +206,17 @@
   pre.code .ty{color:var(--violet);}
   pre.code .cm{color:var(--ink-faint); font-style:italic;}
   pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
   .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
   .struct-note code{white-space:nowrap;}
 </style>
@@ -218,9 +229,10 @@
     <p class="prose">Cada nó aqui guarda <strong>dois</strong> ponteiros — <code>prev</code> e <code>next</code> — em vez de só um. O custo é memória extra por nó; o ganho é poder andar nos dois sentidos e, principalmente, remover o <strong>último</strong> nó em O(1): como cada nó já sabe quem vem antes dele, não é preciso percorrer a lista para achar o penúltimo. Repare também que, para acessar uma posição no meio, dá para partir do lado mais perto — da cabeça ou da cauda — o que uma lista simples nunca pode fazer.</p>
   </header>
 
-  <section class="struct-block" aria-label="Declaração da struct em C">
-    <span class="tag">Como isso é declarado em C</span>
-    <pre class="code"><code><span class="kw">typedef struct</span> <span class="ty">No</span> {
+  <section class="struct-block" data-lang="c" aria-label="Declaração da estrutura em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">Como isso é declarado</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+    <pre class="code so-c" aria-label="C"><code><span class="kw">typedef struct</span> <span class="ty">No</span> {
     <span class="ty">int</span> valor;        <span class="cm">/* o dado guardado no nó */</span>
     <span class="kw">struct</span> <span class="ty">No</span> *prev;  <span class="cm">/* nó anterior (NULL na cabeça) */</span>
     <span class="kw">struct</span> <span class="ty">No</span> *next;  <span class="cm">/* nó seguinte (NULL na cauda) */</span>
@@ -228,7 +240,17 @@
 
 <span class="ty">No</span> *head = <span class="nm">NULL</span>;      <span class="cm">/* primeiro nó */</span>
 <span class="ty">No</span> *tail = <span class="nm">NULL</span>;      <span class="cm">/* último nó — é o que torna remover do fim O(1) */</span></code></pre>
-    <p class="struct-note">São dois ponteiros por nó (<code>prev</code> e <code>next</code>) e dois de entrada na lista (<code>head</code> e <code>tail</code>). Toda inserção ou remoção precisa religar <strong>os dois lados</strong> dos vizinhos — é isso que as setas nos dois sentidos mostram.</p>
+    <pre class="code so-py" aria-label="Python"><code><span class="kw">class</span> <span class="ty">No</span>:
+    <span class="kw">def</span> __init__(self, valor):
+        self.valor = valor  <span class="cm"># o dado guardado no nó</span>
+        self.prev = <span class="nm">None</span>    <span class="cm"># nó anterior (None na cabeça)</span>
+        self.next = <span class="nm">None</span>    <span class="cm"># nó seguinte (None na cauda)</span>
+
+head = <span class="nm">None</span>                 <span class="cm"># primeiro nó</span>
+tail = <span class="nm">None</span>                 <span class="cm"># último nó: é o que torna remover do fim O(1)</span></code></pre>
+    </div>
+    <p class="struct-note so-c">São dois ponteiros por nó (<code>prev</code> e <code>next</code>) e dois de entrada na lista (<code>head</code> e <code>tail</code>). Toda inserção ou remoção precisa religar <strong>os dois lados</strong> dos vizinhos — é isso que as setas nos dois sentidos mostram.</p>
+    <p class="struct-note so-py">Em Python, <code>prev</code> e <code>next</code> são referências comuns e <code>None</code> marca as pontas. A regra continua a mesma: toda inserção ou remoção religa os dois lados dos vizinhos.</p>
   </section>
 
 
@@ -965,4 +987,15 @@
 })();
 </script>
 
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
 </body></html>

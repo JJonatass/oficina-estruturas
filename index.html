@@ -128,6 +128,14 @@ table.custo td:nth-child(2){font-family:var(--mono);white-space:nowrap;color:var
 .langtabs button.amb{margin-left:auto;font-weight:500;color:var(--muted)}
 .langtabs button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 @media (max-width:900px){.codigos[data-lang="ambos"]{grid-template-columns:1fr}}
+.duo{display:grid;gap:8px;margin:10px 0}
+.duo .langtabs{margin-top:0}
+.duo pre{margin:0}
+.duo pre[data-l]::before{content:attr(data-l);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.55;margin-bottom:4px}
+.duo pre[data-l="py"]::before{content:'Python'}
+.duo[data-lang="c"] pre[data-l="py"],.duo[data-lang="py"] pre[data-l="c"]{display:none}
+.duo[data-lang="ambos"]{grid-template-columns:1fr 1fr}.duo[data-lang="ambos"] .langtabs{grid-column:1/-1}
+@media (max-width:900px){.duo[data-lang="ambos"]{grid-template-columns:1fr}}
 
 /* Modo apresentação */
 body.foco header.top,body.foco .modTop{display:none}
@@ -365,12 +373,25 @@ function blocoCodigo(c, py, rotulos){
     <div class="cod py"><div class="cod-h"><b>${rotulos[1]}</b><button data-copiar="py">Copiar</button></div><pre>${realce(py,'py')}</pre></div>
   </div>`;
 }
+function ligarDuos(raiz){
+  raiz.querySelectorAll('.duo').forEach(d => {
+    d.querySelectorAll('pre[data-l]').forEach(p => { p.innerHTML = realce(p.textContent, p.dataset.l); });
+    d.dataset.lang = estado.lang;
+    d.insertAdjacentHTML('afterbegin', `<div class="langtabs" role="group" aria-label="Linguagem"><button data-lang="c" aria-pressed="${estado.lang==='c'}">C</button><button data-lang="py" aria-pressed="${estado.lang==='py'}">Python</button><button class="amb" data-lang="ambos" aria-pressed="${estado.lang==='ambos'}">Lado a lado</button></div>`);
+    d.querySelectorAll('.langtabs button').forEach(b => b.onclick = () => {
+      estado.lang = b.dataset.lang;
+      try { localStorage.setItem(CHAVE + '-lang', estado.lang); } catch(e) {}
+      document.querySelectorAll('.langtabs button').forEach(x => x.setAttribute('aria-pressed', x.dataset.lang === estado.lang));
+      document.querySelectorAll('.codigos,.duo').forEach(x => x.dataset.lang = estado.lang);
+    });
+  });
+}
 function ligarCodigo(raiz, c, py){
   raiz.querySelectorAll('.langtabs button').forEach(b => b.onclick = () => {
     estado.lang = b.dataset.lang;
     try { localStorage.setItem(CHAVE + '-lang', estado.lang); } catch(e) {}
     document.querySelectorAll('.langtabs button').forEach(x => x.setAttribute('aria-pressed', x.dataset.lang === estado.lang));
-    document.querySelectorAll('.codigos').forEach(x => x.dataset.lang = estado.lang);
+    document.querySelectorAll('.codigos,.duo').forEach(x => x.dataset.lang = estado.lang);
     raiz.querySelectorAll('.langtabs button').forEach(x => x.setAttribute('aria-pressed', x.dataset.lang === estado.lang));
     raiz.querySelectorAll('.codigos').forEach(x => x.dataset.lang = estado.lang);
   });
@@ -471,6 +492,7 @@ function vTeoria(m){
     <button class="btn ${estado.s===sl.length-1?'':'pri'}" id="prox">${estado.s===sl.length-1?'Prática →':'Próximo →'}</button></div></div>`;
   const app = $('#app'); ligarTopo(app);
   if (s.cod) ligarCodigo(app, m.codigo.c, m.codigo.py);
+  ligarDuos(app);
   app.querySelectorAll('.trilho button').forEach(b => b.onclick = () => { estado.s = +b.dataset.s; render(); });
   app.querySelectorAll('.irpratica [data-v]').forEach(b => b.onclick = () => irPara(m.id, b.dataset.v));
   $('#ant').onclick = () => { estado.s--; render(); };

@@ -195,6 +195,17 @@
   pre.code .ty{color:var(--violet);}
   pre.code .cm{color:var(--ink-faint); font-style:italic;}
   pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
   .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
   .struct-note code{white-space:nowrap;}
 </style>
@@ -207,9 +218,10 @@
     <p class="prose">A mesma ideia de uma lista encadeada — cada nó aponta para o próximo — mas sem <code>malloc</code> e sem ponteiros de verdade. Os nós vivem dentro de um <strong>vetor de capacidade fixa</strong>, e o "ponteiro" <code>próximo</code> de cada um é só um <strong>índice inteiro</strong> nesse mesmo vetor (ou <code>-1</code> para "nada depois"). As posições ainda não usadas ficam encadeadas entre si numa <strong>lista livre</strong>, dentro do próprio vetor — alocar um nó é tirar o primeiro da lista livre; liberar um nó é devolvê-lo para lá. É assim que se simula uma lista encadeada em ambientes sem alocação dinâmica.</p>
   </header>
 
-  <section class="struct-block" aria-label="Declaração da struct em C">
-    <span class="tag">Como isso é declarado em C</span>
-    <pre class="code"><code><span class="kw">#define</span> CAPACIDADE <span class="nm">7</span>
+  <section class="struct-block" data-lang="c" aria-label="Declaração da estrutura em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">Como isso é declarado</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+    <pre class="code so-c" aria-label="C"><code><span class="kw">#define</span> CAPACIDADE <span class="nm">7</span>
 
 <span class="kw">typedef struct</span> {
     <span class="ty">int</span> valor;   <span class="cm">/* o dado guardado no nó */</span>
@@ -221,7 +233,21 @@
     <span class="ty">int</span> head;            <span class="cm">/* índice do primeiro nó da lista (-1 se vazia) */</span>
     <span class="ty">int</span> livre;           <span class="cm">/* índice do primeiro slot livre (-1 se cheio) */</span>
 } ListaEstatica;</code></pre>
-    <p class="struct-note">Cada caixa da animação é um <code>No</code>: <code>valor</code> é o dado e <code>prox</code> é um <strong>índice</strong> do vetor, não um endereço. <code>head</code> e <code>livre</code> são as duas etiquetas: uma aponta o início da lista, a outra o início da lista de slots disponíveis (as setas tracejadas).</p>
+    <pre class="code so-py" aria-label="Python"><code>CAPACIDADE = <span class="nm">7</span>
+
+<span class="kw">class</span> <span class="ty">No</span>:
+    <span class="kw">def</span> __init__(self):
+        self.valor = <span class="nm">None</span>  <span class="cm"># o dado guardado no nó</span>
+        self.prox = <span class="nm">-1</span>     <span class="cm"># "ponteiro": índice de outro slot, ou -1 = nada</span>
+
+<span class="kw">class</span> <span class="ty">ListaEstatica</span>:
+    <span class="kw">def</span> __init__(self):
+        self.nos = [No() <span class="kw">for</span> _ <span class="kw">in</span> range(CAPACIDADE)]  <span class="cm"># vetor fixo de nós</span>
+        self.head = <span class="nm">-1</span>   <span class="cm"># índice do primeiro nó da lista (-1 se vazia)</span>
+        self.livre = <span class="nm">0</span>   <span class="cm"># índice do primeiro slot livre (-1 se cheio)</span></code></pre>
+    </div>
+    <p class="struct-note so-c">Cada caixa da animação é um <code>No</code>: <code>valor</code> é o dado e <code>prox</code> é um <strong>índice</strong> do vetor, não um endereço. <code>head</code> e <code>livre</code> são as duas etiquetas: uma aponta o início da lista, a outra o início da lista de slots disponíveis (as setas tracejadas).</p>
+    <p class="struct-note so-py">Em Python, <code>prox</code> continua sendo um <strong>índice</strong> da lista <code>nos</code>, não uma referência: é exatamente a mesma técnica, só que sem <code>struct</code>. No início, todos os slots ficam encadeados na lista livre (0 → 1 → … → 6).</p>
   </section>
 
 
@@ -794,4 +820,15 @@
 })();
 </script>
 
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
 </body></html>
