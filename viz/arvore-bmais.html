@@ -1,0 +1,872 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore B+ Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="range"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="range"] .dot{background:var(--success);}
+  .op-pill[data-op="split"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="split"] .dot{background:var(--violet);}
+  .op-pill[data-op="merge"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="merge"] .dot{background:var(--violet);}
+  .op-pill[data-op="rotate"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="rotate"] .dot{background:var(--violet);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-halo{ fill:none; stroke:transparent; stroke-width:3; transition: x .35s ease, y .35s ease, width .35s ease; }
+  .node-box{ fill:var(--node-fill); stroke:var(--paper); stroke-width:2.5; transition: x .35s ease, y .35s ease, width .35s ease, fill .2s ease; }
+  .node[data-type="leaf"] .node-box{ fill:var(--accent); }
+  .node-divider{ stroke:var(--paper); stroke-width:1.6; transition: x1 .35s ease, x2 .35s ease, y1 .35s ease, y2 .35s ease; }
+  .node-value{ font-weight:600; font-size:12px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+  .chain-line{ stroke:var(--success); stroke-width:1.6; fill:none; opacity:0.55; transition: d .35s ease; marker-end:url(#chainArrow); }
+  .chain-line[data-active="1"]{ opacity:1; stroke-width:2.2; }
+
+  .node[data-state="compare"] .node-halo{ stroke:var(--accent); }
+  .node[data-state="new"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="end"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="rotate"] .node-halo{ stroke:var(--violet); }
+  .node[data-state="bad"] .node-halo{ stroke:var(--rust); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:16px;height:12px;border-radius:3px;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.leaf{background:var(--accent); border-color:transparent;}
+  .legend .swatch.compare{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.new{background:var(--card); border-color:var(--gold);}
+  .legend .swatch.rotate{background:var(--card); border-color:var(--violet);}
+  .legend .swatch.bad{background:var(--card); border-color:var(--rust);}
+  .legend .chain-sample{width:22px; height:2px; background:var(--success); display:inline-block; opacity:0.7;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.success{color:var(--success);} button.success:hover{border-color:var(--success); color:var(--success);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:88px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .example-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:18px 20px; display:flex; flex-direction:column; gap:12px;}
+  .example-diagram{display:flex; justify-content:center; align-items:center; gap:14px; overflow-x:auto; padding-block:4px;}
+  .example-arrow{font-size:1.3rem; color:var(--ink-faint); flex:0 0 auto;}
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Árvore de índice com folhas encadeadas · a estrutura por trás de índices de banco de dados</span>
+    <h1>Árvore B+ Visual</h1>
+    <p class="prose">Uma árvore B+ é uma árvore B que separa dois papéis: nós <strong>internos</strong> guardam só separadores para guiar a busca — cópias, nunca dados de verdade — e todo dado real mora nas <strong>folhas</strong>, sempre na mesma profundidade, <strong>encadeadas entre si</strong> numa lista ligada. O resultado: buscar um valor exato ainda é O(log n), mas varrer um intervalo inteiro de valores vira um simples passeio pela lista de folhas — sem nunca voltar à raiz. É por isso que é a estrutura real por trás da maioria dos índices de banco de dados.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da árvore B+">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg">
+        <defs>
+          <marker id="chainArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L8,4 L0,8 z" fill="var(--success)"></path>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch"></span>nó interno (só roteamento)</span>
+      <span class="item"><span class="swatch leaf"></span>folha (dados reais)</span>
+      <span class="item"><span class="chain-sample"></span>ponteiro entre folhas</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch new"></span>nova / encontrada</span>
+      <span class="item"><span class="swatch rotate"></span>dividindo, pedindo emprestado ou fundindo</span>
+      <span class="item"><span class="swatch bad"></span>removida / não encontrada</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+        <button id="btnRandomInsert">🎲 Inserir aleatório</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">De
+          <input type="number" id="rangeLo" placeholder="ex: 10">
+        </label>
+        <label class="small">Até
+          <input type="number" id="rangeHi" placeholder="ex: 50">
+        </label>
+        <button class="success" id="btnRange">🔗 Buscar intervalo</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Tamanho inicial
+          <input type="range" class="mini" id="sizeSlider" min="1" max="30" value="14" step="1">
+          <span class="mono" id="sizeLabel">14</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova árvore aleatória</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Só as folhas guardam dados</h2>
+    <p class="prose">Num nó interno, cada "chave" é só uma cópia usada para decidir para qual filho descer — o valor de verdade, se existir, está em alguma folha. Isso significa que <strong>todo</strong> valor é encontrado no mesmo nível de profundidade, e a árvore inteira pode ser varrida em ordem sem nenhuma recursão: basta achar a folha mais à esquerda e seguir os ponteiros <code>next</code>.</p>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Removendo numa árvore B comum</span>
+      <p class="prose">Se a chave está num nó interno, ela precisa ser trocada pelo predecessor ou sucessor antes de ser removida de uma folha.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Removendo numa árvore B+</span>
+      <p class="prose">A chave <em>só existe</em> numa folha — a remoção desce direto até lá, sem troca nenhuma. Os separadores acima podem ficar desatualizados (são só cópias antigas), mas continuam funcionando como limites de roteamento: cada empréstimo ou fusão já corrige exatamente a fronteira que cruza.</p>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Buscar um valor</span>
+      <h3>O(log n) — desce até uma folha</h3>
+      <p class="prose">Igual a qualquer árvore B: compara com os separadores e desce, sem nunca examinar dados nos nós internos.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Buscar um intervalo</span>
+      <h3>O(log n + k) — desce uma vez, depois só anda</h3>
+      <p class="prose">Desce até a folha onde o intervalo começa (O(log n)) e então segue os ponteiros entre folhas coletando os <code>k</code> valores do intervalo — sem tocar a árvore de novo. É exatamente o que um banco de dados faz numa consulta por faixa (<code>WHERE idade BETWEEN 20 AND 30</code>).</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma árvore B+ com grau mínimo t = 2 (mesmos limites de chaves e filhos da árvore B clássica), com dados restritos às folhas e folhas encadeadas para varredura em ordem e consultas por intervalo. Complexidade: O(log n) para busca, inserção e remoção; O(log n + k) para um intervalo com k resultados.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= B+ tree engine (records one step per operation) =================
+  function createBPlusTreeEngine() {
+    var nextId = 1;
+    var T = 2;
+    var MAX_KEYS = 2 * T - 1;
+    var MIN_KEYS = T - 1;
+    var root = newLeaf();
+    var steps = [];
+
+    function newLeaf() { return { id: nextId++, leaf: true, keys: [], next: null }; }
+    function newInternal() { return { id: nextId++, leaf: false, keys: [], children: [] }; }
+
+    function cloneTree(node) {
+      var idMap = {};
+      function cloneNode(n) {
+        var c = { id: n.id, leaf: n.leaf, keys: n.keys.slice() };
+        idMap[n.id] = c;
+        if (n.leaf) c.next = null; else c.children = n.children.map(cloneNode);
+        return c;
+      }
+      var clonedRoot = cloneNode(node);
+      (function link(n) {
+        if (n.leaf) { idMap[n.id].next = n.next ? idMap[n.next.id] : null; }
+        else n.children.forEach(link);
+      })(node);
+      return clonedRoot;
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ root: cloneTree(root), message: message, op: opts.op || "info", highlight: opts.highlight || { ids: [], kind: "" } });
+    }
+
+    function splitLeaf(parent, i) {
+      var leaf = parent.children[i];
+      var mid = Math.ceil(leaf.keys.length / 2);
+      var right = newLeaf();
+      right.keys = leaf.keys.slice(mid);
+      leaf.keys = leaf.keys.slice(0, mid);
+      right.next = leaf.next;
+      leaf.next = right;
+      var promoted = right.keys[0];
+      parent.keys.splice(i, 0, promoted);
+      parent.children.splice(i + 1, 0, right);
+      snapshot("Folha cheia: nasce uma folha irmã à direita, e a menor chave dela (" + promoted + ") é copiada para o pai como separador — os dados continuam só nas folhas.",
+        { op: "split", highlight: { ids: [parent.id, leaf.id, right.id], kind: "rotate" } });
+    }
+
+    function splitInternal(parent, i) {
+      var node = parent.children[i];
+      var mid = T - 1;
+      var promoted = node.keys[mid];
+      var right = newInternal();
+      right.keys = node.keys.slice(mid + 1);
+      node.keys = node.keys.slice(0, mid);
+      right.children = node.children.slice(mid + 1);
+      node.children = node.children.slice(0, mid + 1);
+      parent.keys.splice(i, 0, promoted);
+      parent.children.splice(i + 1, 0, right);
+      snapshot("Nó interno cheio: a chave do meio (" + promoted + ") sobe para o pai (sem cópia, como numa árvore B comum), e o nó se divide.",
+        { op: "split", highlight: { ids: [parent.id, node.id, right.id], kind: "rotate" } });
+    }
+
+    function insertNonFull(node, key) {
+      if (node.leaf) {
+        for (var j = 0; j < node.keys.length; j++) if (node.keys[j] === key) { snapshot(key + " já está na árvore — nada a inserir.", { op: "insert", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+        var pos = 0; while (pos < node.keys.length && node.keys[pos] < key) pos++;
+        node.keys.splice(pos, 0, key);
+        snapshot(key + " inserida na folha, na posição ordenada correta.", { op: "insert", highlight: { ids: [node.id], kind: "new" } });
+        return true;
+      }
+      var i = 0; while (i < node.keys.length && key >= node.keys[i]) i++;
+      snapshot("Comparando " + key + " com os separadores do nó — descendo para o filho apropriado.", { op: "insert", highlight: { ids: [node.id, node.children[i].id], kind: "compare" } });
+      if (node.children[i].keys.length === MAX_KEYS) {
+        if (node.children[i].leaf) splitLeaf(node, i); else splitInternal(node, i);
+        if (key >= node.keys[i]) i++;
+      }
+      return insertNonFull(node.children[i], key);
+    }
+
+    function insert(key) {
+      if (root.keys.length === MAX_KEYS) {
+        var oldRoot = root;
+        var newRoot = newInternal();
+        newRoot.children.push(oldRoot);
+        root = newRoot;
+        snapshot("A raiz está cheia: criamos uma nova raiz interna vazia acima dela antes de continuar.", { op: "split", highlight: { ids: [newRoot.id], kind: "new" } });
+        if (oldRoot.leaf) splitLeaf(newRoot, 0); else splitInternal(newRoot, 0);
+      }
+      return insertNonFull(root, key);
+    }
+
+    function search(key) {
+      var node = root;
+      while (!node.leaf) {
+        var i = 0; while (i < node.keys.length && key >= node.keys[i]) i++;
+        snapshot("Comparando " + key + " com os separadores — descendo (os dados só existem nas folhas).", { op: "search", highlight: { ids: [node.id, node.children[i].id], kind: "compare" } });
+        node = node.children[i];
+      }
+      snapshot("Chegamos numa folha — procurando " + key + " entre suas chaves.", { op: "search", highlight: { ids: [node.id], kind: "compare" } });
+      for (var j = 0; j < node.keys.length; j++) {
+        if (node.keys[j] === key) { snapshot(key + " encontrada nesta folha.", { op: "search", highlight: { ids: [node.id], kind: "end" } }); return true; }
+      }
+      snapshot(key + " não está nesta folha — a chave não existe na árvore.", { op: "search", highlight: { ids: [node.id], kind: "bad" } });
+      return false;
+    }
+
+    function rangeQuery(lo, hi) {
+      var node = root;
+      while (!node.leaf) {
+        var i = 0; while (i < node.keys.length && lo >= node.keys[i]) i++;
+        snapshot("Descendo até a folha onde o intervalo começa, comparando " + lo + " com os separadores.", { op: "range", highlight: { ids: [node.id, node.children[i].id], kind: "compare" } });
+        node = node.children[i];
+      }
+      snapshot("Achamos a folha inicial do intervalo [" + lo + ", " + hi + "] — agora seguimos os ponteiros entre folhas, sem voltar à raiz.", { op: "range", highlight: { ids: [node.id], kind: "compare" } });
+      var out = [];
+      while (node) {
+        var matched = [];
+        for (var j = 0; j < node.keys.length; j++) if (node.keys[j] >= lo && node.keys[j] <= hi) matched.push(node.keys[j]);
+        out = out.concat(matched);
+        var exhausted = node.keys.length === 0 || node.keys[node.keys.length - 1] > hi;
+        snapshot("Percorrendo uma folha da lista encadeada, coletando " + (matched.length ? matched.join(", ") : "nada") + ".",
+          { op: "range", highlight: { ids: [node.id], kind: matched.length ? "new" : "compare" } });
+        if (exhausted) break;
+        node = node.next;
+      }
+      snapshot("Intervalo completo: [" + out.join(", ") + "].", { op: "range", highlight: { ids: [], kind: "" } });
+      return out;
+    }
+
+    function mergeLeaves(node, i) {
+      var left = node.children[i], right = node.children[i + 1];
+      left.keys = left.keys.concat(right.keys);
+      left.next = right.next;
+      node.keys.splice(i, 1);
+      node.children.splice(i + 1, 1);
+      return left;
+    }
+
+    function mergeInternal(node, i) {
+      var left = node.children[i], right = node.children[i + 1];
+      left.keys.push(node.keys[i]);
+      left.keys = left.keys.concat(right.keys);
+      left.children = left.children.concat(right.children);
+      node.keys.splice(i, 1);
+      node.children.splice(i + 1, 1);
+      return left;
+    }
+
+    function fixChild(node, pos) {
+      var leftSib = pos > 0 ? node.children[pos - 1] : null;
+      var rightSib = pos < node.children.length - 1 ? node.children[pos + 1] : null;
+      var child = node.children[pos];
+
+      if (child.leaf) {
+        if (leftSib && leftSib.keys.length > MIN_KEYS) {
+          var moved = leftSib.keys.pop();
+          child.keys.unshift(moved);
+          node.keys[pos - 1] = child.keys[0];
+          snapshot("A folha tem só " + MIN_KEYS + " chave — pegamos emprestada a maior chave da folha irmã à esquerda; o separador do pai (uma cópia) é atualizado.",
+            { op: "rotate", highlight: { ids: [leftSib.id, node.id, child.id], kind: "rotate" } });
+          return child;
+        }
+        if (rightSib && rightSib.keys.length > MIN_KEYS) {
+          var moved2 = rightSib.keys.shift();
+          child.keys.push(moved2);
+          node.keys[pos] = rightSib.keys[0];
+          snapshot("A folha tem só " + MIN_KEYS + " chave — pegamos emprestada a menor chave da folha irmã à direita; o separador do pai é atualizado.",
+            { op: "rotate", highlight: { ids: [rightSib.id, node.id, child.id], kind: "rotate" } });
+          return child;
+        }
+        if (leftSib) {
+          snapshot("Nenhuma folha irmã tem chave sobrando — fundimos com a folha à esquerda (o separador do pai é descartado, o ponteiro entre folhas é ajustado).",
+            { op: "merge", highlight: { ids: [node.id, leftSib.id, child.id], kind: "rotate" } });
+          return mergeLeaves(node, pos - 1);
+        }
+        snapshot("Nenhuma folha irmã tem chave sobrando — fundimos com a folha à direita.",
+          { op: "merge", highlight: { ids: [node.id, child.id, rightSib.id], kind: "rotate" } });
+        return mergeLeaves(node, pos);
+      }
+
+      if (leftSib && leftSib.keys.length > MIN_KEYS) {
+        child.children.unshift(leftSib.children.pop());
+        child.keys.unshift(node.keys[pos - 1]);
+        node.keys[pos - 1] = leftSib.keys.pop();
+        snapshot("O nó interno tem só " + MIN_KEYS + " chave — pedimos emprestada uma chave do irmão esquerdo, passando pelo pai.",
+          { op: "rotate", highlight: { ids: [leftSib.id, node.id, child.id], kind: "rotate" } });
+        return child;
+      }
+      if (rightSib && rightSib.keys.length > MIN_KEYS) {
+        child.children.push(rightSib.children.shift());
+        child.keys.push(node.keys[pos]);
+        node.keys[pos] = rightSib.keys.shift();
+        snapshot("O nó interno tem só " + MIN_KEYS + " chave — pedimos emprestada uma chave do irmão direito, passando pelo pai.",
+          { op: "rotate", highlight: { ids: [rightSib.id, node.id, child.id], kind: "rotate" } });
+        return child;
+      }
+      if (leftSib) {
+        snapshot("Nenhum irmão interno tem chave sobrando — fundimos com o irmão esquerdo, puxando o separador do pai.",
+          { op: "merge", highlight: { ids: [node.id, leftSib.id, child.id], kind: "rotate" } });
+        return mergeInternal(node, pos - 1);
+      }
+      snapshot("Nenhum irmão interno tem chave sobrando — fundimos com o irmão direito.",
+        { op: "merge", highlight: { ids: [node.id, child.id, rightSib.id], kind: "rotate" } });
+      return mergeInternal(node, pos);
+    }
+
+    function deleteKey(node, key) {
+      if (node.leaf) {
+        var idx = -1;
+        for (var j = 0; j < node.keys.length; j++) if (node.keys[j] === key) { idx = j; break; }
+        if (idx === -1) { snapshot(key + " não está nesta folha — a chave não existe na árvore.", { op: "remove", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+        node.keys.splice(idx, 1);
+        snapshot(key + " removida diretamente da folha — sem precisar de predecessor/sucessor, como numa árvore B comum.", { op: "remove", highlight: { ids: [node.id], kind: "bad" } });
+        return true;
+      }
+      var i = 0; while (i < node.keys.length && key >= node.keys[i]) i++;
+      var child = node.children[i];
+      if (child.keys.length === MIN_KEYS) { child = fixChild(node, i); }
+      else { snapshot("Descendo para o filho apropriado (os dados só existem nas folhas).", { op: "remove", highlight: { ids: [node.id, child.id], kind: "compare" } }); }
+      return deleteKey(child, key);
+    }
+
+    function removeValue(key) {
+      var result = deleteKey(root, key);
+      if (!result) return false;
+      if (!root.leaf && root.keys.length === 0) {
+        root = root.children[0];
+        snapshot("A raiz interna ficou sem separadores; seu único filho vira a nova raiz.", { op: "merge", highlight: { ids: [root.id], kind: "new" } });
+      }
+      return true;
+    }
+
+    function allKeys() {
+      var node = root;
+      while (!node.leaf) node = node.children[0];
+      var out = [];
+      while (node) { out = out.concat(node.keys); node = node.next; }
+      return out;
+    }
+
+    return {
+      insert: insert, search: search, remove: removeValue, range: rangeQuery, keys: allKeys,
+      getRoot: function () { return root; }, getSteps: function () { return steps; }, minDegree: T
+    };
+  }
+
+  // ================= layout: leaves packed by real pixel width, internal = midpoint of children =================
+  var KEY_W = 40, NODE_H = 34;
+  function nodeWidth(node) { return Math.max(node.keys.length, 1) * KEY_W; }
+
+  function computeLayout(root, gap) {
+    var positions = {};
+    var cursorX = 0;
+    function layout(node, depth) {
+      var x;
+      if (node.children && node.children.length === 0 && !node.leaf) {
+        x = cursorX + nodeWidth(node) / 2; cursorX += nodeWidth(node) + gap;
+      } else if (node.leaf) {
+        x = cursorX + nodeWidth(node) / 2;
+        cursorX += nodeWidth(node) + gap;
+      } else {
+        var centers = node.children.map(function (c) { return layout(c, depth + 1); });
+        x = (centers[0] + centers[centers.length - 1]) / 2;
+      }
+      positions[node.id] = { x: x, depth: depth, keys: node.keys.slice(), width: nodeWidth(node), leaf: node.leaf, nextId: node.leaf && node.next ? node.next.id : null, childIds: node.leaf ? [] : node.children.map(function (c) { return c.id; }) };
+      return x;
+    }
+    layout(root, 0);
+    return { positions: positions, totalWidth: Math.max(cursorX - gap, nodeWidth(root)) };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnRandomInsert: document.getElementById("btnRandomInsert"),
+    rangeLo: document.getElementById("rangeLo"),
+    rangeHi: document.getElementById("rangeHi"),
+    btnRange: document.getElementById("btnRange"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var ROW_H = 74, TOP_PAD = 20, SIDE_PAD = 26, GAP = 22;
+  var NS = "http://www.w3.org/2000/svg";
+
+  var engine = createBPlusTreeEngine();
+  var state = { stepIndex: 0, playing: false, timer: null, usedValues: {} };
+  var nodeEls = {}, edgeEls = {}, chainEls = {};
+
+  function rebuildUsedValues() {
+    state.usedValues = {};
+    engine.keys().forEach(function (v) { state.usedValues[v] = true; });
+  }
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    rebuildUsedValues();
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Buscando", range: "Consultando intervalo", split: "Dividindo", merge: "Fundindo", rotate: "Emprestando chave", info: "Início" };
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) {
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira valores para começar, ou gere uma árvore aleatória.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    if (step.root.keys.length === 0 && step.root.leaf) {
+      els.treeSvg.setAttribute("viewBox", "0 0 200 60");
+      els.treeSvg.setAttribute("width", 200); els.treeSvg.setAttribute("height", 60);
+      els.treeSvg.innerHTML = "";
+      var emptyText = document.createElementNS(NS, "text");
+      emptyText.setAttribute("x", 100); emptyText.setAttribute("y", 30);
+      emptyText.setAttribute("text-anchor", "middle"); emptyText.setAttribute("dominant-baseline", "central");
+      emptyText.setAttribute("fill", "var(--ink-faint)"); emptyText.setAttribute("font-family", "IBM Plex Mono, monospace"); emptyText.setAttribute("font-size", "13px");
+      emptyText.textContent = "árvore vazia";
+      els.treeSvg.appendChild(emptyText);
+      nodeEls = {}; edgeEls = {}; chainEls = {};
+      return;
+    }
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function (id) { highlightMap[id] = step.highlight.kind; });
+
+    var layout = computeLayout(step.root, GAP);
+    var maxDepth = 0;
+    Object.keys(layout.positions).forEach(function (id) { if (layout.positions[id].depth > maxDepth) maxDepth = layout.positions[id].depth; });
+
+    var width = SIDE_PAD * 2 + layout.totalWidth;
+    var heightPx = TOP_PAD + (maxDepth + 1) * ROW_H + 16;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix) { return SIDE_PAD + ix; }
+    function yFor(depth) { return TOP_PAD + depth * ROW_H + NODE_H / 2; }
+
+    var presentIds = {};
+    var presentEdgeChildIds = {};
+
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var left = cx - p.width / 2;
+      var kind = highlightMap[id] || "";
+
+      var rec = nodeEls[id];
+      if (!rec) {
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "node");
+        var halo = document.createElementNS(NS, "rect");
+        halo.setAttribute("class", "node-halo");
+        halo.setAttribute("rx", 9); halo.setAttribute("height", NODE_H + 8);
+        var box = document.createElementNS(NS, "rect");
+        box.setAttribute("class", "node-box");
+        box.setAttribute("rx", 7); box.setAttribute("height", NODE_H);
+        g.appendChild(halo); g.appendChild(box);
+        rec = { g: g, halo: halo, box: box, dividers: [], texts: [] };
+        nodeEls[id] = rec;
+      }
+      if (kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+      rec.g.setAttribute("data-type", p.leaf ? "leaf" : "internal");
+
+      rec.halo.setAttribute("x", left - 4); rec.halo.setAttribute("y", cy - NODE_H / 2 - 4); rec.halo.setAttribute("width", p.width + 8);
+      rec.box.setAttribute("x", left); rec.box.setAttribute("y", cy - NODE_H / 2); rec.box.setAttribute("width", p.width);
+
+      while (rec.dividers.length < p.keys.length - 1) { var d = document.createElementNS(NS, "line"); d.setAttribute("class", "node-divider"); rec.g.appendChild(d); rec.dividers.push(d); }
+      while (rec.dividers.length > Math.max(0, p.keys.length - 1)) { rec.dividers.pop().remove(); }
+      for (var di = 0; di < p.keys.length - 1; di++) {
+        var dx = left + (di + 1) * KEY_W;
+        rec.dividers[di].setAttribute("x1", dx); rec.dividers[di].setAttribute("x2", dx);
+        rec.dividers[di].setAttribute("y1", cy - NODE_H / 2); rec.dividers[di].setAttribute("y2", cy + NODE_H / 2);
+      }
+
+      while (rec.texts.length < p.keys.length) { var t = document.createElementNS(NS, "text"); t.setAttribute("class", "node-value"); rec.g.appendChild(t); rec.texts.push(t); }
+      while (rec.texts.length > p.keys.length) { rec.texts.pop().remove(); }
+      for (var ki = 0; ki < p.keys.length; ki++) {
+        var kx = left + ki * KEY_W + KEY_W / 2;
+        rec.texts[ki].setAttribute("x", kx); rec.texts[ki].setAttribute("y", cy + 0.5);
+        rec.texts[ki].textContent = p.keys[ki];
+      }
+    });
+
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      var left = xFor(p.x) - p.width / 2;
+      p.childIds.forEach(function (childId, ci) {
+        presentEdgeChildIds[childId] = true;
+        var child = layout.positions[childId];
+        var line = edgeEls[childId];
+        if (!line) { line = document.createElementNS(NS, "line"); line.setAttribute("class", "edge-line"); edgeEls[childId] = line; }
+        var anchorX = left + ci * KEY_W;
+        line.setAttribute("x1", anchorX); line.setAttribute("y1", yFor(p.depth) + NODE_H / 2);
+        line.setAttribute("x2", xFor(child.x)); line.setAttribute("y2", yFor(child.depth) - NODE_H / 2);
+      });
+    });
+
+    // ---- leaf-to-leaf linked-list arrows, drawn as a shallow arc below the leaf row ----
+    var presentChainIds = {};
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      if (!p.leaf || p.nextId == null) return;
+      var nextP = layout.positions[p.nextId];
+      if (!nextP) return;
+      presentChainIds[id] = true;
+      var x1 = xFor(p.x) + p.width / 2, y1 = yFor(p.depth) + NODE_H / 2;
+      var x2 = xFor(nextP.x) - nextP.width / 2, y2 = yFor(nextP.depth) + NODE_H / 2;
+      var midX = (x1 + x2) / 2, dipY = Math.max(y1, y2) + 13;
+      var chain = chainEls[id];
+      if (!chain) { chain = document.createElementNS(NS, "path"); chain.setAttribute("class", "chain-line"); chainEls[id] = chain; }
+      chain.setAttribute("d", "M" + x1 + "," + y1 + " Q" + midX + "," + dipY + " " + x2 + "," + y2);
+      var active = (highlightMap[id] && highlightMap[id] !== "") || (highlightMap[p.nextId] && highlightMap[p.nextId] !== "");
+      if (active) chain.setAttribute("data-active", "1"); else chain.removeAttribute("data-active");
+    });
+
+    Object.keys(nodeEls).forEach(function (idStr) {
+      var id = Number(idStr);
+      if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; }
+    });
+    Object.keys(edgeEls).forEach(function (idStr) {
+      var id = Number(idStr);
+      if (!presentEdgeChildIds[id]) { edgeEls[id].remove(); delete edgeEls[id]; }
+    });
+    Object.keys(chainEls).forEach(function (idStr) {
+      var id = Number(idStr);
+      if (!presentChainIds[id]) { chainEls[id].remove(); delete chainEls[id]; }
+    });
+
+    var defs = els.treeSvg.querySelector("defs");
+    els.treeSvg.innerHTML = "";
+    if (defs) els.treeSvg.appendChild(defs);
+    Object.keys(edgeEls).forEach(function (id) { els.treeSvg.appendChild(edgeEls[id]); });
+    Object.keys(chainEls).forEach(function (id) { els.treeSvg.appendChild(chainEls[id]); });
+    Object.keys(nodeEls).forEach(function (id) { els.treeSvg.appendChild(nodeEls[id].g); });
+  }
+
+  // ================= playback controls =================
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i) {
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function stepBy(delta) { goTo(state.stepIndex + delta); }
+  function togglePlay() {
+    var steps = engine.getSteps();
+    if (state.playing) { stopPlaying(); return; }
+    if (steps.length === 0) return;
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function () {
+      var s = engine.getSteps();
+      if (state.stepIndex >= s.length - 1) { stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function () { goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stepBy(-1); });
+  els.btnNext.addEventListener("click", function () { stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) { togglePlay(); togglePlay(); } });
+
+  function showError(msg) { els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError() { els.errorText.hidden = true; }
+
+  function parseIntInRange(raw, label) {
+    if (raw === "") { showError("Digite um valor inteiro para " + label + "."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v)) { showError('"' + raw + '" não é um número inteiro válido.'); return null; }
+    if (v < -999 || v > 999) { showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+  function parseValueInput() { return parseIntInRange(els.valueInput.value.trim(), "o valor"); }
+
+  els.btnInsert.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insert(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnRemove.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.remove(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnRandomInsert.addEventListener("click", function () {
+    hideError();
+    if (Object.keys(state.usedValues).length >= 98) { showError("A árvore já cobre quase todos os valores de 1 a 98."); return; }
+    var v; do { v = 1 + Math.floor(Math.random() * 98); } while (state.usedValues[v]);
+    engine.insert(v); jumpToLiveEnd();
+  });
+  els.btnRange.addEventListener("click", function () {
+    var lo = parseIntInRange(els.rangeLo.value.trim(), '"De"'); if (lo === null) return;
+    var hi = parseIntInRange(els.rangeHi.value.trim(), '"Até"'); if (hi === null) return;
+    engine.range(lo, hi); jumpToLiveEnd();
+  });
+  els.sizeSlider.addEventListener("input", function () { els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function () {
+    hideError();
+    engine = createBPlusTreeEngine();
+    nodeEls = {}; edgeEls = {}; chainEls = {};
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { stepBy(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { stepBy(-1); e.preventDefault(); }
+    else if (e.key === " ") { togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= boot =================
+  (function boot() {
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

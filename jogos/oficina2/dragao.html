@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Mensageiro e o Dragão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--fundo:#121119;--mesa:#1B1A24;--painel:#23222F;--borda:#45425A;--chip:#2E2C3D;--texto:#ECE3CF;--mudo:#A9A1B8;--ouro:#F2C14E;--laranja:#F2A93B;--verde:#7FD8A4;--verm:#FF7A6B;--azul:#7FB8FF;--roxo:#C9A3FF;
+--titulo:"IM Fell English SC",Georgia,serif;--sans:"Alegreya Sans","Trebuchet MS",sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fundo);color:var(--texto);font-family:var(--sans);font-size:17px;line-height:1.4;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--borda);border-radius:5px;padding:0 5px;background:#121119;color:var(--ouro)}
+code{font-family:var(--mono);font-size:.9em;color:var(--ouro)}
+.hud{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--mesa);border-bottom:1px solid var(--borda)}
+.kick{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--ouro)}
+h1{margin:0;font-family:var(--titulo);font-weight:400;font-size:28px;line-height:1.05}
+.stats{display:flex;gap:20px;align-items:center}
+.stats div{display:grid;text-align:center}
+.stats span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mudo)}
+.stats b{font-size:22px;font-variant-numeric:tabular-nums}
+#combo.quente{color:var(--laranja);text-shadow:0 0 12px rgba(242,169,59,.6)}
+.vidas{font-size:21px;letter-spacing:1px;color:var(--verm)}
+.vidas i{font-style:normal;transition:opacity .3s}.vidas i.perdida{opacity:.18}
+.bts{display:flex;gap:8px}
+.bts button{background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:6px 12px;font-weight:700;font-size:15px}
+.bts .ouro{border-color:var(--ouro);color:var(--ouro)}
+main{max-width:1100px;margin:0 auto;padding:14px}
+.arena{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--borda);background:radial-gradient(ellipse at 80% 0%,rgba(255,122,107,.16),transparent 55%),radial-gradient(ellipse at 10% 100%,rgba(127,216,164,.08),transparent 50%),#17151f}
+.chefe{display:flex;align-items:center;gap:14px;padding:12px 16px 0;position:relative;z-index:3}
+.chefe .nome{font-family:var(--titulo);font-size:22px;color:var(--verm);white-space:nowrap}
+.hp{flex:1;height:16px;border-radius:9px;background:#0008;border:1px solid #6b2a24;overflow:hidden;position:relative}
+.hp i{display:block;height:100%;background:linear-gradient(90deg,#ff7a6b,#f2a93b);transition:width .5s cubic-bezier(.3,1.3,.5,1)}
+.hp b{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-family:var(--mono)}
+.cap{font-family:var(--mono);font-size:13px;color:var(--mudo);white-space:nowrap}
+.palco{position:relative}
+svg.mapa{display:block;width:100%;height:auto}
+.estrada line{stroke:#4f4a66;stroke-width:5;stroke-linecap:round;transition:stroke .3s}
+.estrada.arv line{stroke:var(--ouro);stroke-width:6}
+.estrada.relax line{stroke:var(--azul);stroke-width:7;animation:pulsa .7s}
+@keyframes pulsa{50%{stroke-width:11}}
+.estrada circle{fill:#1d1b27;stroke:#4f4a66;stroke-width:1.5}
+.estrada text{fill:var(--texto);font:700 14px var(--mono);text-anchor:middle}
+.cidade{cursor:pointer}
+.cidade .base{fill:#2e2c3d;stroke:#8f8aa8;stroke-width:3;transition:all .25s}
+.cidade:hover .base,.cidade:focus .base{stroke:var(--ouro);stroke-width:4}
+.cidade text.nome{fill:var(--texto);font:800 19px var(--sans);text-anchor:middle;pointer-events:none}
+.cidade text.dist{font:700 15px var(--mono);text-anchor:middle;fill:var(--ouro);pointer-events:none}
+.cidade rect.selo{fill:#121119;stroke:var(--ouro);stroke-width:1.5}
+.cidade.final rect.selo{stroke:var(--verde)}
+.cidade .torre{fill:#3a3650;stroke:#8f8aa8;stroke-width:2}
+.cidade.final .base{fill:#20352b;stroke:var(--verde)}
+.cidade.final .torre{fill:#2c4a3a;stroke:var(--verde)}
+.cidade.final text.dist{fill:var(--verde)}
+.cidade.dica .base{stroke:var(--ouro);stroke-width:5;filter:drop-shadow(0 0 8px rgba(242,193,78,.7))}
+.cidade.errou .base{stroke:var(--verm)}
+.cidade.final{cursor:default}
+.mensageiro{transition:transform .6s cubic-bezier(.45,0,.3,1)}
+.dragao{width:120px;flex:none;margin:-6px 0 -18px;transition:transform .2s;position:relative;z-index:4}
+.dragao.ferido{animation:ferido .45s}
+@keyframes ferido{25%{transform:translateX(10px) rotate(4deg);filter:brightness(2)}60%{transform:translateX(-6px)}}
+.dragao.ataca{animation:ataca .5s}
+@keyframes ataca{40%{transform:translateX(-24px) scale(1.08)}}
+.proj{position:absolute;z-index:6;width:26px;height:26px;border-radius:50%;pointer-events:none;transition:transform .45s cubic-bezier(.5,0,.8,.5),opacity .2s}
+.proj.fogo{background:radial-gradient(circle,#fff6c9,#f2a93b 45%,#ff5a3c 75%,transparent 76%);box-shadow:0 0 18px #ff7a3c}
+.proj.magia{background:radial-gradient(circle,#ffffff,#b7f0cc 40%,#7fd8a4 70%,transparent 71%);box-shadow:0 0 18px #7fd8a4}
+.flutua{position:absolute;z-index:7;pointer-events:none;font-weight:800;font-size:24px;text-shadow:0 2px 0 #000;animation:flutua 1.1s ease forwards}
+@keyframes flutua{to{transform:translateY(-60px);opacity:0}}
+.banner{position:absolute;z-index:8;left:50%;top:45%;transform:translate(-50%,-50%) scale(.6);opacity:0;font-family:var(--titulo);font-size:44px;color:var(--ouro);text-shadow:0 4px 0 #000,0 0 30px rgba(242,193,78,.5);white-space:nowrap;pointer-events:none;transition:all .35s;text-align:center}
+.banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.arena.dano{animation:dano .45s}
+@keyframes dano{30%{box-shadow:inset 0 0 0 5px var(--verm),0 0 50px rgba(255,90,60,.45)}}
+.barra{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 16px 14px;position:relative;z-index:3;background:linear-gradient(transparent,rgba(0,0,0,.35))}
+.barra p{margin:0;font-size:18px}
+.tempo{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;color:var(--mudo)}
+.tempo .trk{width:160px;height:10px;border-radius:5px;background:#0008;overflow:hidden}
+.tempo .trk i{display:block;height:100%;background:var(--verde)}
+#dicas{font-size:15px;color:var(--ouro);width:100%}
+.rapido{position:absolute;z-index:9;left:50%;bottom:70px;transform:translateX(-50%);background:var(--painel);border:2px solid var(--azul);border-radius:14px;padding:12px 16px;box-shadow:0 14px 40px rgba(0,0,0,.6);width:min(560px,92%);animation:sobe .3s ease}
+@keyframes sobe{from{transform:translate(-50%,30px);opacity:0}}
+.rapido p{margin:0 0 8px;font-size:17px}
+.rapido .kick{color:var(--azul)}
+.rapido .ops{display:flex;gap:8px;flex-wrap:wrap}
+.rapido .ops button{background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:8px 18px;font-weight:800;font-size:18px;font-family:var(--mono)}
+.rapido .ops button:hover{border-color:var(--azul)}
+.rapido .trk{height:6px;border-radius:3px;background:#0008;overflow:hidden;margin-top:10px}
+.rapido .trk i{display:block;height:100%;background:var(--azul)}
+.modal[hidden]{display:none}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(8,7,12,.86);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}
+.caixa{margin:auto;max-width:680px;width:100%;background:var(--painel);border:2px solid var(--ouro);border-radius:16px;padding:18px 22px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.caixa h2{font-family:var(--titulo);font-weight:400;font-size:32px;line-height:1.1;margin:4px 0 10px}
+.caixa ol{padding-left:22px}.caixa li{margin:6px 0}
+.nota{color:var(--mudo);font-size:15px}
+.mbts{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap}
+.mbts button{background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:8px 16px;font-weight:700}
+.mbts .pri{background:var(--laranja);border-color:var(--laranja);color:#1d1408;font-weight:800}
+.tab{border-collapse:collapse;margin:8px 0;font-size:15px}
+.tab td,.tab th{border-bottom:1px solid var(--borda);padding:4px 10px;text-align:center;font-family:var(--mono)}
+.tab .min{color:var(--verde);font-weight:700}.tab .voce{color:var(--verm)}
+.ops2{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}.ops2 label{display:flex;gap:6px;align-items:center;font-size:15px;color:var(--mudo)}
+.placar{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}
+.placar div{flex:1;min-width:120px;background:var(--mesa);border:1px solid var(--borda);border-radius:12px;padding:10px;text-align:center;display:grid}
+.placar span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mudo)}
+.placar b{font-size:28px;font-variant-numeric:tabular-nums}.placar b.ouro{color:var(--ouro)}
+@media (max-width:700px){h1{font-size:22px}.stats{gap:10px}.stats b{font-size:17px}.dragao{width:96px}.chefe .nome{font-size:17px}.tempo .trk{width:90px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hud">
+  <div><p class="kick">Masmorra · Dijkstra</p><h1>O Mensageiro e o Dragão</h1></div>
+  <div class="stats">
+    <div><span>Pontos</span><b id="pontos">0</b></div>
+    <div><span>Combo</span><b id="combo">×1</b></div>
+    <div><span>Covil</span><b id="cap">1</b></div>
+    <div><span>Vidas</span><b class="vidas" id="vidas"></b></div>
+    <div><span>Recorde</span><b id="rec">0</b></div>
+  </div>
+  <div class="bts"><button id="bSom">Som <kbd>M</kbd></button><button id="bPausa">Pausar <kbd>P</kbd></button><button id="bDica" class="ouro">Dica <kbd>H</kbd></button></div>
+</header>
+<main>
+  <section class="arena" id="arena">
+    <div class="chefe"><span class="nome" id="nomeDragao">Dragão</span><div class="hp"><i id="hp" style="width:100%"></i><b id="hpTxt"></b></div><span class="cap" id="capTxt"></span>
+    <svg class="dragao" id="dragao" viewBox="0 0 160 120" aria-hidden="true">
+      <path d="M150 70 Q120 20 92 44 Q70 10 40 30 Q60 40 56 52 Q30 50 14 70 Q34 72 46 66 Q44 90 70 100 Q98 108 118 92 Q140 96 150 70 Z" fill="#7a2b2b" stroke="#ff7a6b" stroke-width="3"/>
+      <path d="M92 44 Q104 2 132 8 Q116 22 118 40" fill="#5c1f1f" stroke="#ff7a6b" stroke-width="2.5"/>
+      <circle cx="58" cy="48" r="5" fill="#F2C14E"/><path d="M20 70 L6 64 M20 70 L6 76" stroke="#F2A93B" stroke-width="3"/>
+      <path d="M70 100 L64 116 M96 104 L98 118" stroke="#ff7a6b" stroke-width="4" stroke-linecap="round"/>
+    </svg></div>
+    <div class="palco" id="palco"><svg class="mapa" id="mapa" viewBox="0 0 640 400"></svg></div>
+    <div class="barra"><p id="ordem">Prepare-se…</p><span class="tempo">tempo <span class="trk"><i id="tbar"></i></span><b id="tseg">–</b></span><span id="dicas"></span></div>
+    <div class="banner" id="banner"></div>
+  </section>
+</main>
+<div class="modal" id="modal" hidden><div class="caixa" role="dialog" aria-modal="true"><div id="mc"></div></div></div>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const CHAVE = 'oficina-dragao-recorde';
+const DRAGOES = ['Ignis, o Guardião das Estradas','Morvath, a Sombra dos Vales','Kaldra, Senhora das Cinzas','Vurm, o Devorador de Mapas','Azhar, o Último Dragão'];
+const VIDAS = 5;
+
+/* ---------- som ---------- */
+let ctx = null, som = true;
+function tom(f, d=.12, tipo='triangle', v=.07, atraso=0){ if (!som) return; try { ctx = ctx || new (window.AudioContext||window.webkitAudioContext)(); const t = ctx.currentTime+atraso, o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t+d); o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+d+.02); } catch(e) {} }
+const SFX = {
+  magia(c){ [660,880,1175].forEach((f,i)=>tom(f*(1+.05*Math.min(c,5)),.14,'triangle',.07,i*.05)); },
+  fogo(){ tom(110,.4,'sawtooth',.07); tom(82,.45,'sawtooth',.06,.1); },
+  passo(){ tom(330,.05,'square',.02); },
+  vitoria(){ [523,659,784,1046,1318].forEach((f,i)=>tom(f,.2,'triangle',.07,i*.1)); },
+  tic(){ tom(1200,.03,'square',.02); },
+  fim(){ [392,330,262,196].forEach((f,i)=>tom(f,.32,'triangle',.07,i*.17)); }
+};
+
+/* ---------- grafo legível e conexo ---------- */
+function novoMapa(n){
+  const slots = [[90,90],[230,70],[370,100],[520,80],[70,215],[210,205],[350,230],[500,210],[130,330],[290,335],[450,330],[590,300]];
+  for (let t = 0; t < 200; t++) {
+    const idx = shuffle(slots.map((_,i)=>i)).slice(0,n).sort((a,b)=>a-b);
+    const vs = idx.map((si,i)=>({id:'ABCDEFGHIJ'[i], x:slots[si][0]+rnd(-12,12), y:slots[si][1]+16+rnd(-10,10)}));
+    const d = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y), cand = [];
+    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++) if (d(vs[i],vs[j]) < 200) cand.push([i,j,d(vs[i],vs[j])]);
+    const pai = vs.map((_,i)=>i), f = x => pai[x]===x?x:(pai[x]=f(pai[x]));
+    const es = [];
+    for (const [i,j] of shuffle(cand)) if (f(i)!==f(j)) { pai[f(i)]=f(j); es.push([i,j]); }
+    if (es.length < n-1) continue;
+    for (const [i,j] of shuffle(cand.filter(([i,j])=>!es.some(e=>e[0]===i&&e[1]===j))).sort((a,b)=>a[2]-b[2]).slice(0, Math.ceil(n/2))) es.push([i,j]);
+    const cruza=(p1,p2,p3,p4)=>{const o=(a,b,c)=>(c.y-a.y)*(b.x-a.x)-(b.y-a.y)*(c.x-a.x); if([p1,p2].includes(p3)||[p1,p2].includes(p4)) return false; return (o(p1,p2,p3)>0)!==(o(p1,p2,p4)>0)&&(o(p3,p4,p1)>0)!==(o(p3,p4,p2)>0);};
+    const fin = []; for (const e of es) if (!fin.some(g=>cruza(vs[e[0]],vs[e[1]],vs[g[0]],vs[g[1]]))) fin.push(e);
+    const p2 = vs.map((_,i)=>i), f2 = x => p2[x]===x?x:(p2[x]=f2(p2[x])); fin.forEach(([i,j])=>p2[f2(i)]=f2(j));
+    if (new Set(vs.map((_,i)=>f2(i))).size > 1) continue;
+    const pesos = shuffle([...Array(15).keys()].map(x=>x+1));
+    return { vs, es: fin.map(([i,j],k)=>({a:vs[i].id, b:vs[j].id, w:pesos[k % 15]})) };
+  }
+}
+
+/* ---------- estado ---------- */
+let S = null, recorde = 0;
+try { recorde = +localStorage.getItem(CHAVE) || 0; } catch(e) {}
+$('#rec').textContent = recorde.toLocaleString('pt-BR');
+const opc = { explicar:true };
+
+function novoJogo(){ S = { vidas:VIDAS, pontos:0, combo:1, cap:0, rodando:true }; desenharVidas(); placar(); proximoCovil(); }
+function proximoCovil(){
+  S.cap++; $('#cap').textContent = S.cap;
+  const n = Math.min(9, 4 + S.cap);
+  S.g = novoMapa(n);
+  S.dist = Object.fromEntries(S.g.vs.map(v=>[v.id, Infinity])); S.dist.A = 0;
+  S.pai = {A:null}; S.fim = new Set(); S.rapidos = 0;
+  S.hpMax = (n - 1) * 10; S.hp = S.hpMax;
+  S.limite = Math.max(6, 16 - (S.cap - 1) * 2.5);
+  S.pos = 'A'; S.ocupado = true; S.atual = false;
+  $('#nomeDragao').textContent = DRAGOES[(S.cap - 1) % DRAGOES.length];
+  $('#capTxt').textContent = `${n} cidades`;
+  hp(); desenharMapa();
+  banner(`Covil ${S.cap}<br><small style="font-size:22px">${DRAGOES[(S.cap-1)%DRAGOES.length]}</small>`);
+  setTimeout(() => { finalizar('A', true); }, 1300);
+}
+const viz = u => S.g.es.filter(e=>e.a===u||e.b===u).map(e=>({v:e.a===u?e.b:e.a, w:e.w, e}));
+function candidatos(){ return S.g.vs.map(v=>v.id).filter(v=>!S.fim.has(v) && S.dist[v] < Infinity).sort((a,b)=>S.dist[a]-S.dist[b] || (a<b?-1:1)); }
+
+/* finaliza u, anda até lá, relaxa as estradas e prepara a próxima decisão */
+function finalizar(u, inicial){
+  S.ocupado = true; S.fim.add(u);
+  andarAte(u, () => {
+    const melhorou = [];
+    for (const {v, w, e} of viz(u)) if (!S.fim.has(v) && S.dist[u] + w < S.dist[v]) { melhorou.push({v, velho:S.dist[v], novo:S.dist[u]+w, w}); }
+    desenharMapa();
+    const aplicar = () => {
+      melhorou.forEach(m => { S.dist[m.v] = m.novo; S.pai[m.v] = u; });
+      melhorou.forEach((m,k) => setTimeout(() => { const el = document.querySelector(`[data-e="${[u,m.v].sort().join('')}"]`); el && el.classList.add('relax'); SFX.passo(); }, k*120));
+      setTimeout(() => { desenharMapa(); proximaDecisao(); }, melhorou.length * 120 + 450);
+    };
+    if (!inicial && melhorou.length && S.rapidos < 2 && Math.random() < 0.6) { S.rapidos++; desafioRapido(u, melhorou[rnd(0, melhorou.length-1)], aplicar); }
+    else aplicar();
+  });
+}
+function proximaDecisao(){
+  if (!S.rodando) return;
+  const c = candidatos();
+  if (!c.length) return vitoria();
+  S.atual = true; S.ocupado = false; S.tempo = S.limite; S.dica = 0; $('#dicas').textContent = '';
+  $('#ordem').innerHTML = `Qual cidade o mensageiro <b>confirma</b> agora? <span class="nota">(menor distância provisória; empate: ordem alfabética)</span>`;
+}
+function escolher(v){
+  if (!S || !S.rodando || S.ocupado || !S.atual || !$('#modal').hidden || S.fim.has(v)) return;
+  const c = candidatos(), certo = c[0];
+  S.atual = false;
+  if (v === certo) {
+    const frac = S.tempo / S.limite, dano = 10 + (frac > .5 ? 4 : 0) + (S.combo >= 3 ? 4 : 0);
+    const ganho = Math.round((100 + 120 * frac - 40 * S.dica) * S.combo);
+    S.pontos += Math.max(20, ganho); S.combo = Math.min(5, S.combo + 1); placar();
+    magia(v, dano, ganho);
+    finalizar(v, false);
+  } else errou(v, c, false);
+}
+function errou(v, c, esgotou){
+  S.ocupado = true; S.combo = 1; S.vidas--; placar(); desenharVidas();
+  fogo(v || S.pos);
+  if (v) { const el = document.querySelector(`.cidade[data-v="${v}"]`); el && el.classList.add('errou'); }
+  const seguir = () => { if (S.vidas <= 0) return fimDeJogo(); S.atual = false; finalizar(c[0], false); };
+  const tabela = `<table class="tab"><tr><th>cidade</th>${c.map(x=>`<td class="${x===c[0]?'min':(x===v?'voce':'')}">${x}</td>`).join('')}</tr><tr><th>distância</th>${c.map(x=>`<td class="${x===c[0]?'min':(x===v?'voce':'')}">${S.dist[x]}</td>`).join('')}</tr></table>`;
+  const html = `<p class="kick">${esgotou ? 'O dragão não espera' : 'O dragão contra-ataca'}</p><h2>A cidade certa era ${c[0]}</h2>
+    <p>${v && S.dist[v] === Infinity ? `${v} ainda não foi alcançada (∞): nenhuma estrada de uma cidade confirmada chega até ela.` : ''} O Dijkstra sempre confirma a cidade <b>não confirmada</b> de menor distância provisória${c.length > 1 && S.dist[c[1]] === S.dist[c[0]] ? ' (aqui houve empate, resolvido pela ordem alfabética)' : ''}:</p>${tabela}
+    <p class="nota">Com pesos não negativos, nenhum caminho por cidades mais distantes pode baratear a menor delas. Por isso ela já é definitiva.</p>`;
+  setTimeout(() => opc.explicar ? modal(html, [{t:'Continuar', pri:true, f:seguir}]) : setTimeout(seguir, 500), 550);
+}
+
+/* desafio rápido: nova distância depois do relaxamento */
+function desafioRapido(u, m, depois){
+  const ops = shuffle([...new Set([m.novo, m.w, m.velho === Infinity ? m.novo + rnd(2,5) : m.velho, m.novo + rnd(1,3), Math.max(1, m.novo - rnd(1,3))])]).slice(0,4);
+  if (!ops.includes(m.novo)) ops[0] = m.novo;
+  const box = document.createElement('div'); box.className = 'rapido';
+  box.innerHTML = `<p class="kick">Desafio rápido · bônus</p><p>${u} foi confirmada com distância <b>${S.dist[u]}</b>. Pela estrada ${u}–${m.v} (custo ${m.w}), qual a nova distância de <b>${m.v}</b>? <span class="nota">(antes: ${m.velho === Infinity ? '∞' : m.velho})</span></p><div class="ops">${shuffle(ops).map(x=>`<button data-x="${x}">${x}</button>`).join('')}</div><div class="trk"><i></i></div>`;
+  $('#arena').appendChild(box);
+  const T = 7; let t = T, vivo = true;
+  const barra = box.querySelector('.trk i');
+  const tick = setInterval(() => { if (!$('#modal').hidden || S.pausado) return; t -= .1; barra.style.width = (100*t/T)+'%'; if (t <= 0) fim(null); }, 100);
+  function fim(x){
+    if (!vivo) return; vivo = false; clearInterval(tick);
+    if (x === m.novo) { S.pontos += 150 * S.combo; placar(); magia(m.v, 6, 150 * S.combo, 'bônus'); box.remove(); depois(); }
+    else {
+      box.remove(); S.combo = 1; placar();
+      const html = `<p class="kick">Relaxamento</p><h2>A nova distância de ${m.v} é ${m.novo}</h2><p>dist(${u}) + custo = ${S.dist[u]} + ${m.w} = <b>${m.novo}</b>, que é menor que ${m.velho === Infinity ? '∞' : m.velho}. Então ${m.v} passa a valer ${m.novo}, com ${u} como antecessor.</p><p class="nota">Errar o desafio rápido não custa vida, só o bônus e o combo.</p>`;
+      opc.explicar ? modal(html, [{t:'Continuar', pri:true, f:depois}]) : depois();
+    }
+  }
+  box.querySelectorAll('button').forEach(b => b.onclick = () => fim(+b.dataset.x));
+  window.__rapido = m.novo;
+}
+
+/* ---------- tempo ---------- */
+let ult = performance.now();
+function laco(t){
+  const dt = Math.min(.1, (t - ult)/1000); ult = t;
+  if (S && S.rodando && S.atual && !S.ocupado && !S.pausado && $('#modal').hidden) {
+    const antes = Math.ceil(S.tempo); S.tempo -= dt;
+    if (Math.ceil(S.tempo) !== antes && S.tempo < 3.5 && S.tempo > 0) SFX.tic();
+    if (S.tempo <= 0) { S.tempo = 0; S.atual = false; errou(null, candidatos(), true); }
+  }
+  if (S && S.limite) { const f = Math.max(0, (S.tempo ?? 0) / S.limite); $('#tbar').style.width = (100*f)+'%'; $('#tbar').style.background = f > .5 ? 'var(--verde)' : (f > .25 ? 'var(--ouro)' : 'var(--verm)'); $('#tseg').textContent = S.atual ? Math.ceil(S.tempo) + ' s' : '–'; }
+  requestAnimationFrame(laco);
+}
+requestAnimationFrame(laco);
+
+/* ---------- desenho ---------- */
+function desenharMapa(){
+  const P = Object.fromEntries(S.g.vs.map(v=>[v.id,v]));
+  const cands = new Set(candidatos());
+  let s = '<defs><radialGradient id="nev" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>';
+  for (const e of S.g.es) {
+    const a = P[e.a], b = P[e.b], mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    const arv = S.fim.has(e.a) && S.fim.has(e.b) && (S.pai[e.a] === e.b || S.pai[e.b] === e.a);
+    s += `<g class="estrada ${arv?'arv':''}" data-e="${[e.a,e.b].sort().join('')}"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><circle cx="${mx}" cy="${my}" r="14"/><text x="${mx}" y="${my+5}">${e.w}</text></g>`;
+  }
+  for (const v of S.g.vs) {
+    const fim = S.fim.has(v.id), d = S.dist[v.id];
+    s += `<g class="cidade ${fim?'final':''}" data-v="${v.id}" tabindex="${fim?-1:0}" role="button" aria-label="Cidade ${v.id}, distância ${d===Infinity?'infinita':d}${fim?', confirmada':''}">
+      <circle class="base" cx="${v.x}" cy="${v.y}" r="24"/><path class="torre" d="M${v.x-9} ${v.y-20} v-14 h4 v5 h4 v-5 h2 v5 h4 v-5 h4 v14 z"/>
+      <text class="nome" x="${v.x}" y="${v.y+7}">${v.id}</text><rect class="selo" x="${v.x+16}" y="${v.y+8}" width="34" height="22" rx="7"/><text class="dist" x="${v.x+33}" y="${v.y+24}">${d===Infinity?'∞':d}</text></g>`;
+  }
+  const m = P[S.pos];
+  s += `<g class="mensageiro" id="mens" style="transform:translate(${m.x}px,${m.y}px)"><g transform="translate(14,-40)"><circle cx="0" cy="-8" r="7" fill="#F2C14E" stroke="#1d1408" stroke-width="2"/><path d="M-8 10 Q0 -6 8 10 Z" fill="#7FB8FF" stroke="#1d1408" stroke-width="2"/><path d="M6 0 L16 -6 L14 4 Z" fill="#ECE3CF" stroke="#1d1408" stroke-width="1.5"/></g></g>`;
+  $('#mapa').innerHTML = s;
+  $('#mapa').querySelectorAll('.cidade').forEach(c => { c.onclick = () => escolher(c.dataset.v); c.onkeydown = e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); escolher(c.dataset.v); } }; });
+}
+function andarAte(u, depois){
+  const de = S.pos, P = Object.fromEntries(S.g.vs.map(v=>[v.id,v]));
+  /* caminho pela árvore: de u sobe até a raiz e de 'de' também; anda pelo ancestral comum */
+  const sobe = x => { const c = []; while (x) { c.push(x); x = S.pai[x]; } return c; };
+  const cu = sobe(u), cd = sobe(de), comum = cu.find(x => cd.includes(x)) || 'A';
+  const rota = cd.slice(0, cd.indexOf(comum)+1).concat(cu.slice(0, cu.indexOf(comum)).reverse());
+  let k = 0;
+  const mens = () => document.getElementById('mens');
+  (function passo(){
+    k++;
+    if (k >= rota.length) { S.pos = u; return setTimeout(depois, 150); }
+    const p = P[rota[k]], el = mens(); if (el) el.style.transform = `translate(${p.x}px,${p.y}px)`; SFX.passo();
+    setTimeout(passo, rota.length > 4 ? 280 : 420);
+  })();
+}
+function pontoTela(el){ const r = el.getBoundingClientRect(), a = $('#arena').getBoundingClientRect(); return {x: r.left - a.left + r.width/2, y: r.top - a.top + r.height/2}; }
+function projetil(classe, de, para, fim){
+  const p = document.createElement('div'); p.className = 'proj ' + classe;
+  p.style.left = (de.x - 13) + 'px'; p.style.top = (de.y - 13) + 'px'; $('#arena').appendChild(p);
+  requestAnimationFrame(() => p.style.transform = `translate(${para.x - de.x}px, ${para.y - de.y}px)`);
+  setTimeout(() => { p.remove(); fim && fim(); }, 470);
+}
+function magia(v, dano, ganho, rotulo){
+  const c = document.querySelector(`.cidade[data-v="${v}"]`), d = $('#dragao');
+  if (!c) return;
+  SFX.magia(S.combo);
+  projetil('magia', pontoTela(c), pontoTela(d), () => {
+    S.hp = Math.max(0, S.hp - dano); hp();
+    d.classList.remove('ferido'); void d.getBoundingClientRect(); d.classList.add('ferido');
+    flutua(`−${dano}${rotulo ? ' ' + rotulo : ''}`, pontoTela(d), 'var(--verde)');
+  });
+  flutua(`+${Math.max(20, ganho)}`, pontoTela(c), 'var(--ouro)');
+}
+function fogo(v){
+  const alvo = document.querySelector(`.cidade[data-v="${v}"]`) || document.getElementById('mens'), d = $('#dragao');
+  d.classList.remove('ataca'); void d.getBoundingClientRect(); d.classList.add('ataca');
+  SFX.fogo();
+  projetil('fogo', pontoTela(d), pontoTela(alvo), () => { $('#arena').classList.remove('dano'); void $('#arena').offsetWidth; $('#arena').classList.add('dano'); flutua('−1 ♥', pontoTela(alvo), 'var(--verm)'); });
+}
+function flutua(txt, p, cor){ const f = document.createElement('div'); f.className = 'flutua'; f.textContent = txt; f.style.color = cor; f.style.left = (p.x - 24) + 'px'; f.style.top = (p.y - 20) + 'px'; $('#arena').appendChild(f); setTimeout(() => f.remove(), 1100); }
+function hp(){ $('#hp').style.width = (100 * S.hp / S.hpMax) + '%'; $('#hpTxt').textContent = `${S.hp} / ${S.hpMax}`; }
+function desenharVidas(){ $('#vidas').innerHTML = Array.from({length:VIDAS}, (_,i) => `<i class="${i >= S.vidas ? 'perdida' : ''}">♥</i>`).join(''); }
+function placar(){ $('#pontos').textContent = S.pontos.toLocaleString('pt-BR'); $('#combo').textContent = '×' + S.combo; $('#combo').classList.toggle('quente', S.combo >= 3); }
+function banner(html){ const b = $('#banner'); b.innerHTML = html; b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1200); }
+
+function vitoria(){
+  S.ocupado = true; S.atual = false;
+  const sobra = S.hp; S.hp = 0; hp();
+  const bonus = 300 + S.vidas * 60 + sobra * 5;
+  S.pontos += bonus; placar(); SFX.vitoria();
+  $('#dragao').classList.add('ferido');
+  if (S.vidas < VIDAS && S.cap % 2 === 0) { S.vidas++; desenharVidas(); }
+  const dist = S.g.vs.map(v=>`${v.id}=${S.dist[v.id]}`).join(' · ');
+  setTimeout(() => modal(`<p class="kick">Covil ${S.cap} vencido</p><h2>${DRAGOES[(S.cap-1)%DRAGOES.length].split(',')[0]} foge!</h2>
+    <p>O mensageiro confirmou todas as rotas. A árvore dourada no mapa é a <b>árvore de caminhos mínimos</b> a partir de A.</p><p class="nota">Distâncias finais: ${dist}</p>
+    <div class="placar"><div><span>Bônus do covil</span><b class="ouro">+${bonus}</b></div><div><span>Pontos</span><b>${S.pontos.toLocaleString('pt-BR')}</b></div></div>
+    ${S.cap % 2 === 0 && S.vidas <= VIDAS ? '<p class="nota">A cada dois covis vencidos, você recupera uma vida.</p>' : ''}`,
+    [{t:'Próximo covil', pri:true, f:proximoCovil}]), 700);
+}
+function fimDeJogo(){
+  S.rodando = false; SFX.fim();
+  const novo = S.pontos > recorde;
+  if (novo) { recorde = S.pontos; try { localStorage.setItem(CHAVE, String(recorde)); } catch(e) {} $('#rec').textContent = recorde.toLocaleString('pt-BR'); }
+  modal(`<p class="kick">O mensageiro caiu</p><h2>${novo ? 'Novo recorde neste aparelho!' : 'Fim da jornada'}</h2>
+    <div class="placar"><div><span>Pontos</span><b class="ouro">${S.pontos.toLocaleString('pt-BR')}</b></div><div><span>Covis vencidos</span><b>${S.cap - 1}</b></div><div><span>Recorde</span><b>${recorde.toLocaleString('pt-BR')}</b></div></div>`,
+    [{t:'Nova jornada', pri:true, f:novoJogo}]);
+}
+
+/* ---------- dica, janelas, controles ---------- */
+function dica(){
+  if (!S || !S.atual || S.ocupado || S.dica >= 2) return;
+  S.dica++; S.combo = 1; S.tempo = Math.min(S.limite, S.tempo + 3); placar();
+  const c = candidatos();
+  if (S.dica === 1) $('#dicas').textContent = `Candidatas (alcançadas e não confirmadas): ${c.map(x=>`${x}=${S.dist[x]}`).join(', ')}.`;
+  else { document.querySelector(`.cidade[data-v="${c[0]}"]`)?.classList.add('dica'); $('#dicas').textContent = `A menor é ${c[0]} (${S.dist[c[0]]}).`; }
+}
+function modal(html, botoes){
+  $('#mc').innerHTML = html + `<div class="mbts">${botoes.map((b,i)=>`<button data-i="${i}" class="${b.pri?'pri':''}">${b.t}</button>`).join('')}</div>`;
+  $('#modal').hidden = false;
+  $('#mc').querySelectorAll('[data-i]').forEach(x => x.onclick = () => { $('#modal').hidden = true; botoes[+x.dataset.i].f && botoes[+x.dataset.i].f(); });
+  setTimeout(() => ($('#mc .pri') || $('#mc button'))?.focus(), 30);
+}
+function comoJogar(inicio){
+  modal(`<p class="kick">Masmorra · Dijkstra</p><h2>O Mensageiro e o Dragão</h2>
+  <p>Um dragão bloqueia as estradas do reino. O mensageiro parte de <b>A</b> e só vence o dragão confirmando, uma por uma, a rota mais curta até cada cidade.</p>
+  <ol><li>O número embaixo de cada cidade é a distância provisória (∞ = ainda não alcançada).</li>
+  <li>Clique na cidade que o mensageiro deve <b>confirmar</b>: a de menor distância entre as não confirmadas (empate: ordem alfabética). Cada acerto lança uma magia no dragão.</li>
+  <li>Depois de confirmar, as estradas que saem dela são <b>relaxadas</b> e as distâncias vizinhas podem diminuir. Às vezes surge um <b>desafio rápido</b> valendo bônus.</li>
+  <li>Errar ou demorar demais: o dragão cospe fogo e você perde uma vida ♥. Covis seguintes têm mais cidades e menos tempo.</li></ol>
+  <p class="nota">Dica <kbd>H</kbd>: 1ª camada lista as candidatas, 2ª destaca a resposta. Dica zera o combo e dá +3 s.</p>
+  <div class="ops2"><label><input type="checkbox" id="oExp" ${opc.explicar?'checked':''}> Explicar cada erro numa janela</label></div>`,
+  inicio ? [{t:'Partir de A', pri:true, f:novoJogo}] : [{t:'Voltar ao jogo', pri:true, f:() => S.pausado = false}]);
+  const cb = $('#oExp'); if (cb) cb.onchange = () => opc.explicar = cb.checked;
+}
+function pausar(){ if (!S || !S.rodando || !$('#modal').hidden) return; S.pausado = true; modal('<p class="kick">Pausa</p><h2>O dragão cochila</h2><p class="nota">O relógio está parado.</p>', [{t:'Continuar', pri:true, f:() => S.pausado = false}, {t:'Como jogar', f:() => comoJogar(false)}]); }
+$('#bSom').onclick = () => { som = !som; $('#bSom').innerHTML = (som ? 'Som' : 'Mudo') + ' <kbd>M</kbd>'; };
+$('#bPausa').onclick = pausar; $('#bDica').onclick = dica;
+document.addEventListener('keydown', e => {
+  if (!$('#modal').hidden) { if (e.key === 'Enter' || e.key === 'Escape') { const b = $('#mc .pri'); if (b) { e.preventDefault(); b.click(); } } return; }
+  const k = e.key.toLowerCase();
+  if (k === 'm') $('#bSom').click(); else if (k === 'p') pausar(); else if (k === 'h') dica();
+  else if (S && S.atual && /^[a-j]$/.test(k)) escolher(k.toUpperCase());
+});
+window.__resposta = () => (S && S.atual && !S.ocupado) ? candidatos()[0] : null;
+window.__estado = () => S;
+
+/* tela inicial com um mapa de exemplo ao fundo */
+S = { vidas:VIDAS, pontos:0, combo:1, cap:0, g:novoMapa(6), pai:{A:null}, fim:new Set(), pos:'A', hpMax:50, hp:50 };
+S.dist = Object.fromEntries(S.g.vs.map(v=>[v.id, Infinity])); S.dist.A = 0;
+desenharMapa(); desenharVidas(); placar(); hp();
+comoJogar(true);
+})();
+</script>
+</body>
+</html>

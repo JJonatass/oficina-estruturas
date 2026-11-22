@@ -1,0 +1,690 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lista Sequencial (Vetor)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"], .op-pill[data-op="insert-start"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot, .op-pill[data-op="insert-start"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove-start"], .op-pill[data-op="shrink"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove-start"] .dot, .op-pill[data-op="shrink"] .dot{background:var(--rust);}
+  .op-pill[data-op="shift-right"], .op-pill[data-op="shift-left"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="shift-right"] .dot, .op-pill[data-op="shift-left"] .dot{background:var(--violet);}
+  .op-pill[data-op="search-start"], .op-pill[data-op="compare"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search-start"] .dot, .op-pill[data-op="compare"] .dot{background:var(--accent);}
+  .op-pill[data-op="found"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="found"] .dot{background:var(--success);}
+  .op-pill[data-op="bad"], .op-pill[data-op="not-found"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot, .op-pill[data-op="not-found"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .sl-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .sl-svg, .sl-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .sl-cell-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease, x .28s ease; }
+  .sl-cell-rect.occupied{ fill:var(--accent-soft); }
+  .sl-cell-rect.empty{ fill:var(--paper); stroke-dasharray:3 3; }
+  .sl-cell[data-state="new"] .sl-cell-rect{ stroke:var(--gold); stroke-width:2.8; fill:var(--gold-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .sl-cell[data-state="source"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.6; }
+  .sl-cell[data-state="dest"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.8; fill:var(--violet-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .sl-cell[data-state="cursor"] .sl-cell-rect{ stroke:var(--accent); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .sl-cell[data-state="found"] .sl-cell-rect{ stroke:var(--success); stroke-width:2.8; fill:var(--success-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+  .sl-cell[data-state="bad"] .sl-cell-rect{ stroke:var(--rust); stroke-width:2.4; }
+  .sl-cell-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .sl-cell-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .sl-cell-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .sl-cell-index.boundary{ fill:var(--accent-ink); font-weight:600; }
+  .sl-boundary-line{ stroke:var(--accent); stroke-width:1.6; stroke-dasharray:4 3; }
+  .sl-boundary-label{ font-size:9px; fill:var(--accent-ink); text-anchor:middle; font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sl-cursor-arrow{ fill:var(--accent); }
+  .sl-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.shift{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold); background:var(--gold-soft);}
+  .legend .swatch.found{border-color:var(--success); background:var(--success-soft);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+  .legend .swatch.empty{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Estrutura linear · vetor de tamanho fixo</span>
+    <h1>Lista Sequencial (Vetor)</h1>
+    <p class="prose">A forma mais direta de guardar uma sequência: um vetor comum, de capacidade fixa, onde os elementos ocupam posições contíguas <code>0, 1, 2, …</code> sem buracos. Acessar qualquer posição por índice é O(1) — mas inserir ou remover no meio exige <strong>deslocar fisicamente</strong> todo mundo depois dela, uma posição de cada vez. É esse custo de deslocamento que a lista encadeada, mais adiante nesta trilha, existe para evitar.</p>
+  </header>
+
+  <section class="struct-block" aria-label="Declaração da struct em C">
+    <span class="tag">Como isso é declarado em C</span>
+    <pre class="code"><code><span class="kw">#define</span> CAPACIDADE <span class="nm">8</span>
+
+<span class="kw">typedef struct</span> {
+    <span class="ty">int</span> dados[CAPACIDADE];  <span class="cm">/* o vetor: posições contíguas 0..CAPACIDADE-1 */</span>
+    <span class="ty">int</span> tamanho;            <span class="cm">/* quantas posições estão em uso (a linha tracejada) */</span>
+} ListaSequencial;</code></pre>
+    <p class="struct-note">A lista inteira é uma única <code>struct</code>: o vetor <code>dados</code> (as caixas) e o contador <code>tamanho</code> (a linha tracejada que separa o ocupado do livre). Inserir ou remover no meio mexe em <code>dados[i]</code> um a um e, no fim, atualiza <code>tamanho</code>.</p>
+  </section>
+
+
+  <section class="card" aria-label="Visualizador da lista sequencial">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="sl-svg" id="slSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch occ"></span>ocupado</span>
+      <span class="item"><span class="swatch empty"></span>livre (dentro da capacidade)</span>
+      <span class="item"><span class="swatch cursor"></span>posição afetada</span>
+      <span class="item"><span class="swatch shift"></span>deslocando</span>
+      <span class="item"><span class="swatch new"></span>recém-escrito</span>
+      <span class="item"><span class="swatch found"></span>encontrado</span>
+      <span class="item"><span class="swatch bad"></span>operação inválida</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="text" id="valueInput" placeholder="ex: 42">
+        </label>
+        <label class="small">Posição
+          <input type="number" id="indexInput" placeholder="0" min="0" style="width:64px;">
+        </label>
+        <button class="primary" id="btnInsertAt">+ Inserir na posição</button>
+        <button id="btnInsertFirst">+ Inserir no início</button>
+        <button id="btnInsertLast">+ Inserir no fim</button>
+      </div>
+      <div class="controls-row">
+        <button class="danger" id="btnRemoveAt">− Remover posição</button>
+        <button class="danger" id="btnRemoveFirst">− Remover início</button>
+        <button class="danger" id="btnRemoveLast">− Remover fim</button>
+        <button id="btnSearch">Buscar valor</button>
+      </div>
+      <div class="controls-row">
+        <button class="danger" id="btnClear">Limpar lista</button>
+        <div class="spacer"></div>
+        <label class="small">Capacidade
+          <input type="range" class="mini" id="capSlider" min="4" max="14" value="8" step="1">
+          <span class="mono" id="capLabel">8</span>
+        </label>
+        <button class="violet" id="btnNewEmpty">↺ Nova lista vazia</button>
+        <button class="violet" id="btnNewRandom">🎲 Preencher aleatoriamente</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Lista sequencial (vetor)</span>
+      <p class="prose">Acesso por índice é <code>O(1)</code> — é só aritmética de endereço. Mas inserir ou remover em qualquer posição que não seja o fim exige deslocar todos os elementos depois dela: <code>O(n)</code> no pior caso, e a capacidade é fixa de antemão.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Lista encadeada</span>
+      <p class="prose">Inserir ou remover é <code>O(1)</code> <em>uma vez que se tem o nó certo em mãos</em> — basta religar dois ponteiros, sem mover nada. O custo que ela paga: acessar a posição <code>i</code> exige percorrer <code>i</code> nós a partir do início, também <code>O(n)</code>, e cada nó carrega um ponteiro extra.</p>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada operação</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Operação</th><th>Custo</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Acessar posição i</td><td class="mono">O(1)</td><td>Endereço do elemento = início do vetor + <code>i × tamanho_do_elemento</code> — cálculo direto, sem percorrer nada.</td></tr>
+          <tr><td class="op">Inserir/remover no fim</td><td class="mono">O(1)</td><td>Nenhum elemento precisa se mover — só escreve (ou limpa) a última posição ocupada.</td></tr>
+          <tr><td class="op">Inserir/remover no início ou meio</td><td class="mono">O(n)</td><td>Todo elemento depois da posição afetada desloca uma casa — no pior caso (posição 0), são <code>n</code> movimentos.</td></tr>
+          <tr><td class="op">Buscar um valor</td><td class="mono">O(n)</td><td>Sem informação extra sobre a ordem dos dados, é preciso comparar posição por posição até achar (ou chegar ao fim).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Vantagem</span>
+      <h3>Acesso aleatório e memória compacta</h3>
+      <p class="prose">Nenhum espaço desperdiçado com ponteiros por elemento, e qualquer posição é alcançada em tempo constante — essencial para algoritmos de ordenação e busca binária, que dependem de acesso rápido por índice.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Onde aparece de verdade</span>
+      <h3>Arrays, buffers, e a base de quase tudo</h3>
+      <p class="prose">O <code>array</code>/<code>vector</code> de qualquer linguagem, buffers de imagem e áudio, tabelas de uma planilha — e a estrutura de apoio por trás de heaps, tabelas hash e dos próprios vetores dinâmicos (<code>ArrayList</code>, <code>Vec</code>), que só adicionam a capacidade de crescer realocando um vetor maior quando o atual enche.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma lista sequencial (array-based list) com capacidade fixa. Acesso por índice e inserção/remoção no fim custam O(1); inserir ou remover em qualquer outra posição custa O(n) por causa do deslocamento físico dos elementos; busca por valor é O(n).</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Sequential list engine (records one step per mutation/comparison) =================
+  function createSequentialListEngine(capacity) {
+    if (!(capacity >= 1)) throw new Error("capacity must be >= 1");
+    var nextId = 1;
+    var data = new Array(capacity).fill(null); // slots [0..size-1] hold {id,value}; rest are null
+    var size = 0;
+    var steps = [];
+
+    function cloneData() {
+      return data.map(function (slot) { return slot ? { id: slot.id, value: slot.value } : null; });
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message,
+        data: cloneData(),
+        size: size,
+        capacity: capacity,
+        op: opts.op || "info",
+        activeIndex: opts.activeIndex != null ? opts.activeIndex : null,
+        fromIndex: opts.fromIndex != null ? opts.fromIndex : null,
+        toIndex: opts.toIndex != null ? opts.toIndex : null
+      });
+    }
+
+    function isFull() { return size === capacity; }
+    function isEmpty() { return size === 0; }
+
+    function validateIndexForInsert(index) {
+      return Number.isInteger(index) && index >= 0 && index <= size;
+    }
+    function validateIndexForAccess(index) {
+      return Number.isInteger(index) && index >= 0 && index < size;
+    }
+
+    function insertAt(index, value) {
+      if (!validateIndexForInsert(index)) throw new Error("index out of range for insert: " + index + " (size=" + size + ")");
+      if (isFull()) {
+        snapshot('Vetor cheio (capacidade ' + capacity + ') — não é possível inserir "' + value + '".', { op: "bad" });
+        return false;
+      }
+      snapshot('Inserir "' + value + '" na posição ' + index + ': é preciso abrir espaço deslocando ' + (size - index) + ' elemento(s) uma posição à direita.',
+        { op: "insert-start", activeIndex: index });
+      for (var i = size; i > index; i--) {
+        data[i] = data[i - 1];
+        snapshot("Desloca " + JSON.stringify(data[i].value) + " da posição " + (i - 1) + " para " + i + ".",
+          { op: "shift-right", fromIndex: i - 1, toIndex: i });
+      }
+      var id = nextId++;
+      data[index] = { id: id, value: value };
+      size++;
+      snapshot('"' + value + '" escrito na posição ' + index + ". Tamanho agora é " + size + ".",
+        { op: "insert", activeIndex: index });
+      return true;
+    }
+
+    function insertFirst(value) { return insertAt(0, value); }
+    function insertLast(value) { return insertAt(size, value); }
+
+    function removeAt(index) {
+      if (!validateIndexForAccess(index)) {
+        snapshot("Índice " + index + " inválido (tamanho atual é " + size + ").", { op: "bad" });
+        return null;
+      }
+      var removed = data[index].value;
+      snapshot('Remover a posição ' + index + ' (valor ' + JSON.stringify(removed) + ").",
+        { op: "remove-start", activeIndex: index });
+      for (var i = index; i < size - 1; i++) {
+        data[i] = data[i + 1];
+        snapshot("Desloca " + JSON.stringify(data[i].value) + " da posição " + (i + 1) + " para " + i + ", fechando o buraco.",
+          { op: "shift-left", fromIndex: i + 1, toIndex: i });
+      }
+      data[size - 1] = null;
+      size--;
+      snapshot("Posição " + size + " liberada. Tamanho agora é " + size + ".",
+        { op: "shrink", activeIndex: size });
+      return removed;
+    }
+
+    function removeFirst() { return removeAt(0); }
+    function removeLast() { return removeAt(size - 1); }
+
+    function get(index) {
+      if (!validateIndexForAccess(index)) throw new Error("index out of range: " + index + " (size=" + size + ")");
+      return data[index].value;
+    }
+
+    function indexOf(value) {
+      snapshot('Buscando ' + JSON.stringify(value) + " a partir da posição 0.", { op: "search-start" });
+      for (var i = 0; i < size; i++) {
+        var match = data[i].value === value;
+        snapshot("Posição " + i + ": " + JSON.stringify(data[i].value) + (match ? " — encontrado!" : " ≠ " + JSON.stringify(value) + ", segue."),
+          { op: match ? "found" : "compare", activeIndex: i });
+        if (match) return i;
+      }
+      snapshot(JSON.stringify(value) + " não está na lista.", { op: "not-found" });
+      return -1;
+    }
+
+    function clear() {
+      data = new Array(capacity).fill(null);
+      size = 0;
+      snapshot("Lista esvaziada.", { op: "info" });
+    }
+
+    function toArray() {
+      var out = [];
+      for (var i = 0; i < size; i++) out.push(data[i].value);
+      return out;
+    }
+
+    return {
+      insertAt: insertAt, insertFirst: insertFirst, insertLast: insertLast,
+      removeAt: removeAt, removeFirst: removeFirst, removeLast: removeLast,
+      get: get, indexOf: indexOf, clear: clear, toArray: toArray,
+      isFull: isFull, isEmpty: isEmpty,
+      getSize: function () { return size; }, getCapacity: function () { return capacity; },
+      getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= UI wiring =================
+  var NS = "http://www.w3.org/2000/svg";
+  var els = {
+    opPill: document.getElementById("opPill"), opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"), scrubber: document.getElementById("scrubber"),
+    slSvg: document.getElementById("slSvg"), message: document.getElementById("message"),
+    btnReset: document.getElementById("btnReset"), btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"), btnNext: document.getElementById("btnNext"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"), indexInput: document.getElementById("indexInput"),
+    btnInsertAt: document.getElementById("btnInsertAt"), btnInsertFirst: document.getElementById("btnInsertFirst"),
+    btnInsertLast: document.getElementById("btnInsertLast"),
+    btnRemoveAt: document.getElementById("btnRemoveAt"), btnRemoveFirst: document.getElementById("btnRemoveFirst"),
+    btnRemoveLast: document.getElementById("btnRemoveLast"), btnSearch: document.getElementById("btnSearch"),
+    btnClear: document.getElementById("btnClear"),
+    capSlider: document.getElementById("capSlider"), capLabel: document.getElementById("capLabel"),
+    btnNewEmpty: document.getElementById("btnNewEmpty"), btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var engine = createSequentialListEngine(8);
+  var state = { stepIndex: 0, playing: false, timer: null };
+  var cellEls = {};
+  var CELL_W = 54, CELL_H = 46, CELL_GAP = 10;
+
+  function buildStatics() {
+    els.slSvg.innerHTML = "";
+    cellEls = {};
+    var capacity = engine.getCapacity();
+    var left = 30;
+    var top = 40;
+    var totalW = capacity * (CELL_W + CELL_GAP) - CELL_GAP + left * 2;
+    var width = Math.max(totalW, 360);
+    var height = top + CELL_H + 54;
+
+    els.slSvg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    els.slSvg.setAttribute("width", width);
+    els.slSvg.setAttribute("height", height);
+
+    var label = document.createElementNS(NS, "text"); label.setAttribute("class", "sl-section-label");
+    label.setAttribute("x", width / 2); label.setAttribute("y", top - 16); label.setAttribute("text-anchor", "middle");
+    label.textContent = "vetor (capacidade " + capacity + ")";
+    els.slSvg.appendChild(label);
+
+    var cellLayer = document.createElementNS(NS, "g");
+    var cursorLayer = document.createElementNS(NS, "g");
+    var boundaryLayer = document.createElementNS(NS, "g");
+    els.slSvg.appendChild(cellLayer); els.slSvg.appendChild(boundaryLayer); els.slSvg.appendChild(cursorLayer);
+
+    for (var i = 0; i < capacity; i++) {
+      var bx = left + i * (CELL_W + CELL_GAP);
+      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "sl-cell");
+      var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "sl-cell-rect");
+      rect.setAttribute("x", bx); rect.setAttribute("y", top); rect.setAttribute("width", CELL_W); rect.setAttribute("height", CELL_H); rect.setAttribute("rx", 8);
+      var idxText = document.createElementNS(NS, "text"); idxText.setAttribute("class", "sl-cell-index");
+      idxText.setAttribute("x", bx + CELL_W / 2); idxText.setAttribute("y", top - 6); idxText.textContent = String(i);
+      var valText = document.createElementNS(NS, "text"); valText.setAttribute("class", "sl-cell-value");
+      valText.setAttribute("x", bx + CELL_W / 2); valText.setAttribute("y", top + CELL_H / 2 + 0.5);
+      g.appendChild(rect); g.appendChild(valText);
+      cellLayer.appendChild(g); els.slSvg.appendChild(idxText);
+      cellEls[i] = { g: g, rect: rect, valText: valText, idxText: idxText, x: bx };
+    }
+
+    var cursorArrow = document.createElementNS(NS, "path"); cursorArrow.setAttribute("class", "sl-cursor-arrow");
+    cursorArrow.setAttribute("d", "M -5,0 L 5,0 L 0,7 Z");
+    cursorLayer.appendChild(cursorArrow);
+
+    var boundaryLine = document.createElementNS(NS, "line"); boundaryLine.setAttribute("class", "sl-boundary-line");
+    boundaryLine.setAttribute("y1", top - 2); boundaryLine.setAttribute("y2", top + CELL_H + 2);
+    var boundaryLabel = document.createElementNS(NS, "text"); boundaryLabel.setAttribute("class", "sl-boundary-label");
+    boundaryLabel.setAttribute("y", top + CELL_H + 15);
+    boundaryLayer.appendChild(boundaryLine); boundaryLayer.appendChild(boundaryLabel);
+
+    els.slSvg._parts = { cursorArrow: cursorArrow, boundaryLine: boundaryLine, boundaryLabel: boundaryLabel, left: left, top: top };
+
+    render();
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = {
+      "insert-start": "Preparando inserção", "shift-right": "Deslocando (abrindo espaço)", "insert": "Inserido",
+      "remove-start": "Preparando remoção", "shift-left": "Deslocando (fechando buraco)", "shrink": "Removido",
+      "search-start": "Buscando", "compare": "Comparando", "found": "Encontrado", "not-found": "Não encontrado",
+      "bad": "Operação inválida", "info": "Início"
+    };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.max = steps.length - 1;
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var parts = els.slSvg._parts;
+
+    for (var i = 0; i < step.capacity; i++) {
+      var cell = cellEls[i];
+      if (!cell) continue;
+      var slot = step.data[i];
+      var occupied = slot !== null;
+      cell.rect.classList.toggle("occupied", occupied);
+      cell.rect.classList.toggle("empty", !occupied);
+      cell.valText.textContent = occupied ? String(slot.value) : "·";
+      cell.valText.classList.toggle("empty", !occupied);
+      cell.idxText.classList.toggle("boundary", i === step.size);
+
+      var state_ = null;
+      if (step.op === "shift-right" || step.op === "shift-left") {
+        if (i === step.toIndex) state_ = "dest";
+        else if (i === step.fromIndex) state_ = "source";
+      } else if (step.op === "insert") {
+        if (i === step.activeIndex) state_ = "new";
+      } else if (step.op === "insert-start" || step.op === "remove-start" || step.op === "shrink") {
+        if (i === step.activeIndex) state_ = step.op === "bad" ? "bad" : "cursor";
+      } else if (step.op === "compare") {
+        if (i === step.activeIndex) state_ = "cursor";
+      } else if (step.op === "found") {
+        if (i === step.activeIndex) state_ = "found";
+      } else if (step.op === "bad") {
+        state_ = "bad";
+      }
+      if (state_) cell.g.setAttribute("data-state", state_); else cell.g.removeAttribute("data-state");
+    }
+
+    // cursor arrow under the active index (insert/remove/search position)
+    var cursorIdx = step.activeIndex;
+    if (cursorIdx != null && cursorIdx >= 0 && cursorIdx < step.capacity && step.op !== "shift-right" && step.op !== "shift-left") {
+      var cx = parts.left + cursorIdx * (CELL_W + CELL_GAP) + CELL_W / 2;
+      parts.cursorArrow.setAttribute("transform", "translate(" + cx + "," + (parts.top - 15) + ")");
+      parts.cursorArrow.style.display = "";
+    } else {
+      parts.cursorArrow.style.display = "none";
+    }
+
+    // dashed boundary line marking the end of the logical (occupied) region
+    if (step.size < step.capacity) {
+      var bx = parts.left + step.size * (CELL_W + CELL_GAP) - CELL_GAP / 2;
+      parts.boundaryLine.setAttribute("x1", bx); parts.boundaryLine.setAttribute("x2", bx);
+      parts.boundaryLabel.setAttribute("x", bx);
+      parts.boundaryLabel.textContent = "tamanho=" + step.size;
+      parts.boundaryLine.style.display = ""; parts.boundaryLabel.style.display = "";
+    } else {
+      parts.boundaryLine.style.display = "none"; parts.boundaryLabel.style.display = "none";
+    }
+
+    els.btnPrev.disabled = state.stepIndex === 0;
+    els.btnNext.disabled = state.stepIndex === steps.length - 1;
+  }
+
+  function goTo(i) {
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function goToEnd() { goTo(engine.getSteps().length - 1); }
+
+  function stopPlaying() {
+    state.playing = false;
+    els.btnPlay.textContent = "▶ Reproduzir";
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  }
+  function togglePlay() {
+    if (state.playing) { stopPlaying(); return; }
+    var steps = engine.getSteps();
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      var s = engine.getSteps();
+      if (state.stepIndex >= s.length - 1) { stopPlaying(); return; }
+      state.stepIndex++;
+      render();
+    }, Number(els.speed.value));
+  }
+
+  function showError(msg) {
+    if (!msg) { els.errorText.hidden = true; els.errorText.textContent = ""; return; }
+    els.errorText.hidden = false; els.errorText.textContent = msg;
+  }
+
+  function runAndRender(fn) {
+    stopPlaying();
+    showError(null);
+    try { fn(); goToEnd(); } catch (err) { showError(err.message); }
+  }
+
+  function readValue() {
+    var v = els.valueInput.value.trim();
+    return v === "" ? String(Math.floor(Math.random() * 90) + 10) : v;
+  }
+  function readIndex(fallback) {
+    var v = els.indexInput.value.trim();
+    if (v === "") return fallback;
+    var n = Number(v);
+    return Number.isInteger(n) ? n : fallback;
+  }
+
+  els.btnInsertAt.addEventListener("click", function () { runAndRender(function () { engine.insertAt(readIndex(engine.getSize()), readValue()); }); });
+  els.btnInsertFirst.addEventListener("click", function () { runAndRender(function () { engine.insertFirst(readValue()); }); });
+  els.btnInsertLast.addEventListener("click", function () { runAndRender(function () { engine.insertLast(readValue()); }); });
+  els.btnRemoveAt.addEventListener("click", function () { runAndRender(function () { engine.removeAt(readIndex(engine.getSize() - 1)); }); });
+  els.btnRemoveFirst.addEventListener("click", function () { runAndRender(function () { engine.removeFirst(); }); });
+  els.btnRemoveLast.addEventListener("click", function () { runAndRender(function () { engine.removeLast(); }); });
+  els.btnSearch.addEventListener("click", function () { runAndRender(function () { engine.indexOf(readValue()); }); });
+  els.btnClear.addEventListener("click", function () { runAndRender(function () { engine.clear(); }); });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex + 1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+
+  els.capSlider.addEventListener("input", function () { els.capLabel.textContent = els.capSlider.value; });
+  els.btnNewEmpty.addEventListener("click", function () {
+    stopPlaying(); showError(null);
+    engine = createSequentialListEngine(Number(els.capSlider.value));
+    engine.clear();
+    state.stepIndex = 0;
+    buildStatics();
+  });
+  els.btnNewRandom.addEventListener("click", function () {
+    stopPlaying(); showError(null);
+    var cap = Number(els.capSlider.value);
+    engine = createSequentialListEngine(cap);
+    var fillCount = Math.max(1, Math.floor(cap * (0.4 + Math.random() * 0.5)));
+    for (var i = 0; i < fillCount; i++) engine.insertLast(String(Math.floor(Math.random() * 90) + 10));
+    state.stepIndex = engine.getSteps().length - 1;
+    buildStatics();
+  });
+
+  // ---- boot demo: a populated list with insertAt(2, "X") already performed, so the
+  // page is meaningful at rest instead of opening on an empty vetor ----
+  engine.insertLast("12"); engine.insertLast("47"); engine.insertLast("8"); engine.insertLast("63"); engine.insertLast("29");
+  engine.insertAt(2, "X");
+  state.stepIndex = engine.getSteps().length - 1;
+  buildStatics();
+})();
+</script>
+
+</body></html>

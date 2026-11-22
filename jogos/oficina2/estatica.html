@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Os Armários do Alquimista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 50% 0%,rgba(127,216,164,.12),transparent 60%),linear-gradient(#1b1a22,#15131b);padding:18px}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.livro{display:flex;gap:10px}
+.livro span{font-family:var(--mono);font-size:15px;background:#e9dcbf;color:#3a2a1a;border-radius:8px;padding:5px 12px;box-shadow:0 3px 0 #0007}
+.livro b{font-size:18px}
+.livro .mudou{animation:kbrilha .7s}
+.estante{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:18px;perspective:700px}
+.arm{position:relative;height:150px;border:0;padding:0;background:#2a1e17;border-radius:10px;box-shadow:inset 0 0 0 3px #4a3324,0 5px 0 #0007;display:grid;place-items:center}
+.arm .interior{display:grid;justify-items:center;gap:4px}
+.frasco{width:38px;height:52px;position:relative}
+.frasco svg{width:100%;height:100%}
+.arm .val{font-weight:800;font-size:20px}
+.arm .bil{font-family:var(--mono);font-size:13px;background:#e9dcbf;color:#3a2a1a;border-radius:5px;padding:1px 6px}
+.porta{position:absolute;inset:0;border-radius:10px;background:linear-gradient(90deg,#6b4a2f,#7a5238 50%,#6b4a2f);box-shadow:inset 0 0 0 3px #3a2418;transform-origin:left center;transition:transform .45s ease;display:grid;place-items:center;backface-visibility:hidden}
+.porta::after{content:"";position:absolute;right:14px;top:50%;width:9px;height:9px;border-radius:50%;background:#F2C14E}
+.porta b{font-family:var(--mono);font-size:22px;color:#F2C14E;text-shadow:0 2px 0 #000}
+.arm.aberto .porta{transform:rotateY(-105deg)}
+.arm.livre .interior{opacity:.35}
+.arm.k-dica{box-shadow:inset 0 0 0 3px var(--ouro),0 0 18px rgba(242,193,78,.6)}
+.arm.errou{animation:ktreme .4s}
+.arm.caminho{box-shadow:inset 0 0 0 3px var(--verde),0 5px 0 #0007}
+.arm .num{position:absolute;bottom:-20px;font-family:var(--mono);font-size:12px;color:var(--mudo)}
+.trilha{font-family:var(--mono);color:var(--verde);font-size:14px;min-height:20px;margin-top:22px}
+@media (max-width:760px){.estante{grid-template-columns:repeat(4,1fr)}.arm{height:120px}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena">
+    <div class="topo"><div class="livro"><span>inicio → <b id="lIni"></b></span><span>livre → <b id="lLivre"></b></span></div><span class="nota" id="nota"></span></div>
+    <div class="estante" id="est"></div>
+    <div class="trilha" id="trilha"></div>
+  </section>
+  <div class="ordem"><span id="ordem">…</span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const CAP = 8;
+let G = null;
+const COR = v => ['#7FD8A4','#7FB8FF','#C9A3FF','#F2A93B','#FF7A6B'][v % 5];
+const frasco = v => `<span class="frasco"><svg viewBox="0 0 40 54"><path d="M14 4 h12 v12 l10 18 q4 16 -16 16 q-20 0 -16 -16 l10 -18 z" fill="${COR(v)}" fill-opacity=".75" stroke="#ECE3CF" stroke-width="2"/><rect x="12" y="1" width="16" height="6" rx="2" fill="#8a6a4a"/></svg></span>`;
+
+function montar(){
+  G.val = Array(CAP).fill(null); G.prox = Array(CAP).fill(-1);
+  const nUso = K.rnd(4,5), ordem = K.shuffle([...Array(CAP).keys()]), uso = ordem.slice(0, nUso), liv = ordem.slice(nUso);
+  uso.forEach((s,k) => { G.val[s] = K.rnd(10,99); G.prox[s] = k < nUso-1 ? uso[k+1] : -1; });
+  liv.forEach((s,k) => { G.prox[s] = k < liv.length-1 ? liv[k+1] : -1; });
+  G.ini = uso[0]; G.livre = liv[0];
+}
+const lista = () => { const l = []; for (let i = G.ini; i !== -1; i = G.prox[i]) l.push(i); return l; };
+function desenhar(){
+  $('#est').innerHTML = G.val.map((v,i) => `<button class="arm ${G.abertos.has(i)?'aberto':''} ${v===null?'livre':''} ${G.caminho.includes(i)?'caminho':''}" data-i="${i}" aria-label="Armário ${i}">
+    <div class="interior">${v===null?'<span class="val" style="color:var(--mudo)">vazio</span>':frasco(v)+`<span class="val">${v}</span>`}<span class="bil">prox → ${G.prox[i]}</span></div>
+    <div class="porta"><b>${i}</b></div><span class="num">${i}</span></button>`).join('');
+  $('#est').querySelectorAll('.arm').forEach(b => b.onclick = () => clicar(+b.dataset.i));
+  $('#lIni').textContent = G.ini; $('#lLivre').textContent = G.livre;
+  $('#trilha').textContent = G.caminho.length ? 'caminho: ' + G.caminho.join(' → ') : '';
+}
+function novaMissao(){
+  G.abertos = new Set(); G.caminho = [];
+  const l = lista(), tipos = ['achar','achar','inserir'];
+  if (l.length > 2) tipos.push('remover');
+  if (G.nivel >= 2) tipos.push('inserir','remover');
+  if (G.livre === -1) { tipos.length = 0; tipos.push('remover'); }
+  const t = K.pick(tipos);
+  const passo = Math.max(3.5, 8 - G.nivel);
+  if (t === 'achar' || t === 'remover') {
+    const alvoI = K.pick(l.slice(t === 'remover' ? 0 : 1)), v = G.val[alvoI];
+    G.m = {t, v, alvo:alvoI, seq: l.slice(0, l.indexOf(alvoI) + 1), k:0};
+    $('#ordem').innerHTML = t === 'achar' ? `O alquimista quer a poção <b>${v}</b>. Abra os armários na ordem da lista, a partir de <code>inicio</code>.` : `Jogue fora a poção <b>${v}</b>: siga a lista até ela.`;
+    K.turno(passo * (G.m.seq.length + (t==='remover'?2:0)), () => falhou(null), dicaSeq);
+  } else {
+    const v = K.rnd(10,99);
+    G.m = {t, v, etapa:0};
+    $('#ordem').innerHTML = `Guardar a poção nova <b>${v}</b> no <b>início</b> da lista: abra o armário que vai recebê-la.`;
+    K.turno(passo * 3, () => falhou(null), () => [ 'Quem diz qual é o primeiro armário vazio?', `<code>livre = ${G.livre}</code>.`]);
+  }
+  $('#nota').textContent = `${l.length} poções na lista`;
+  desenhar();
+}
+const dicaSeq = () => G.m.k === 0 ? ['A lista começa no armário indicado por <code>inicio</code>.', `Abra o armário ${G.ini}.`] : ['Leia o bilhete <code>prox</code> do último armário aberto.', `O próximo é o ${G.m.seq[G.m.k]}.`];
+
+function abrir(i){ G.abertos.add(i); const el = document.querySelector(`.arm[data-i="${i}"]`); el && el.classList.add('aberto'); K.SFX.clique(); }
+function clicar(i){
+  if (!K.s.rodando || K.s.ocupado || !G.m) return;
+  const m = G.m;
+  if (m.t === 'achar' || (m.t === 'remover' && m.k < m.seq.length)) {
+    if (i !== m.seq[m.k]) return falhou(i);
+    abrir(i); G.caminho.push(i); m.k++; $('#trilha').textContent = 'caminho: ' + G.caminho.join(' → ');
+    document.querySelector(`.arm[data-i="${i}"]`)?.classList.add('caminho');
+    if (m.k < m.seq.length) { K.timer.mais(0); K.dicaProv = dicaSeq; K.s.dicaN = 0; return; }
+    if (m.t === 'achar') return concluir(`Poção ${m.v} encontrada em ${m.seq.length} passo(s)!`);
+    /* remover: religa e libera */
+    const idx = m.seq.length - 1, ant = idx > 0 ? m.seq[idx-1] : -1;
+    if (ant === -1) G.ini = G.prox[i]; else G.prox[ant] = G.prox[i];
+    G.val[i] = null; const velhoLivre = G.livre; G.prox[i] = velhoLivre; G.livre = i;
+    $('#ordem').innerHTML = `Poção ${m.v} descartada! ${ant === -1 ? 'O <code>inicio</code> passou para o próximo.' : `O armário ${ant} agora aponta para ${G.prox[ant]}.`} O armário ${i} voltou para a lista livre.`;
+    K.s.ocupado = true; setTimeout(() => { K.s.ocupado = false; desenhar(); ['#lIni','#lLivre'].forEach(s => K.anima($(s).parentElement, 'mudou')); concluir(); }, 500);
+    return;
+  }
+  if (m.t === 'inserir') {
+    if (m.etapa === 0) {
+      if (i !== G.livre) return falhou(i);
+      abrir(i); m.slot = i; m.etapa = 1;
+      $('#ordem').innerHTML = `A poção ${m.v} vai no armário ${i}. Ela vira a primeira da lista: para qual armário o bilhete dela deve apontar? Clique nele.`;
+      K.dicaProv = () => ['Inserindo no início, o novo nó aponta para quem era o primeiro.', `O primeiro era o ${G.ini}.`]; K.s.dicaN = 0;
+      return;
+    }
+    if (i !== G.ini) return falhou(i);
+    const s = m.slot; G.livre = G.prox[s]; G.val[s] = m.v; G.prox[s] = G.ini; G.ini = s;
+    desenhar(); ['#lIni','#lLivre'].forEach(x => K.anima($(x).parentElement, 'mudou'));
+    concluir(`Poção ${m.v} guardada: inicio = ${s}, livre = ${G.livre}.`);
+  }
+}
+function concluir(msg){
+  const m = G.m; G.m = null; K.timer.parar();
+  K.acerto($('#est'), 80 + 30 * ((m.seq && m.seq.length) || 2));
+  if (msg) $('#ordem').innerHTML = msg;
+  G.feitas++;
+  setTimeout(() => {
+    if (G.feitas % 4 === 0) { G.nivel++; K.subirNivel(G.nivel, 'Menos tempo para cada armário'); setTimeout(novaMissao, 1000); }
+    else novaMissao();
+  }, 900);
+}
+function falhou(i){
+  const m = G.m; if (!m) return;
+  if (i !== null) { abrir(i); K.anima(document.querySelector(`.arm[data-i="${i}"]`), 'errou'); }
+  let html;
+  if (m.t === 'achar' || (m.t === 'remover' && m.k < m.seq.length)) {
+    const ant = m.k > 0 ? m.seq[m.k-1] : null;
+    html = `<p>${ant === null ? `A lista começa no armário indicado por <code>inicio</code>: o <b>${G.ini}</b>.` : `O armário ${ant} tem o bilhete <b>prox → ${m.seq[m.k]}</b>. Numa lista encadeada estática, a ordem dos armários na estante não importa: só os bilhetes.`}</p><p>Caminho completo até ${m.v}: <b>${m.seq.join(' → ')}</b>.</p>`;
+  } else if (m.etapa === 0) html = `<p>Para alocar, tira-se o primeiro armário da <b>lista livre</b>: o indicado por <code>livre</code>, que é o <b>${G.livre}</b>. Liberar e alocar custam O(1).</p>`;
+  else html = `<p>A poção nova vira a primeira da lista, então o bilhete dela aponta para o antigo <code>inicio</code>: o armário <b>${G.ini}</b>. Depois disso, <code>inicio</code> passa a ser ${m.slot}.</p>`;
+  K.erro(html, () => {
+    /* resolve a missão do jeito certo e segue */
+    if (m.t === 'remover') { const l = lista(), idx = l.indexOf(m.alvo), ant = idx > 0 ? l[idx-1] : -1; if (ant === -1) G.ini = G.prox[m.alvo]; else G.prox[ant] = G.prox[m.alvo]; G.val[m.alvo] = null; G.prox[m.alvo] = G.livre; G.livre = m.alvo; }
+    if (m.t === 'inserir') { const s = G.livre; G.livre = G.prox[s]; G.val[s] = m.v; G.prox[s] = G.ini; G.ini = s; }
+    G.m = null; G.feitas++; novaMissao();
+  }, {kicker: i === null ? 'O tempo acabou' : 'Armário errado'});
+}
+
+K.init({
+  id:'estatica', titulo:'Os Armários do Alquimista', kicker:'Masmorra · Lista encadeada estática', vidas:3, comecar:'Abrir a oficina',
+  ajuda:`<p>Os armários ficam fechados. Dentro de cada um há uma poção e um bilhete <code>prox</code> com o número do próximo armário da lista (−1 = fim). O livro diz onde a lista começa (<code>inicio</code>) e qual é o primeiro armário vazio (<code>livre</code>).</p>
+  <ol><li><b>Achar:</b> abra os armários na ordem da lista, seguindo os bilhetes, até a poção pedida.</li>
+  <li><b>Guardar no início:</b> abra o armário <code>livre</code> e depois clique no armário para onde o bilhete da poção nova deve apontar.</li>
+  <li><b>Descartar:</b> siga a lista até a poção; o armário volta para a lista livre.</li></ol>
+  <p class="nota">Abrir um armário fora da ordem custa uma vida.</p>`,
+  iniciar(){ G = {nivel:1, feitas:0, abertos:new Set(), caminho:[]}; montar(); novaMissao(); },
+  auto(){
+    const m = G.m; if (!m) return;
+    if (m.t === 'inserir') clicar(m.etapa === 0 ? G.livre : G.ini); else clicar(m.seq[m.k]);
+    return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

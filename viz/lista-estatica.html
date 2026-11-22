@@ -1,0 +1,797 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lista Encadeada Estática</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:1020px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert-start"], .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert-start"] .dot, .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove-start"], .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove-start"] .dot, .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="walk-start"], .op-pill[data-op="walk"], .op-pill[data-op="walk-found"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="walk-start"] .dot, .op-pill[data-op="walk"] .dot, .op-pill[data-op="walk-found"] .dot{background:var(--violet);}
+  .op-pill[data-op="search-start"], .op-pill[data-op="compare"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search-start"] .dot, .op-pill[data-op="compare"] .dot{background:var(--accent);}
+  .op-pill[data-op="found"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="found"] .dot{background:var(--success);}
+  .op-pill[data-op="bad"], .op-pill[data-op="not-found"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot, .op-pill[data-op="not-found"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .st-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .st-svg, .st-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .st-cell-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease; }
+  .st-cell-rect.occupied{ fill:var(--accent-soft); }
+  .st-cell-rect.free{ fill:var(--paper); stroke-dasharray:3 3; }
+  .st-cell[data-state="new"] .st-cell-rect{ stroke:var(--gold); stroke-width:2.8; fill:var(--gold-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .st-cell[data-state="cursor"] .st-cell-rect{ stroke:var(--violet); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .st-cell[data-state="target"] .st-cell-rect{ stroke:var(--rust); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--rust) 55%, transparent)); }
+  .st-cell[data-state="found"] .st-cell-rect{ stroke:var(--success); stroke-width:2.8; fill:var(--success-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+  .st-cell[data-state="bad"] .st-cell-rect{ stroke:var(--rust); stroke-width:2.4; }
+  .st-cell-data{ font-weight:600; font-size:12px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .st-cell-data.empty{ fill:var(--ink-faint); font-weight:400; }
+  .st-cell-next{ font-size:9px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .st-cell-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .st-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .st-chain-used{ fill:none; stroke:var(--accent); stroke-width:2; opacity:0.85; }
+  .st-chain-free{ fill:none; stroke:var(--ink-faint); stroke-width:1.5; stroke-dasharray:4 3; opacity:0.75; }
+  .st-chain-end-line{ stroke:var(--ink-faint); stroke-width:1.3; }
+  .st-chain-end-label{ font-size:9px; fill:var(--ink-faint); text-anchor:middle; }
+
+  .st-tag-pill{ font-size:10px; font-weight:700; text-anchor:middle; dominant-baseline:central; fill:#fff; }
+  .st-tag-bg{ fill:var(--ink-soft); }
+  .st-tag-bg.head{ fill:var(--accent); }
+  .st-tag-bg.free{ fill:var(--ink-faint); }
+  .st-tag-line{ stroke:var(--line-strong); stroke-width:1.2; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--violet);}
+  .legend .swatch.target{border-color:var(--rust);}
+  .legend .swatch.new{border-color:var(--gold); background:var(--gold-soft);}
+  .legend .swatch.found{border-color:var(--success); background:var(--success-soft);}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+  .legend .swatch.free{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+  .legend .line{width:16px; height:0; border-top:2px solid var(--accent); display:inline-block;}
+  .legend .line.freechain{border-top:2px dashed var(--ink-faint);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Estrutura linear · nós dentro de um vetor, sem ponteiros reais</span>
+    <h1>Lista Encadeada Estática</h1>
+    <p class="prose">A mesma ideia de uma lista encadeada — cada nó aponta para o próximo — mas sem <code>malloc</code> e sem ponteiros de verdade. Os nós vivem dentro de um <strong>vetor de capacidade fixa</strong>, e o "ponteiro" <code>próximo</code> de cada um é só um <strong>índice inteiro</strong> nesse mesmo vetor (ou <code>-1</code> para "nada depois"). As posições ainda não usadas ficam encadeadas entre si numa <strong>lista livre</strong>, dentro do próprio vetor — alocar um nó é tirar o primeiro da lista livre; liberar um nó é devolvê-lo para lá. É assim que se simula uma lista encadeada em ambientes sem alocação dinâmica.</p>
+  </header>
+
+  <section class="struct-block" aria-label="Declaração da struct em C">
+    <span class="tag">Como isso é declarado em C</span>
+    <pre class="code"><code><span class="kw">#define</span> CAPACIDADE <span class="nm">7</span>
+
+<span class="kw">typedef struct</span> {
+    <span class="ty">int</span> valor;   <span class="cm">/* o dado guardado no nó */</span>
+    <span class="ty">int</span> prox;    <span class="cm">/* "ponteiro": índice de outro slot, ou -1 = nada */</span>
+} No;
+
+<span class="kw">typedef struct</span> {
+    No  nos[CAPACIDADE];  <span class="cm">/* todos os nós vivem aqui, num vetor fixo */</span>
+    <span class="ty">int</span> head;            <span class="cm">/* índice do primeiro nó da lista (-1 se vazia) */</span>
+    <span class="ty">int</span> livre;           <span class="cm">/* índice do primeiro slot livre (-1 se cheio) */</span>
+} ListaEstatica;</code></pre>
+    <p class="struct-note">Cada caixa da animação é um <code>No</code>: <code>valor</code> é o dado e <code>prox</code> é um <strong>índice</strong> do vetor, não um endereço. <code>head</code> e <code>livre</code> são as duas etiquetas: uma aponta o início da lista, a outra o início da lista de slots disponíveis (as setas tracejadas).</p>
+  </section>
+
+
+  <section class="card" aria-label="Visualizador da lista encadeada estática">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="st-svg" id="stSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch occ"></span>em uso</span>
+      <span class="item"><span class="swatch free"></span>livre</span>
+      <span class="item"><span class="swatch cursor"></span>percorrendo</span>
+      <span class="item"><span class="swatch target"></span>afetado</span>
+      <span class="item"><span class="swatch new"></span>recém-alocado</span>
+      <span class="item"><span class="swatch found"></span>encontrado</span>
+      <span class="item"><span class="line"></span>cadeia da lista (a partir de head)</span>
+      <span class="item"><span class="line freechain"></span>cadeia livre (a partir de freeHead)</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="text" id="valueInput" placeholder="ex: 42">
+        </label>
+        <label class="small">Posição
+          <input type="number" id="indexInput" placeholder="0" min="0" style="width:64px;">
+        </label>
+        <button class="primary" id="btnInsertAt">+ Inserir na posição</button>
+        <button id="btnInsertFirst">+ Inserir no início</button>
+        <button id="btnInsertLast">+ Inserir no fim</button>
+      </div>
+      <div class="controls-row">
+        <button class="danger" id="btnRemoveAt">− Remover posição</button>
+        <button class="danger" id="btnRemoveFirst">− Remover início</button>
+        <button class="danger" id="btnRemoveLast">− Remover fim</button>
+        <button id="btnSearch">Buscar valor</button>
+      </div>
+      <div class="controls-row">
+        <button class="danger" id="btnClear">Limpar lista</button>
+        <div class="spacer"></div>
+        <label class="small">Capacidade
+          <input type="range" class="mini" id="capSlider" min="4" max="12" value="7" step="1">
+          <span class="mono" id="capLabel">7</span>
+        </label>
+        <button class="violet" id="btnNewEmpty">↺ Nova lista vazia</button>
+        <button class="violet" id="btnNewRandom">🎲 Preencher aleatoriamente</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Lista encadeada estática (aqui)</span>
+      <p class="prose">Capacidade fixa, alocada de uma vez só — nunca fragmenta a memória, e a estrutura inteira é um bloco contíguo, fácil de serializar ou mandar inteiro para outro processo. O custo: um índice extra por nó (o "próximo"), e um teto rígido no número de elementos.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Lista encadeada com malloc</span>
+      <p class="prose">Cresce sem limite predefinido, um nó por chamada de <code>malloc</code>. Em troca, paga o custo (e a imprevisibilidade) do alocador a cada inserção/remoção, e os nós ficam espalhados pela memória — nada de bloco único.</p>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada operação</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Operação</th><th>Custo</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Inserir/remover no início</td><td class="mono">O(1)</td><td>Só reatribui <code>head</code> e troca um <code>próximo</code> — nenhum percurso necessário.</td></tr>
+          <tr><td class="op">Inserir/remover no meio ou fim</td><td class="mono">O(n)</td><td>É preciso <strong>percorrer</strong> a partir de <code>head</code> até achar o predecessor — não existe acesso direto por posição.</td></tr>
+          <tr><td class="op">Acessar posição i</td><td class="mono">O(n)</td><td>Mesmo problema: só dá para chegar na posição <code>i</code> seguindo <code>i</code> ponteiros a partir de <code>head</code>.</td></tr>
+          <tr><td class="op">Alocar/liberar um nó</td><td class="mono">O(1)</td><td>Tirar ou devolver o topo da lista livre — sempre a mesma operação simples, não importa a capacidade.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Vantagem</span>
+      <h3>Sem fragmentação, memória previsível</h3>
+      <p class="prose">Toda a estrutura cabe num único vetor alocado de uma vez — ótimo para orçamentos de memória fixos, e trivial de salvar em disco ou mandar pela rede como um bloco de bytes, sem precisar "seguir ponteiros" para reconstruir a lista do outro lado.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Onde aparece de verdade</span>
+      <h3>Firmware, pools de objetos, alocadores</h3>
+      <p class="prose">Sistemas embarcados sem heap dinâmico, pools de objetos reutilizáveis em motores de jogos (evitar <code>malloc</code> a cada frame), e é literalmente assim que o próprio alocador de memória de uma linguagem organiza seus blocos livres.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma lista encadeada estática (cursor-based) com capacidade fixa: nós {dado, próximo} vivem num vetor, "próximo" é um índice (não um ponteiro real), e um free list encadeado dentro do mesmo vetor controla a alocação. Inserir/remover no início é O(1); em qualquer outra posição é O(n) por causa do percurso necessário para achar o predecessor.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Static (cursor-based) linked list engine =================
+  function createStaticListEngine(capacity) {
+    if (!(capacity >= 1)) throw new Error("capacity must be >= 1");
+    var slots = new Array(capacity);
+    for (var i = 0; i < capacity; i++) slots[i] = { data: null, next: i + 1 < capacity ? i + 1 : -1 };
+    var head = -1;
+    var freeHead = 0;
+    var steps = [];
+
+    function cloneSlots() {
+      return slots.map(function (s) { return { data: s.data, next: s.next }; });
+    }
+
+    function usedIndices() {
+      var out = [];
+      var cur = head;
+      var guard = 0;
+      while (cur !== -1 && guard <= capacity) { out.push(cur); cur = slots[cur].next; guard++; }
+      return out;
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message,
+        slots: cloneSlots(),
+        head: head, freeHead: freeHead, capacity: capacity,
+        op: opts.op || "info",
+        cursor: opts.cursor != null ? opts.cursor : null,
+        prev: opts.prev != null ? opts.prev : null,
+        target: opts.target != null ? opts.target : null
+      });
+    }
+
+    function isFull() { return freeHead === -1; }
+    function isEmpty() { return head === -1; }
+    function logicalLength() { return usedIndices().length; }
+
+    function allocSlot() {
+      var idx = freeHead;
+      freeHead = slots[idx].next;
+      return idx;
+    }
+    function freeSlot(idx) {
+      slots[idx].data = null;
+      slots[idx].next = freeHead;
+      freeHead = idx;
+    }
+
+    function insertAt(pos, value) {
+      var len = logicalLength();
+      if (!(Number.isInteger(pos) && pos >= 0 && pos <= len)) throw new Error("position out of range for insert: " + pos + " (length=" + len + ")");
+      if (isFull()) {
+        snapshot('Vetor de nós cheio (capacidade ' + capacity + ') — não é possível inserir "' + value + '".', { op: "bad" });
+        return false;
+      }
+      if (pos === 0) {
+        snapshot('Inserir "' + value + '" na posição 0: o novo nó vira a cabeça (head) da lista.', { op: "insert-start", target: head });
+        var slot0 = allocSlot();
+        slots[slot0].data = value;
+        slots[slot0].next = head;
+        head = slot0;
+        snapshot('Nó alocado no slot ' + slot0 + ': dado="' + value + '", próximo=' + slots[slot0].next + ". head agora aponta para " + slot0 + ".",
+          { op: "insert", target: slot0 });
+        return true;
+      }
+      snapshot('Inserir "' + value + '" na posição ' + pos + ": é preciso percorrer a partir de head até achar o nó na posição " + (pos - 1) + ".",
+        { op: "walk-start", cursor: head });
+      var cur = head, idx = 0;
+      while (idx < pos - 1) {
+        snapshot("No slot " + cur + " (posição " + idx + "); segue para o próximo: slot " + slots[cur].next + ".",
+          { op: "walk", cursor: cur });
+        cur = slots[cur].next;
+        idx++;
+      }
+      snapshot("Chegou ao slot " + cur + " (posição " + idx + ") — é o predecessor onde o novo nó vai se encaixar.",
+        { op: "walk-found", cursor: cur });
+      var newSlot = allocSlot();
+      slots[newSlot].data = value;
+      slots[newSlot].next = slots[cur].next;
+      slots[cur].next = newSlot;
+      snapshot('Nó alocado no slot ' + newSlot + ': dado="' + value + '", próximo=' + slots[newSlot].next + ". slot " + cur + ".próximo agora aponta para " + newSlot + ".",
+        { op: "insert", prev: cur, target: newSlot });
+      return true;
+    }
+
+    function insertFirst(value) { return insertAt(0, value); }
+    function insertLast(value) { return insertAt(logicalLength(), value); }
+
+    function removeAt(pos) {
+      var len = logicalLength();
+      if (!(Number.isInteger(pos) && pos >= 0 && pos < len)) {
+        snapshot("Posição " + pos + " inválida (tamanho lógico atual é " + len + ").", { op: "bad" });
+        return null;
+      }
+      if (pos === 0) {
+        var removedSlot = head;
+        var removedVal = slots[removedSlot].data;
+        snapshot("Remover a posição 0 (slot " + removedSlot + ", valor " + JSON.stringify(removedVal) + "): head passa a apontar para " + slots[removedSlot].next + ".",
+          { op: "remove-start", target: removedSlot });
+        head = slots[removedSlot].next;
+        freeSlot(removedSlot);
+        snapshot("Slot " + removedSlot + " devolvido à lista livre (free list). freeHead agora é " + freeHead + ".",
+          { op: "remove", target: removedSlot });
+        return removedVal;
+      }
+      snapshot("Remover a posição " + pos + ": é preciso percorrer até o predecessor, na posição " + (pos - 1) + ".",
+        { op: "walk-start", cursor: head });
+      var cur = head, idx = 0;
+      while (idx < pos - 1) {
+        snapshot("No slot " + cur + " (posição " + idx + "); segue para o próximo: slot " + slots[cur].next + ".",
+          { op: "walk", cursor: cur });
+        cur = slots[cur].next;
+        idx++;
+      }
+      snapshot("Chegou ao predecessor no slot " + cur + " (posição " + idx + ").", { op: "walk-found", cursor: cur });
+      var target = slots[cur].next;
+      var removed = slots[target].data;
+      snapshot("Religando: slot " + cur + ".próximo pula o slot " + target + " e passa a apontar direto para " + slots[target].next + ".",
+        { op: "remove-start", prev: cur, target: target });
+      slots[cur].next = slots[target].next;
+      freeSlot(target);
+      snapshot("Slot " + target + " devolvido à lista livre. freeHead agora é " + freeHead + ".",
+        { op: "remove", prev: cur, target: target });
+      return removed;
+    }
+
+    function removeFirst() { return removeAt(0); }
+    function removeLast() { return removeAt(logicalLength() - 1); }
+
+    function find(value) {
+      snapshot('Buscando ' + JSON.stringify(value) + " a partir de head.", { op: "search-start", cursor: head });
+      var cur = head, idx = 0;
+      while (cur !== -1) {
+        var match = slots[cur].data === value;
+        snapshot("Slot " + cur + " (posição " + idx + "): " + JSON.stringify(slots[cur].data) + (match ? " — encontrado!" : " ≠ " + JSON.stringify(value) + ", segue para " + slots[cur].next + "."),
+          { op: match ? "found" : "compare", cursor: cur });
+        if (match) return idx;
+        cur = slots[cur].next;
+        idx++;
+      }
+      snapshot(JSON.stringify(value) + " não está na lista.", { op: "not-found" });
+      return -1;
+    }
+
+    function clear() {
+      for (var i = 0; i < capacity; i++) slots[i] = { data: null, next: i + 1 < capacity ? i + 1 : -1 };
+      head = -1;
+      freeHead = 0;
+      snapshot("Lista esvaziada — todos os slots voltaram para a lista livre.", { op: "info" });
+    }
+
+    function toArray() {
+      var out = [];
+      var cur = head;
+      while (cur !== -1) { out.push(slots[cur].data); cur = slots[cur].next; }
+      return out;
+    }
+
+    return {
+      insertAt: insertAt, insertFirst: insertFirst, insertLast: insertLast,
+      removeAt: removeAt, removeFirst: removeFirst, removeLast: removeLast,
+      find: find, clear: clear, toArray: toArray,
+      isFull: isFull, isEmpty: isEmpty, logicalLength: logicalLength,
+      getHead: function () { return head; }, getFreeHead: function () { return freeHead; },
+      getCapacity: function () { return capacity; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= UI wiring =================
+  var NS = "http://www.w3.org/2000/svg";
+  var els = {
+    opPill: document.getElementById("opPill"), opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"), scrubber: document.getElementById("scrubber"),
+    stSvg: document.getElementById("stSvg"), message: document.getElementById("message"),
+    btnReset: document.getElementById("btnReset"), btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"), btnNext: document.getElementById("btnNext"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"), indexInput: document.getElementById("indexInput"),
+    btnInsertAt: document.getElementById("btnInsertAt"), btnInsertFirst: document.getElementById("btnInsertFirst"),
+    btnInsertLast: document.getElementById("btnInsertLast"),
+    btnRemoveAt: document.getElementById("btnRemoveAt"), btnRemoveFirst: document.getElementById("btnRemoveFirst"),
+    btnRemoveLast: document.getElementById("btnRemoveLast"), btnSearch: document.getElementById("btnSearch"),
+    btnClear: document.getElementById("btnClear"),
+    capSlider: document.getElementById("capSlider"), capLabel: document.getElementById("capLabel"),
+    btnNewEmpty: document.getElementById("btnNewEmpty"), btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var engine = createStaticListEngine(7);
+  var state = { stepIndex: 0, playing: false, timer: null };
+  var cellEls = {};
+  var CELL_W = 64, CELL_H = 50, CELL_GAP = 20;
+
+  function buildStatics() {
+    els.stSvg.innerHTML = "";
+    cellEls = {};
+    var capacity = engine.getCapacity();
+    var left = 34;
+    var top = 76;
+    var totalW = capacity * (CELL_W + CELL_GAP) - CELL_GAP + left * 2;
+    var width = Math.max(totalW, 420);
+    var height = top + CELL_H + 150;
+
+    els.stSvg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    els.stSvg.setAttribute("width", width);
+    els.stSvg.setAttribute("height", height);
+
+    var label = document.createElementNS(NS, "text"); label.setAttribute("class", "st-section-label");
+    label.setAttribute("x", width / 2); label.setAttribute("y", top - 46); label.setAttribute("text-anchor", "middle");
+    label.textContent = "vetor de nós (capacidade " + capacity + ")";
+    els.stSvg.appendChild(label);
+
+    var defs = document.createElementNS(NS, "defs");
+    [["stArrowUsed", "var(--accent)"], ["stArrowFree", "var(--ink-faint)"]].forEach(function (pair) {
+      var marker = document.createElementNS(NS, "marker");
+      marker.setAttribute("id", pair[0]); marker.setAttribute("markerWidth", "8"); marker.setAttribute("markerHeight", "8");
+      marker.setAttribute("refX", "6"); marker.setAttribute("refY", "3"); marker.setAttribute("orient", "auto"); marker.setAttribute("markerUnits", "userSpaceOnUse");
+      var mpath = document.createElementNS(NS, "path"); mpath.setAttribute("d", "M0,0 L0,6 L7,3 Z"); mpath.setAttribute("fill", pair[1]);
+      marker.appendChild(mpath); defs.appendChild(marker);
+    });
+    els.stSvg.appendChild(defs);
+
+    var chainLayer = document.createElementNS(NS, "g");
+    var cellLayer = document.createElementNS(NS, "g");
+    var tagLayer = document.createElementNS(NS, "g");
+    var endLayer = document.createElementNS(NS, "g");
+    els.stSvg.appendChild(chainLayer); els.stSvg.appendChild(endLayer); els.stSvg.appendChild(cellLayer); els.stSvg.appendChild(tagLayer);
+
+    for (var i = 0; i < capacity; i++) {
+      var bx = left + i * (CELL_W + CELL_GAP);
+      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "st-cell");
+      var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "st-cell-rect");
+      rect.setAttribute("x", bx); rect.setAttribute("y", top); rect.setAttribute("width", CELL_W); rect.setAttribute("height", CELL_H); rect.setAttribute("rx", 8);
+      var idxText = document.createElementNS(NS, "text"); idxText.setAttribute("class", "st-cell-index");
+      idxText.setAttribute("x", bx + CELL_W / 2); idxText.setAttribute("y", top - 8); idxText.textContent = String(i);
+      var dataText = document.createElementNS(NS, "text"); dataText.setAttribute("class", "st-cell-data");
+      dataText.setAttribute("x", bx + CELL_W / 2); dataText.setAttribute("y", top + 18);
+      var nextText = document.createElementNS(NS, "text"); nextText.setAttribute("class", "st-cell-next");
+      nextText.setAttribute("x", bx + CELL_W / 2); nextText.setAttribute("y", top + 36);
+      g.appendChild(rect); g.appendChild(dataText); g.appendChild(nextText);
+      cellLayer.appendChild(g); els.stSvg.appendChild(idxText);
+      cellEls[i] = { g: g, rect: rect, dataText: dataText, nextText: nextText, idxText: idxText, x: bx, cx: bx + CELL_W / 2 };
+    }
+
+    function makeTag(cls) {
+      var g = document.createElementNS(NS, "g");
+      var line = document.createElementNS(NS, "line"); line.setAttribute("class", "st-tag-line");
+      var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "st-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 48); bg.setAttribute("height", 18);
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "st-tag-pill"); text.textContent = cls === "head" ? "head" : "livre";
+      g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+      tagLayer.appendChild(g);
+      return { g: g, line: line, bg: bg, text: text };
+    }
+    var headTag = makeTag("head");
+    var freeTag = makeTag("free");
+
+    els.stSvg._parts = { chainLayer: chainLayer, endLayer: endLayer, left: left, top: top, width: width, headTag: headTag, freeTag: freeTag };
+
+    render();
+  }
+
+  function placeTag(tag, index, labelExtra, offsetY) {
+    if (index == null || index < 0) { tag.g.style.display = "none"; return; }
+    tag.g.style.display = "";
+    var rec = cellEls[index];
+    var cx = rec.cx;
+    var topY = els.stSvg._parts.top;
+    var pillY = topY - 46 + offsetY;
+    tag.bg.setAttribute("x", cx - 24); tag.bg.setAttribute("y", pillY);
+    tag.text.setAttribute("x", cx); tag.text.setAttribute("y", pillY + 9.5);
+    tag.line.setAttribute("x1", cx); tag.line.setAttribute("x2", cx);
+    tag.line.setAttribute("y1", pillY + 18); tag.line.setAttribute("y2", topY - 2);
+  }
+
+  function chainPath(fromIdx, toIdx, bulgeBase) {
+    var a = cellEls[fromIdx], b = cellEls[toIdx];
+    var y = els.stSvg._parts.top + CELL_H;
+    var dist = Math.abs(toIdx - fromIdx);
+    var bulge = Math.min(bulgeBase + dist * 12, 130);
+    var midX = (a.cx + b.cx) / 2;
+    var controlY = y + bulge;
+    return "M " + a.cx + "," + y + " Q " + midX + "," + controlY + " " + b.cx + "," + y;
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = {
+      "insert-start": "Preparando inserção", "insert": "Inserido",
+      "remove-start": "Preparando remoção", "remove": "Removido",
+      "walk-start": "Começando a percorrer", "walk": "Percorrendo", "walk-found": "Predecessor encontrado",
+      "search-start": "Buscando", "compare": "Comparando", "found": "Encontrado", "not-found": "Não encontrado",
+      "bad": "Operação inválida", "info": "Início"
+    };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.max = steps.length - 1;
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var parts = els.stSvg._parts;
+
+    for (var i = 0; i < step.capacity; i++) {
+      var cell = cellEls[i];
+      if (!cell) continue;
+      var slot = step.slots[i];
+      var occupied = slot.data !== null;
+      cell.rect.classList.toggle("occupied", occupied);
+      cell.rect.classList.toggle("free", !occupied);
+      cell.dataText.textContent = occupied ? String(slot.data) : "·";
+      cell.dataText.classList.toggle("empty", !occupied);
+      cell.nextText.textContent = "próx:" + (slot.next === -1 ? "∅" : slot.next);
+
+      var state_ = null;
+      if (step.op === "found" && step.cursor === i) state_ = "found";
+      else if ((step.op === "walk" || step.op === "walk-start" || step.op === "walk-found" || step.op === "compare" || step.op === "search-start") && step.cursor === i) state_ = "cursor";
+      else if ((step.op === "insert" || step.op === "remove-start" && step.prev == null) && step.target === i && step.op === "insert") state_ = "new";
+      else if (step.op === "remove-start" && step.target === i) state_ = "target";
+      else if (step.op === "remove" && step.target === i) state_ = "target";
+      else if (step.op === "insert-start" && step.target === i && step.target !== -1) state_ = "cursor";
+      else if (step.op === "bad") state_ = "bad";
+      if (state_) cell.g.setAttribute("data-state", state_); else cell.g.removeAttribute("data-state");
+    }
+
+    // chains: used (from head, solid accent) drawn closer to the row; free (from freeHead, dashed) drawn further below
+    parts.chainLayer.innerHTML = "";
+    parts.endLayer.innerHTML = "";
+    function drawChain(startIdx, cls, bulgeBase) {
+      var cur = startIdx, guard = 0;
+      while (cur !== -1 && guard <= step.capacity) {
+        var next = step.slots[cur].next;
+        if (next !== -1) {
+          var path = document.createElementNS(NS, "path");
+          path.setAttribute("class", cls);
+          path.setAttribute("d", chainPath(cur, next, bulgeBase));
+          path.setAttribute("marker-end", cls === "st-chain-used" ? "url(#stArrowUsed)" : "url(#stArrowFree)");
+          parts.chainLayer.appendChild(path);
+        } else {
+          var cell = cellEls[cur];
+          var y0 = parts.top + CELL_H;
+          var line = document.createElementNS(NS, "line"); line.setAttribute("class", "st-chain-end-line");
+          line.setAttribute("x1", cell.cx); line.setAttribute("x2", cell.cx);
+          line.setAttribute("y1", y0); line.setAttribute("y2", y0 + 14);
+          var lbl = document.createElementNS(NS, "text"); lbl.setAttribute("class", "st-chain-end-label");
+          lbl.setAttribute("x", cell.cx); lbl.setAttribute("y", y0 + 26); lbl.textContent = "∅";
+          parts.endLayer.appendChild(line); parts.endLayer.appendChild(lbl);
+        }
+        cur = next;
+        guard++;
+      }
+    }
+    drawChain(step.head, "st-chain-used", 18);
+    drawChain(step.freeHead, "st-chain-free", 60);
+
+    placeTag(parts.headTag, step.head, "head", 0);
+    placeTag(parts.freeTag, step.freeHead, "livre", 22);
+
+    els.btnPrev.disabled = state.stepIndex === 0;
+    els.btnNext.disabled = state.stepIndex === steps.length - 1;
+  }
+
+  function goTo(i) {
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function goToEnd() { goTo(engine.getSteps().length - 1); }
+
+  function stopPlaying() {
+    state.playing = false;
+    els.btnPlay.textContent = "▶ Reproduzir";
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  }
+  function togglePlay() {
+    if (state.playing) { stopPlaying(); return; }
+    var steps = engine.getSteps();
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      var s = engine.getSteps();
+      if (state.stepIndex >= s.length - 1) { stopPlaying(); return; }
+      state.stepIndex++;
+      render();
+    }, Number(els.speed.value));
+  }
+
+  function showError(msg) {
+    if (!msg) { els.errorText.hidden = true; els.errorText.textContent = ""; return; }
+    els.errorText.hidden = false; els.errorText.textContent = msg;
+  }
+
+  function runAndRender(fn) {
+    stopPlaying();
+    showError(null);
+    try { fn(); goToEnd(); } catch (err) { showError(err.message); }
+  }
+
+  function readValue() {
+    var v = els.valueInput.value.trim();
+    return v === "" ? String(Math.floor(Math.random() * 90) + 10) : v;
+  }
+  function readIndex(fallback) {
+    var v = els.indexInput.value.trim();
+    if (v === "") return fallback;
+    var n = Number(v);
+    return Number.isInteger(n) ? n : fallback;
+  }
+
+  els.btnInsertAt.addEventListener("click", function () { runAndRender(function () { engine.insertAt(readIndex(engine.logicalLength()), readValue()); }); });
+  els.btnInsertFirst.addEventListener("click", function () { runAndRender(function () { engine.insertFirst(readValue()); }); });
+  els.btnInsertLast.addEventListener("click", function () { runAndRender(function () { engine.insertLast(readValue()); }); });
+  els.btnRemoveAt.addEventListener("click", function () { runAndRender(function () { engine.removeAt(readIndex(engine.logicalLength() - 1)); }); });
+  els.btnRemoveFirst.addEventListener("click", function () { runAndRender(function () { engine.removeFirst(); }); });
+  els.btnRemoveLast.addEventListener("click", function () { runAndRender(function () { engine.removeLast(); }); });
+  els.btnSearch.addEventListener("click", function () { runAndRender(function () { engine.find(readValue()); }); });
+  els.btnClear.addEventListener("click", function () { runAndRender(function () { engine.clear(); }); });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex + 1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+
+  els.capSlider.addEventListener("input", function () { els.capLabel.textContent = els.capSlider.value; });
+  els.btnNewEmpty.addEventListener("click", function () {
+    stopPlaying(); showError(null);
+    engine = createStaticListEngine(Number(els.capSlider.value));
+    engine.clear();
+    state.stepIndex = 0;
+    buildStatics();
+  });
+  els.btnNewRandom.addEventListener("click", function () {
+    stopPlaying(); showError(null);
+    var cap = Number(els.capSlider.value);
+    engine = createStaticListEngine(cap);
+    var fillCount = Math.max(1, Math.floor(cap * (0.4 + Math.random() * 0.5)));
+    for (var i = 0; i < fillCount; i++) engine.insertLast(String(Math.floor(Math.random() * 90) + 10));
+    state.stepIndex = engine.getSteps().length - 1;
+    buildStatics();
+  });
+
+  // ---- boot demo: a populated list with insertAt(2, "X") already performed, exercising
+  // the free-list reuse so the page is meaningful at rest, not an empty vetor ----
+  engine.insertLast("12"); engine.insertLast("47"); engine.insertLast("8"); engine.insertLast("63");
+  engine.removeAt(1);          // frees a slot out of order, to show free-list reuse right away
+  engine.insertAt(2, "X");     // reuses the freed slot
+  state.stepIndex = engine.getSteps().length - 1;
+  buildStatics();
+})();
+</script>
+
+</body></html>

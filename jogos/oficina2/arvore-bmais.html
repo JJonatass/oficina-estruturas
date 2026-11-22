@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>As Galerias da Mina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#1d1a24,#141217 70%,#0f0d10);min-height:400px;padding:16px;overflow-x:auto}
+.arvore{position:relative;margin:64px auto 10px}
+svg.linhas{position:absolute;inset:0;overflow:visible;pointer-events:none}
+svg.linhas line{stroke:#5d5975;stroke-width:5}
+svg.linhas .trilho{stroke:#8a6a4a;stroke-width:6;stroke-dasharray:3 9;stroke-linecap:round}
+.no{position:absolute;display:flex;align-items:center;height:44px;padding:0 4px;border-radius:9px;background:linear-gradient(#3a3650,#2a2738);box-shadow:inset 0 0 0 3px #1d1b27,0 5px 0 #0008}
+.no.folha{background:linear-gradient(#4a3c32,#33281f);box-shadow:inset 0 0 0 3px #1d1611,0 5px 0 #0008}
+.no.ativo{box-shadow:inset 0 0 0 3px var(--ouro),0 0 20px rgba(242,193,78,.45)}
+.no.vagao{box-shadow:inset 0 0 0 3px var(--verde),0 0 20px rgba(127,216,164,.45)}
+.no.estoura{box-shadow:inset 0 0 0 3px var(--verm),0 0 20px rgba(255,122,107,.5);animation:kbrilha 1s infinite}
+.no.errou{animation:ktreme .4s}
+.ch{min-width:36px;height:32px;display:grid;place-items:center;font:700 16px var(--mono);color:#cfc8d8;background:#16141d;border-radius:7px;margin:0 2px;border:0;padding:0 4px}
+.folha .ch{color:#F2C14E}
+.folha .ch.gema{cursor:pointer}
+.no.vagao .ch.gema:hover,.no.estoura .ch:hover{outline:2px solid var(--ouro)}
+.no.estoura .ch{cursor:pointer}
+.ch.pego{background:#20352b;color:var(--verde)}
+.ch.k-dica{outline:3px solid var(--ouro)}
+.fr{width:10px;height:32px;border:0;padding:0;background:transparent;border-radius:5px}
+.no.ativo .fr{width:22px;background:rgba(242,193,78,.18);cursor:pointer;border:2px dashed var(--ouro)}
+.no.ativo .fr:hover{background:rgba(242,193,78,.45)}
+.carro{position:absolute;z-index:5;font-size:34px;transition:left .45s cubic-bezier(.4,1.2,.6,1),top .45s;pointer-events:none;filter:drop-shadow(0 3px 0 #000)}
+.ctl{display:flex;gap:8px;flex-wrap:wrap}
+.ctl button{background:var(--chip);border:1px solid var(--ouro);color:var(--ouro);border-radius:10px;padding:8px 14px;font-weight:800}
+.ctl button.errou{animation:ktreme .4s;border-color:var(--verm)}
+.sacola{font-family:var(--mono);color:var(--verde);font-size:15px}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena" id="cena"><div class="arvore" id="arv"></div></section>
+  <div class="ordem"><span id="ordem">…</span><span class="ctl" id="ctl"></span></div>
+  <div class="ordem"><span class="sacola" id="sacola"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const MAX = 3;
+let G = null, NID = 0;
+const novoNo = folha => ({id:'p'+(NID++), folha, k:[], c:[], prox:null});
+const bisR = (a, x) => { let i = 0; while (i < a.length && x >= a[i]) i++; return i; };
+function insRec(x, k){
+  if (x.folha) { let i = 0; while (i < x.k.length && x.k[i] < k) i++; x.k.splice(i,0,k); if (x.k.length <= MAX) return null;
+    const m = x.k.length >> 1, z = novoNo(true); z.k = x.k.slice(m); x.k = x.k.slice(0,m); z.prox = x.prox; x.prox = z; return [z.k[0], z]; }
+  const i = bisR(x.k, k), r = insRec(x.c[i], k); if (!r) return null;
+  x.k.splice(i,0,r[0]); x.c.splice(i+1,0,r[1]); if (x.k.length <= MAX) return null;
+  const m = x.k.length >> 1, z = novoNo(false), sobe = x.k[m]; z.k = x.k.slice(m+1); z.c = x.c.slice(m+1); x.k = x.k.slice(0,m); x.c = x.c.slice(0,m+1); return [sobe, z];
+}
+function inserir(raiz, k){ const r = insRec(raiz, k); if (!r) return raiz; const n = novoNo(false); n.k = [r[0]]; n.c = [raiz, r[1]]; return n; }
+const folhas = () => { let f = G.raiz; while (!f.folha) f = f.c[0]; const l = []; for (; f; f = f.prox) l.push(f); return l; };
+const todas = () => folhas().flatMap(f => f.k);
+const altura = n => n.folha ? 1 : 1 + altura(n.c[0]);
+
+/* ---------- desenho ---------- */
+const larg = n => 8 + n.k.length * 40 + (n.k.length + 1) * 14;
+function desenhar(){
+  const pos = new Map(); let x = 0;
+  (function lay(n, d){ if (n.folha) { const w = larg(n); pos.set(n, {x, y:d*92, w}); x += w + 34; return; }
+    n.c.forEach(f => lay(f, d+1)); const a = pos.get(n.c[0]), b = pos.get(n.c[n.c.length-1]), w = larg(n); pos.set(n, {x:(a.x+b.x+b.w)/2 - w/2, y:d*92, w}); })(G.raiz, 0);
+  const W = x - 34, H = altura(G.raiz) * 92, arv = $('#arv');
+  arv.style.width = Math.max(W, 300) + 'px'; arv.style.height = H + 'px';
+  let lin = '', h = '';
+  pos.forEach((p, n) => {
+    n.c.forEach((f, i) => { const q = pos.get(f); lin += `<line x1="${p.x + 4 + i*54 + 7}" y1="${p.y + 42}" x2="${q.x + q.w/2}" y2="${q.y + 2}"/>`; });
+    if (n.folha && n.prox) { const q = pos.get(n.prox); lin += `<line class="trilho" x1="${p.x + p.w}" y1="${p.y + 22}" x2="${q.x}" y2="${q.y + 22}"/>`; }
+    const cls = ['no', n.folha ? 'folha' : '', G.at === n && G.fase === 'descer' ? 'ativo' : '', G.vagao === n ? 'vagao' : '', G.estoura === n ? 'estoura' : ''].join(' ');
+    let corpo = '';
+    for (let i = 0; i <= n.k.length; i++) { corpo += `<button class="fr" data-n="${n.id}" data-g="${i}"></button>`; if (i < n.k.length) { const k = n.k[i]; corpo += `<button class="ch ${n.folha ? 'gema' : ''} ${G.pegos && G.pegos.has(k) ? 'pego' : ''}" data-n="${n.id}" data-k="${k}">${k}</button>`; } }
+    h += `<div class="${cls}" data-id="${n.id}" style="left:${p.x}px;top:${p.y}px;width:${p.w}px">${corpo}</div>`;
+  });
+  const alvo = G.fase === 'descer' ? G.at : (G.vagao || G.estoura), pa = alvo && pos.get(alvo);
+  arv.innerHTML = `<svg class="linhas" style="width:${W}px;height:${H}px">${lin}</svg>${h}<div class="carro" id="carro">🛒</div>`;
+  if (pa) { const c = $('#carro'); c.style.left = (pa.x + pa.w/2 - 18) + 'px'; c.style.top = (pa.y - 46) + 'px';
+    const cena = $('#cena'), alvoX = arv.offsetLeft + pa.x + pa.w/2 - cena.clientWidth/2; cena.scrollTo({left: Math.max(0, alvoX), behavior:'smooth'}); }
+  else $('#carro').style.display = 'none';
+  arv.querySelectorAll('.fr').forEach(b => b.onclick = () => fresta(b.dataset.n, +b.dataset.g, b));
+  arv.querySelectorAll('.ch').forEach(b => b.onclick = () => chave(b.dataset.n, +b.dataset.k, b));
+}
+
+/* ---------- missões ---------- */
+function montar(){ NID = 0; G.raiz = novoNo(true); for (const k of K.distintos(K.rnd(11,14), 1, 99)) G.raiz = inserir(G.raiz, k); }
+function novaMissao(){
+  G.pegos = new Set(); G.vagao = null; G.estoura = null; $('#ctl').innerHTML = ''; $('#sacola').textContent = '';
+  if (todas().length > 24) { montar(); K.banner('Mina nova!'); }
+  const ord = todas();
+  const tipo = (G.feitas % 3 === 2) ? 'ins' : 'int';
+  if (tipo === 'int') {
+    const i = K.rnd(0, ord.length - 5), j = Math.min(ord.length - 1, i + K.rnd(3, 6));
+    const a = Math.max(1, ord[i] - K.rnd(0, 2)), b = ord[j] + K.rnd(0, 2);
+    G.m = {t:'int', a, b, alvo: ord.filter(x => x >= a && x <= b)};
+    G.at = G.raiz; G.fase = 'descer';
+    $('#ordem').innerHTML = `Encomenda: todo o minério entre <b>${a}</b> e <b>${b}</b>. Desça até a primeira galeria (pela fresta certa).`;
+  } else {
+    let k, alvo, t = 0;
+    do { k = K.rnd(1,99); let x = G.raiz; while (!x.folha) x = x.c[bisR(x.k, k)]; alvo = x; t++; } while ((ord.includes(k) || alvo.k.length < MAX) && t < 500);
+    G.m = {t:'ins', k, folhaAlvo: alvo};
+    G.at = G.raiz; G.fase = 'descer';
+    $('#ordem').innerHTML = `Guardar o minério <b>${k}</b>. Desça até a galeria certa.`;
+  }
+  passo();
+}
+const tempo = () => Math.max(4, 11 - G.nivel * 1.2);
+function chaveAlvo(){ return G.m.t === 'int' ? G.m.a : G.m.k; }
+function passo(){
+  desenhar();
+  if (G.fase === 'descer') {
+    const k = chaveAlvo(), j = bisR(G.at.k, k);
+    if (!G.at.folha) $('#ordem').innerHTML = `${G.m.t === 'int' ? `Encomenda [${G.m.a}, ${G.m.b}]` : `Guardar ${G.m.k}`}: procurando ${k} no túnel [${G.at.k.join(' · ')}]. Clique na fresta.`;
+    K.turno(tempo(), () => falhou(null, true), () => ['As placas dos túneis separam as faixas. Valor igual à placa vai para a direita.', `Fresta ${j}.`]);
+  } else if (G.fase === 'coletar') {
+    $('#ordem').innerHTML = `Vagão na galeria [${G.vagao.k.join(' · ')}]. Clique no minério entre <b>${G.m.a}</b> e <b>${G.m.b}</b>, depois siga pelo trilho ou freie.`;
+    $('#ctl').innerHTML = `<button id="bTrilho">Seguir o trilho →</button><button id="bFreio">Frear: encomenda completa</button>`;
+    $('#bTrilho').onclick = e => trilho(e.currentTarget); $('#bFreio').onclick = e => freio(e.currentTarget);
+    K.turno(tempo() + 3, () => falhou(null, true), () => {
+      const falta = G.vagao.k.filter(x => x >= G.m.a && x <= G.m.b && !G.pegos.has(x));
+      return ['Pegue tudo desta galeria que está no intervalo; depois decida se a próxima galeria ainda pode ter minério da encomenda.', falta.length ? `Falta pegar aqui: ${falta.join(', ')}.` : (G.vagao.k[G.vagao.k.length-1] >= G.m.b || !G.vagao.prox ? 'Já passou de ' + G.m.b + ': freie.' : 'Siga o trilho.')];
+    });
+  } else if (G.fase === 'estoura') {
+    const junto = G.estoura.k;
+    $('#ordem').innerHTML = `A galeria ficou com [${junto.join(' · ')}] e <b>estoura</b> (máximo 3). Clique na chave que é <b>copiada</b> para a placa de cima.`;
+    K.turno(tempo(), () => falhou(null, true), () => [`Ela se divide em [${junto.slice(0,2).join(', ')}] e [${junto.slice(2).join(', ')}].`, `A placa recebe a primeira da galeria nova: ${junto[2]}.`]);
+  }
+}
+function fresta(nid, g, el){
+  if (!K.s.rodando || K.s.ocupado || !G || G.fase !== 'descer' || nid !== G.at.id) return;
+  const k = chaveAlvo();
+  if (G.at.folha) return;   /* nas folhas não se escolhe fresta */
+  if (g !== bisR(G.at.k, k)) return falhou(el);
+  K.SFX.passo(); K.acerto(null, 30);
+  G.at = G.at.c[g];
+  if (G.at.folha) {
+    if (G.m.t === 'int') { G.vagao = G.at; G.fase = 'coletar'; }
+    else { G.at.k.push(G.m.k); G.at.k.sort((a,b)=>a-b); G.estoura = G.at; G.fase = 'estoura'; }
+  }
+  passo();
+}
+function chave(nid, k, el){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  if (G.fase === 'coletar' && nid === G.vagao.id) {
+    if (G.pegos.has(k)) return;
+    if (k < G.m.a || k > G.m.b) return falhou(el, false, `${k} está fora do intervalo [${G.m.a}, ${G.m.b}].`);
+    G.pegos.add(k); el.classList.add('pego'); K.SFX.acerto(1); K.flutua('+💎', el, 'var(--verde)');
+    $('#sacola').textContent = 'Na sacola: ' + [...G.pegos].join(', ');
+  } else if (G.fase === 'estoura' && nid === G.estoura.id) {
+    const junto = G.estoura.k;
+    if (k !== junto[2]) return falhou(el);
+    /* aplica a divisão de verdade, refazendo a inserção a partir da raiz */
+    junto.splice(junto.indexOf(G.m.k), 1);
+    G.raiz = inserir(G.raiz, G.m.k);
+    K.acerto(el, 150); K.banner('Galeria dividida!<small>a chave foi copiada; ela continua na folha</small>');
+    concluir(false);
+  }
+}
+function trilho(el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'coletar') return;
+  const falta = G.vagao.k.filter(x => x >= G.m.a && x <= G.m.b && !G.pegos.has(x));
+  if (falta.length) return falhou(el, false, `Ainda havia minério da encomenda nesta galeria: ${falta.join(', ')}.`);
+  if (!G.vagao.prox || G.vagao.k[G.vagao.k.length-1] >= G.m.b) return falhou(el, false, `A galeria já chegava a ${G.vagao.k[G.vagao.k.length-1]} ≥ ${G.m.b}: a próxima só tem valores maiores que ${G.m.b}. Era hora de frear.`);
+  G.vagao = G.vagao.prox; K.SFX.whoosh(); K.timer.mais(4); passo();
+}
+function freio(el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'coletar') return;
+  const falta = G.m.alvo.filter(x => !G.pegos.has(x));
+  if (falta.length) return falhou(el, false, `Faltou minério: ${falta.join(', ')}.${G.vagao.k.every(x => x < G.m.b) && G.vagao.prox ? ' A próxima galeria ainda podia ter valores até ' + G.m.b + '.' : ''}`);
+  K.acerto(el, 100 + 30 * G.m.alvo.length);
+  concluir(true);
+}
+function concluir(inter){
+  G.fase = null; K.timer.parar(); G.feitas++; K.s.ocupado = true;
+  if (inter) $('#ordem').innerHTML = `Encomenda entregue: ${G.m.alvo.join(', ')}. Uma descida só e depois o trilho: O(log n + k).`;
+  setTimeout(() => { K.s.ocupado = false; desenhar();
+    if (G.feitas % 4 === 0) { G.nivel++; K.subirNivel(G.nivel, 'Menos tempo nas galerias'); setTimeout(novaMissao, 1000); } else novaMissao(); }, 900);
+}
+function falhou(el, tempo, porque){
+  if (el) K.anima(el, 'errou');
+  const m = G.m; let html;
+  if (G.fase === 'descer') { const k = chaveAlvo(), j = bisR(G.at.k, k); html = `<p>Procurando ${k} no túnel [${G.at.k.join(', ')}]: ${j === 0 ? `${k} &lt; ${G.at.k[0]}` : `${k} ≥ ${G.at.k[j-1]}${j < G.at.k.length ? ` e &lt; ${G.at.k[j]}` : ''}`}, então a fresta certa era a <b>${j}</b>. Na B+, valor igual à placa vai para a direita, porque a placa é uma cópia da primeira chave da galeria da direita.</p>`; }
+  else if (G.fase === 'coletar') html = `<p>${porque || 'O tempo acabou antes de completar a encomenda.'}</p><p>Na B+, a consulta por intervalo desce <b>uma vez</b> até a primeira galeria e depois só anda pelo trilho das folhas, até passar de ${m.b}. Encomenda completa: ${m.alvo.join(', ')}.</p>`;
+  else html = `<p>A galeria [${G.estoura.k.join(', ')}] se divide em [${G.estoura.k.slice(0,2).join(', ')}] e [${G.estoura.k.slice(2).join(', ')}]. A primeira chave da galeria nova, <b>${G.estoura.k[2]}</b>, é <b>copiada</b> para a placa de cima e <b>continua na folha</b>, porque todo dado da B+ mora nas folhas.</p>`;
+  K.erro(html, () => {
+    if (m.t === 'ins') { if (G.estoura) G.estoura.k.splice(G.estoura.k.indexOf(m.k), 1); G.raiz = inserir(G.raiz, m.k); }
+    G.feitas++; G.fase = null; novaMissao();
+  }, {kicker: tempo ? 'O tempo acabou' : 'Desvio na mina'});
+}
+
+K.init({
+  id:'arvore-bmais', titulo:'As Galerias da Mina', kicker:'Masmorra · Árvore B+', vidas:3, comecar:'Descer à mina',
+  ajuda:`<p>A mina é uma <b>árvore B+</b>. As placas dos túneis (nós internos, em roxo) só indicam o caminho. Todo o minério fica nas galerias do fundo (folhas, em marrom), que são ligadas por um trilho.</p>
+  <ol><li><b>Descer:</b> clique na fresta do túnel por onde o vagão desce. Valor igual à placa vai para a direita.</li>
+  <li><b>Encomenda [a, b]:</b> na galeria, clique em todo minério do intervalo; depois <b>siga o trilho</b> para a galeria vizinha ou <b>freie</b> quando a encomenda estiver completa.</li>
+  <li><b>Guardar minério:</b> se a galeria estourar (4 chaves), clique na chave que é copiada para a placa de cima.</li></ol>`,
+  iniciar(){ G = {nivel:1, feitas:0}; montar(); novaMissao(); },
+  auto(){
+    if (G.fase === 'descer') { const g = bisR(G.at.k, chaveAlvo()); fresta(G.at.id, g, document.querySelector(`.fr[data-n="${G.at.id}"][data-g="${g}"]`)); return true; }
+    if (G.fase === 'coletar') {
+      const falta = G.vagao.k.filter(x => x >= G.m.a && x <= G.m.b && !G.pegos.has(x));
+      if (falta.length) { chave(G.vagao.id, falta[0], document.querySelector(`.ch[data-n="${G.vagao.id}"][data-k="${falta[0]}"]`)); return true; }
+      if (G.m.alvo.every(x => G.pegos.has(x))) freio($('#bFreio')); else trilho($('#bTrilho'));
+      return true;
+    }
+    if (G.fase === 'estoura') { const k = G.estoura.k[2]; chave(G.estoura.id, k, document.querySelector(`.ch[data-n="${G.estoura.id}"][data-k="${k}"]`)); return true; }
+  }
+});
+})();
+</script>
+</body>
+</html>

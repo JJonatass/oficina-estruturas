@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Oráculo das Frutas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 50% 0%,rgba(201,163,255,.16),transparent 60%),linear-gradient(#1c1828,#141219);padding:14px;min-height:340px}
+.oraculo{display:flex;align-items:center;gap:12px}
+.olho{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,#C9A3FF 19% 45%,#3a2b55 46%);box-shadow:0 0 24px rgba(201,163,255,.6);animation:pisca 4s infinite}
+@keyframes pisca{94%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.oraculo p{margin:0;font-family:var(--titulo);font-size:22px;color:var(--roxo)}
+svg.linha{display:block;width:100%;height:auto;margin-top:8px}
+.eixo{stroke:#5d5975;stroke-width:3}
+.fruta circle{stroke:#1d1408;stroke-width:2.5}
+.fruta text{font:800 13px var(--sans);text-anchor:middle;fill:#121119;pointer-events:none}
+.fruta .peso{font:600 12px var(--mono);fill:var(--mudo)}
+.fruta.fora{opacity:.25}
+.gap{fill:transparent;cursor:pointer}
+.gap:hover,.gap:focus{fill:rgba(242,193,78,.14)}
+.gap.k-dica{fill:rgba(242,193,78,.35)}
+.gap.errou{fill:rgba(255,122,107,.3)}
+.corte{stroke:#F2C14E;stroke-width:4;stroke-dasharray:8 6}
+.corte-rot{font:700 13px var(--mono);fill:#F2C14E;text-anchor:middle}
+.medidor{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:15px;min-height:24px;color:var(--mudo)}
+.medidor b{color:var(--texto)}
+.lim{color:#7FD8A4}.lar{color:#F2A93B}
+.arvoreTxt{font-family:var(--mono);font-size:14px;color:var(--roxo);white-space:pre;margin-top:6px}
+.fila{display:flex;gap:10px;align-items:center}
+.nova{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;font:800 18px var(--mono);background:#3a3650;border:3px dashed var(--roxo);color:var(--texto);animation:kbrilha 1.2s infinite}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="oraculo"><span class="olho"></span><p id="fala">O oráculo observa as frutas…</p></div>
+    <svg class="linha" id="lin" viewBox="0 0 900 190"></svg>
+    <div class="medidor" id="med"></div><div class="arvoreTxt" id="arvTxt"></div></section>
+  <div class="ordem"><span id="ordem">…</span><span class="escolhas" id="esc"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+const gini = (a, b) => { const n = a + b; if (!n) return 0; const p = a/n, q = b/n; return 1 - p*p - q*q; };
+const f2 = x => x.toFixed(3).replace('.', ',');
+const X0 = 50, X1 = 860;
+const px = p => X0 + (p - G.min) / (G.max - G.min) * (X1 - X0);
+
+function pomar(){
+  const n = Math.min(12, 7 + G.nivel);
+  for (let t = 0; t < 300; t++) {
+    const pesos = K.distintos(n, 5, 21).map(x => x * 10).sort((a,b)=>a-b), corte = K.rnd(2, n - 3);
+    const fr = pesos.map((p,i) => ({p, c: ((i < corte) !== (Math.random() < 0.18)) ? 'L' : 'O'}));
+    G.fr = fr; G.min = pesos[0] - 10; G.max = pesos[n-1] + 10;
+    const ana = analisar(fr);
+    const imp = ana.melhor.lados.some(l => l.L && l.O);
+    if (ana.unico && imp && fr.some(f=>f.c==='L') && fr.some(f=>f.c==='O')) break;
+  }
+  G.cortes = []; G.fase = 'raiz'; G.sub = null; G.subCorte = null; G.qualSub = null; G.raizCorte = null;
+  $('#arvTxt').textContent = '';
+  turnoCorte();
+}
+/* melhor corte num subconjunto: menor Gini ponderado; 'unico' diz se o mínimo não empata */
+function analisar(fr){
+  const res = [];
+  for (let i = 0; i < fr.length - 1; i++) {
+    const lim = (fr[i].p + fr[i+1].p) / 2, e = fr.slice(0, i+1), d = fr.slice(i+1);
+    const c = s => ({L: s.filter(f=>f.c==='L').length, O: s.filter(f=>f.c==='O').length});
+    const ce = c(e), cd = c(d);
+    res.push({i, lim, lados:[ce, cd], g: (e.length * gini(ce.L, ce.O) + d.length * gini(cd.L, cd.O)) / fr.length});
+  }
+  const ord = res.slice().sort((a,b)=>a.g-b.g);
+  return {res, melhor: ord[0], unico: ord.length < 2 || ord[1].g - ord[0].g > 1e-9};
+}
+function desenhar(sub){
+  const fr = G.fr, ativo = sub || fr;
+  let s = `<line class="eixo" x1="${X0-20}" y1="100" x2="${X1+20}" y2="100"/>`;
+  if (G.fase !== 'classificar') for (let i = 0; i < ativo.length - 1; i++) {
+    const a = px(ativo[i].p), b = px(ativo[i+1].p), lim = (ativo[i].p + ativo[i+1].p) / 2;
+    s += `<rect class="gap" data-i="${i}" data-lim="${lim}" x="${a + 14}" y="30" width="${Math.max(6, b - a - 28)}" height="120" rx="8" tabindex="0" role="button" aria-label="Cortar em ${lim}"/>`;
+  }
+  G.cortes.forEach(c => { const x = px(c); s += `<line class="corte" x1="${x}" y1="22" x2="${x}" y2="160"/><text class="corte-rot" x="${x}" y="16">&lt; ${c}</text>`; });
+  fr.forEach(f => { const x = px(f.p), fora = sub && !sub.includes(f);
+    s += `<g class="fruta ${fora ? 'fora' : ''}"><circle cx="${x}" cy="100" r="15" fill="${f.c==='L'?'#7FD8A4':'#F2A93B'}"/><text x="${x}" y="105">${f.c}</text><text class="peso" x="${x}" y="134">${f.p}</text></g>`; });
+  $('#lin').innerHTML = s;
+  $('#lin').querySelectorAll('.gap').forEach(g => {
+    g.onclick = () => cortar(+g.dataset.i, g);
+    g.onkeydown = e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); cortar(+g.dataset.i, g); } };
+    g.onmouseenter = g.onfocus = () => previa(+g.dataset.i);
+  });
+}
+function previa(i){
+  const sub = G.sub || G.fr, e = sub.slice(0, i+1), d = sub.slice(i+1);
+  const c = s => `<span class="lim">${s.filter(f=>f.c==='L').length} L</span> / <span class="lar">${s.filter(f=>f.c==='O').length} O</span>`;
+  $('#med').innerHTML = `corte em <b>${(sub[i].p + sub[i+1].p)/2}</b>: esquerda ${c(e)} · direita ${c(d)}`;
+}
+function turnoCorte(){
+  const sub = G.sub || G.fr; desenhar(G.sub);
+  $('#med').innerHTML = '<span>Passe o mouse (ou use Tab) sobre um vão para ver quantas frutas de cada tipo ficam de cada lado.</span>';
+  $('#esc').innerHTML = '';
+  $('#fala').textContent = G.fase === 'raiz' ? '“Qual pergunta separa melhor?”' : '“Ainda há mistura deste lado…”';
+  $('#ordem').innerHTML = G.fase === 'raiz' ? 'Escolha o <b>corte de menor Gini ponderado</b> para a primeira pergunta do oráculo: clique no vão entre duas frutas.' : `O lado ${G.ladoSub} ainda está misturado. Escolha o melhor corte <b>só entre as frutas acesas</b>.`;
+  const ana = analisar(sub);
+  K.turno(Math.max(10, 26 - G.nivel * 3), () => falhou(null, true), () => ['Gini de um lado = 1 − (p_L² + p_O²); ponderado = média dos dois lados pelo número de frutas.', `O melhor corte é em ${ana.melhor.lim} (Gini ${f2(ana.melhor.g)}).`]);
+}
+function cortar(i, el){
+  if (!K.s.rodando || K.s.ocupado || !['raiz','sub'].includes(G.fase)) return;
+  const sub = G.sub || G.fr, ana = analisar(sub), esc = ana.res[i];
+  if (esc.g - ana.melhor.g > 1e-9) return falhou(el, false, esc);
+  K.acerto(el, 160); K.SFX.whoosh(); G.cortes.push(esc.lim); K.s.ocupado = true;
+  if (G.fase === 'raiz') {
+    G.raizCorte = esc.lim;
+    const e = sub.filter(f => f.p < esc.lim), d = sub.filter(f => f.p >= esc.lim);
+    const mist = [e, d].map(s => s.some(f=>f.c==='L') && s.some(f=>f.c==='O'));
+    G.lados = {e, d};
+    if (mist[0] || mist[1]) {
+      const qual = (mist[0] && mist[1]) ? (e.length >= d.length ? 0 : 1) : (mist[0] ? 0 : 1);
+      if ([e, d][qual].length >= 2) { G.fase = 'sub'; G.sub = [e, d][qual]; G.ladoSub = qual === 0 ? 'esquerdo' : 'direito'; G.qualSub = qual; return setTimeout(() => { K.s.ocupado = false; turnoCorte(); }, 500); }
+    }
+  } else G.subCorte = esc.lim;
+  setTimeout(() => { K.s.ocupado = false; iniciarClassificacao(); }, 500);
+}
+/* a árvore construída classifica pela maioria de cada folha */
+function folhas(){
+  const fol = [];
+  const maj = s => s.filter(f=>f.c==='L').length >= s.filter(f=>f.c==='O').length ? 'L' : 'O';
+  const {e, d} = G.lados;
+  [[e, 'esquerdo', 0], [d, 'direito', 1]].forEach(([s, nome, q]) => {
+    if (G.subCorte !== undefined && G.subCorte !== null && G.qualSub === q) {
+      const a = s.filter(f => f.p < G.subCorte), b = s.filter(f => f.p >= G.subCorte);
+      fol.push({teste: p => (q ? p >= G.raizCorte : p < G.raizCorte) && p < G.subCorte, resp: maj(a), n:a.length});
+      fol.push({teste: p => (q ? p >= G.raizCorte : p < G.raizCorte) && p >= G.subCorte, resp: maj(b), n:b.length});
+    } else fol.push({teste: p => q ? p >= G.raizCorte : p < G.raizCorte, resp: maj(s), n:s.length});
+  });
+  return fol;
+}
+function textoArvore(){
+  const t = [`peso < ${G.raizCorte}?`];
+  const fol = folhas(), nome = r => r === 'L' ? 'limão' : 'laranja';
+  if (G.subCorte !== undefined && G.subCorte !== null) {
+    if (G.qualSub === 0) { t.push(`├ sim → peso < ${G.subCorte}? sim → ${nome(fol[0].resp)} · não → ${nome(fol[1].resp)}`); t.push(`└ não → ${nome(fol[2].resp)}`); }
+    else { t.push(`├ sim → ${nome(fol[0].resp)}`); t.push(`└ não → peso < ${G.subCorte}? sim → ${nome(fol[1].resp)} · não → ${nome(fol[2].resp)}`); }
+  } else { t.push(`├ sim → ${nome(fol[0].resp)}`); t.push(`└ não → ${nome(fol[1].resp)}`); }
+  return t.join('\n');
+}
+function iniciarClassificacao(){
+  G.fase = 'classificar'; G.sub = null; desenhar(); G.nClass = 0;
+  $('#arvTxt').textContent = textoArvore();
+  $('#fala').textContent = '“Agora eu respondo sozinho. Confira se você entendeu minhas perguntas.”';
+  proximaFruta();
+}
+function proximaFruta(){
+  if (G.nClass >= 3) return fimPomar();
+  const exist = new Set(G.fr.map(f=>f.p)); let p; do { p = K.rnd(G.min + 5, G.max - 5); } while (exist.has(p));
+  G.nova = p; const fol = folhas().find(f => f.teste(p)); G.resp = fol.resp;
+  $('#med').innerHTML = `<span class="fila"><span class="nova">${p} g</span> Uma fruta nova chegou.</span>`;
+  $('#ordem').innerHTML = `Pela árvore do oráculo, o que é a fruta de <b>${p} g</b>?`;
+  $('#esc').innerHTML = `<button data-c="L"><kbd>1</kbd> Limão</button><button data-c="O"><kbd>2</kbd> Laranja</button>`;
+  $('#esc').querySelectorAll('button').forEach(b => b.onclick = () => classificar(b.dataset.c, b));
+  K.turno(Math.max(4, 9 - G.nivel), () => falhou(null, true), () => ['Siga as perguntas da árvore, de cima para baixo.', `É ${G.resp === 'L' ? 'limão' : 'laranja'}.`]);
+}
+function classificar(c, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'classificar') return;
+  if (c !== G.resp) return falhou(el);
+  K.acerto(el, 80); G.nClass++; proximaFruta();
+}
+function fimPomar(){
+  K.timer.parar(); G.feitas++; G.fase = 'espera'; $('#esc').innerHTML = '';
+  K.bonus(200, $('#lin'), 'Pomar classificado +200');
+  setTimeout(() => { if (G.feitas % 2 === 0) { G.nivel++; K.subirNivel(G.nivel, 'Mais frutas no pomar'); setTimeout(pomar, 1000); } else pomar(); }, 900);
+}
+function falhou(el, tempo, esc){
+  if (el) K.anima(el, el.classList && el.classList.contains('gap') ? 'errou' : 'treme');
+  let html;
+  if (G.fase === 'classificar') html = `<p>A árvore do oráculo:</p><pre class="arvoreTxt">${textoArvore()}</pre><p>A fruta de ${G.nova} g cai numa folha que responde <b>${G.resp === 'L' ? 'limão' : 'laranja'}</b> (a classe mais comum entre as frutas daquela folha).</p>`;
+  else {
+    const sub = G.sub || G.fr, ana = analisar(sub);
+    const linhas = ana.res.map(r => `<tr${r === ana.melhor ? ' style="color:var(--verde)"' : (esc && r.i === esc.i ? ' style="color:var(--verm)"' : '')}><td>&lt; ${r.lim}</td><td>${r.lados[0].L}L/${r.lados[0].O}O</td><td>${r.lados[1].L}L/${r.lados[1].O}O</td><td>${f2(r.g)}</td></tr>`).join('');
+    html = `<p>O melhor corte é o de <b>menor Gini ponderado</b>:</p><table class="tab"><tr><th>corte</th><th>esquerda</th><th>direita</th><th>Gini</th></tr>${linhas}</table>`;
+  }
+  K.erro(html, () => {
+    if (G.fase === 'classificar') { G.nClass++; proximaFruta(); }
+    else { const sub = G.sub || G.fr, ana = analisar(sub); G.fase === 'raiz' ? (G.fase = 'raiz') : null; cortarForcado(ana.melhor.i); }
+  }, {kicker: tempo ? 'O tempo acabou' : 'O oráculo discorda'});
+}
+function cortarForcado(i){ const pts = K.s.pontos, combo = K.s.combo; cortar(i, null); K.s.pontos = pts; K.s.combo = combo; K.placar(); }
+
+K.init({
+  id:'arvore-decisao', titulo:'O Oráculo das Frutas', kicker:'Masmorra · Árvore de decisão', vidas:3, comecar:'Consultar o oráculo',
+  ajuda:`<p>O oráculo aprende a separar limões (L) de laranjas (O) fazendo perguntas sobre o peso, como uma <b>árvore de decisão</b>. Você escolhe as perguntas.</p>
+  <ol><li>Clique no vão entre duas frutas para cortar ali. Passando o mouse, você vê quantas frutas de cada tipo ficam de cada lado.</li>
+  <li>O corte certo é o de <b>menor Gini ponderado</b>. Gini de um lado = 1 − (p_L² + p_O²); o ponderado é a média dos dois lados pelo número de frutas.</li>
+  <li>Se um lado continuar misturado, escolha o melhor corte só para ele.</li>
+  <li>Por fim, use a árvore pronta para classificar frutas novas.</li></ol>`,
+  tecla(e){ if (G && G.fase === 'classificar') { const c = {'1':'L','2':'O'}[e.key]; if (c) classificar(c, document.querySelector(`#esc [data-c="${c}"]`)); } },
+  iniciar(){ G = {nivel:1, feitas:0}; pomar(); },
+  auto(){
+    if (G.fase === 'classificar') { classificar(G.resp, document.querySelector(`#esc [data-c="${G.resp}"]`)); return true; }
+    if (G.fase === 'raiz' || G.fase === 'sub') { const ana = analisar(G.sub || G.fr); cortar(ana.melhor.i, document.querySelector(`.gap[data-i="${ana.melhor.i}"]`)); return true; }
+  }
+});
+})();
+</script>
+</body>
+</html>

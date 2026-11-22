@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Ponte de Cordas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#1c2133 0%,#232a3f 50%,#1b3a4a 50%,#12303d 100%);min-height:380px;padding:16px}
+.agua{position:absolute;left:0;right:0;bottom:0;height:50%;background:repeating-linear-gradient(170deg,transparent 0 22px,rgba(255,255,255,.04) 22px 26px);animation:agua 6s linear infinite}
+@keyframes agua{to{background-position:200px 0}}
+.ponte{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:34px;margin-top:120px;flex-wrap:nowrap}
+.poste{width:62px;height:120px;border:0;border-radius:10px 10px 0 0;background:linear-gradient(#5a4535,#3a2c22);display:grid;place-items:center;font-family:var(--mono);font-size:13px;color:var(--mudo);box-shadow:0 5px 0 #0007}
+.tabua{position:relative;width:78px;height:52px;border:0;border-radius:8px;background:linear-gradient(#a57a52,#7a5238);box-shadow:inset 0 0 0 3px #4d3323,0 6px 0 #0008;font-weight:800;font-size:21px;color:#2b1a0e;transition:transform .5s,opacity .5s}
+.tabua.rem{box-shadow:inset 0 0 0 3px var(--verm),0 0 16px rgba(255,122,107,.5)}
+.tabua.cai{transform:translateY(200px) rotate(25deg);opacity:0}
+.tabua.nova{position:absolute;top:-96px;box-shadow:inset 0 0 0 3px var(--ouro),0 0 16px rgba(242,193,78,.5)}
+.tabua.k-dica,.poste.k-dica{outline:3px solid var(--ouro)}
+.tabua.errou,.poste.errou{animation:ktreme .4s}
+.cena.vento .tabua{animation:vento .5s 3}
+@keyframes vento{50%{transform:rotate(6deg) translateY(-6px)}}
+svg.cordas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+svg.cordas path{fill:none;stroke-width:3.5;stroke-linecap:round}
+svg.cordas .prox{stroke:#d9c9a8}svg.cordas .prev{stroke:#8fb7d9;stroke-dasharray:7 5}
+svg.cordas .nova{stroke:var(--ouro);stroke-width:5}
+.legenda{position:absolute;right:14px;top:10px;font-size:13px;color:var(--mudo);z-index:3}
+.legenda b{color:#d9c9a8}.legenda i{color:#8fb7d9;font-style:normal}
+.pontas{display:flex;gap:8px;flex-wrap:wrap}
+.pontas button{background:var(--chip);border:2px solid var(--borda);border-radius:10px;padding:8px 12px;font:600 15px var(--mono)}
+.pontas button.sel{border-color:var(--ouro);color:var(--ouro);box-shadow:0 0 12px rgba(242,193,78,.4)}
+.pontas button.feita{border-color:var(--verde);color:var(--verde);pointer-events:none}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena" id="cena"><div class="agua"></div><span class="legenda"><b>━ prox</b> · <i>┅ prev</i></span><svg class="cordas" id="cordas"></svg><div class="ponte" id="ponte"></div></section>
+  <div class="ordem"><span id="ordem">…</span></div>
+  <div class="ordem"><span>Pontas soltas (escolha uma e clique no destino):</span><span class="pontas" id="pontas"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+
+function desenhar(){
+  const p = $('#ponte');
+  p.innerHTML = `<button class="poste" data-d="NULL-e">NULL</button>` + G.v.map((x,i) => `<button class="tabua ${G.m && G.m.t==='rem' && G.m.k===i?'rem':''}" data-d="${x}">${x}</button>`).join('') + `<button class="poste" data-d="NULL-d">NULL</button>`;
+  if (G.m && G.m.t === 'ins') {
+    const a = p.querySelectorAll('.tabua')[G.m.k];
+    const nova = document.createElement('button'); nova.className = 'tabua nova'; nova.dataset.d = String(G.m.val); nova.textContent = G.m.val;
+    p.appendChild(nova);
+    requestAnimationFrame(() => { const r = a.getBoundingClientRect(), pr = p.getBoundingClientRect(); nova.style.left = (r.left - pr.left + r.width + 4) + 'px'; cordas(); });
+  }
+  p.querySelectorAll('[data-d]').forEach(b => b.onclick = () => destino(b.dataset.d, b));
+  requestAnimationFrame(cordas);
+}
+function el(d){ return document.querySelector(`#ponte [data-d="${d}"]`); }
+function cordas(){
+  const c = $('#cordas'), cr = $('#cena').getBoundingClientRect();
+  const pt = (e, lado, baixo) => { const r = e.getBoundingClientRect(); return {x: r.left - cr.left + (lado === 'd' ? r.width - 8 : 8), y: r.top - cr.top + (baixo ? r.height : 0)}; };
+  const arco = (a, b, cls, baixo) => { const my = baixo ? Math.max(a.y, b.y) + 28 : Math.min(a.y, b.y) - 28; return `<path class="${cls}" d="M${a.x} ${a.y} Q${(a.x+b.x)/2} ${my} ${b.x} ${b.y}"/>`; };
+  let s = '';
+  const tab = [...document.querySelectorAll('#ponte .tabua:not(.nova)')];
+  tab.forEach((t, i) => {
+    const prox = G.ligP[i], prev = G.ligV[i];
+    const alvoP = prox === null ? el('NULL-d') : el(String(prox)), alvoV = prev === null ? el('NULL-e') : el(String(prev));
+    if (alvoP) s += arco(pt(t,'d',false), pt(alvoP,'e',false), G.novas.has(`${G.v[i]}.prox`) ? 'nova prox' : 'prox', false);
+    if (alvoV) s += arco(pt(t,'e',true), pt(alvoV,'d',true), G.novas.has(`${G.v[i]}.prev`) ? 'nova prev' : 'prev', true);
+  });
+  (G.extras || []).forEach(([de, para, baixo]) => { const a = el(de), b = el(para); if (a && b) s += arco(pt(a, baixo?'e':'d', baixo), pt(b, baixo?'d':'e', baixo), 'nova', baixo); });
+  c.innerHTML = s;
+}
+window.addEventListener('resize', () => G && cordas());
+
+function religar(){ G.ligP = G.v.map((_,i) => i < G.v.length-1 ? G.v[i+1] : null); G.ligV = G.v.map((_,i) => i > 0 ? G.v[i-1] : null); }
+function novaMissao(){
+  G.novas = new Set(); G.extras = []; G.sel = null;
+  const n = G.v.length;
+  const t = (n <= 3 || (n < 6 && Math.random() < .5)) ? 'ins' : 'rem';
+  const nome = i => i < 0 || i >= n ? 'NULL' : String(G.v[i]);
+  const req = [];
+  if (t === 'rem') {
+    const k = K.rnd(0, n-1), X = G.v[k];
+    G.m = {t, k, X};
+    if (k > 0) req.push({id:`${G.v[k-1]}.prox`, certo: k+1 < n ? String(G.v[k+1]) : 'NULL'}); else req.push({id:'head', certo: nome(k+1)});
+    if (k < n-1) req.push({id:`${G.v[k+1]}.prev`, certo: k-1 >= 0 ? String(G.v[k-1]) : 'NULL'}); else req.push({id:'tail', certo: nome(k-1)});
+    $('#ordem').innerHTML = `Tire a tábua <b>${X}</b> da ponte: amarre de novo as cordas dos vizinhos${k===0||k===n-1?' (é uma tábua da ponta!)':''}.`;
+  } else {
+    const k = K.rnd(0, n-1), val = K.distintos(1, 10, 99).find(x => !G.v.includes(x)) || 50;
+    G.m = {t, k, val, A:G.v[k], B: k+1 < n ? G.v[k+1] : null};
+    req.push({id:`${val}.prev`, certo:String(G.v[k])}, {id:`${val}.prox`, certo: nome(k+1)}, {id:`${G.v[k]}.prox`, certo:String(val)});
+    req.push(k+1 < n ? {id:`${G.v[k+1]}.prev`, certo:String(val)} : {id:'tail', certo:String(val)});
+    $('#ordem').innerHTML = `Encaixe a tábua nova <b>${val}</b> logo depois da <b>${G.v[k]}</b>: amarre as quatro cordas.`;
+  }
+  G.m.req = K.shuffle(req); G.m.feitas = new Set();
+  $('#pontas').innerHTML = G.m.req.map(r => `<button data-r="${r.id}">${r.id}</button>`).join('');
+  $('#pontas').querySelectorAll('button').forEach(b => b.onclick = () => selecionar(b.dataset.r));
+  desenhar();
+  K.turno(Math.max(7, 18 - G.nivel * 2) + req.length, () => falhou(null, true), () => {
+    const r = G.m.req.find(x => !G.m.feitas.has(x.id));
+    return ['Os vizinhos da tábua passam a se apontar; nas pontas, quem muda é head ou tail.', r ? `<code>${r.id}</code> → <b>${r.certo}</b>.` : ''];
+  });
+}
+function selecionar(id){
+  if (!K.s.rodando || K.s.ocupado || !G.m) return;
+  G.sel = id; K.SFX.clique();
+  $('#pontas').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.r === id));
+}
+function destino(d, alvoEl){
+  if (!K.s.rodando || K.s.ocupado || !G.m) return;
+  if (!G.sel) { K.flutua('Escolha uma ponta solta', alvoEl, 'var(--mudo)'); return; }
+  const r = G.m.req.find(x => x.id === G.sel);
+  const dn = d.startsWith('NULL') ? 'NULL' : d;
+  if (dn !== r.certo) return falhou(alvoEl, false, r);
+  G.m.feitas.add(r.id); K.SFX.whoosh();
+  const [dono, campo] = r.id.includes('.') ? r.id.split('.') : [null, r.id];
+  if (dono) { const de = dono, para = dn === 'NULL' ? (campo === 'prox' ? 'NULL-d' : 'NULL-e') : dn; G.extras.push([de, para, campo === 'prev']); }
+  K.flutua('amarrada!', alvoEl, 'var(--verde)');
+  const b = $('#pontas').querySelector(`[data-r="${r.id}"]`); b.classList.remove('sel'); b.classList.add('feita'); G.sel = null;
+  cordas();
+  if (G.m.feitas.size === G.m.req.length) concluir();
+}
+function concluir(){
+  const m = G.m; K.timer.parar(); K.s.ocupado = true;
+  K.acerto($('#ponte'), 100 + 30 * m.req.length);
+  if (m.t === 'rem') { const t = document.querySelectorAll('#ponte .tabua')[m.k]; t.classList.add('cai'); setTimeout(() => { G.v.splice(m.k, 1); fim(); }, 600); }
+  else { G.v.splice(m.k + 1, 0, m.val); setTimeout(fim, 400); }
+  function fim(){ religar(); G.m = null; G.feitas++; K.s.ocupado = false;
+    if (G.feitas % 4 === 0) { G.nivel++; K.subirNivel(G.nivel, 'O vento sopra mais cedo'); setTimeout(novaMissao, 1000); } else novaMissao(); }
+}
+function falhou(alvoEl, tempo, r){
+  const m = G.m; if (!m) return;
+  if (alvoEl) K.anima(alvoEl, 'errou');
+  if (tempo) $('#cena').classList.add('vento');
+  const lista = m.req.map(x => `<li><code>${x.id}</code> → <b>${x.certo}</b>${m.feitas.has(x.id) ? ' ✓' : ''}</li>`).join('');
+  const html = `${r ? `<p>A ponta <code>${r.id}</code> devia ir para <b>${r.certo}</b>.</p>` : '<p>O vento chegou antes de todas as cordas estarem amarradas.</p>'}
+    <p>${m.t === 'rem' ? `Para tirar a tábua ${m.X}, o vizinho da esquerda passa a apontar (<code>prox</code>) para o da direita e o da direita aponta de volta (<code>prev</code>) para o da esquerda. Sem vizinho de um lado, quem muda é <code>head</code> ou <code>tail</code>.` : `Para encaixar ${m.val} depois de ${m.A}, mudam quatro cordas: as duas da tábua nova e as dos dois vizinhos que agora a cercam.`}</p><ul>${lista}</ul>`;
+  K.erro(html, () => {
+    $('#cena').classList.remove('vento');
+    if (m.t === 'rem') G.v.splice(m.k, 1); else G.v.splice(m.k + 1, 0, m.val);
+    religar(); G.m = null; G.feitas++; novaMissao();
+  }, {kicker: tempo ? 'Rajada de vento!' : 'A corda arrebentou', atraso: tempo ? 900 : 380});
+}
+
+K.init({
+  id:'dupla', titulo:'A Ponte de Cordas', kicker:'Masmorra · Lista duplamente encadeada', vidas:3, comecar:'Atravessar o rio',
+  ajuda:`<p>Cada tábua da ponte tem duas cordas: <code>prox</code> (para a tábua seguinte, por cima) e <code>prev</code> (para a anterior, por baixo). Nas pontas, as cordas vão até os postes <b>NULL</b>, e as placas <code>head</code> e <code>tail</code> marcam a primeira e a última tábua.</p>
+  <ol><li>Leia a missão: tirar uma tábua ou encaixar uma nova.</li>
+  <li>Clique numa <b>ponta solta</b> (por exemplo <code>23.prox</code>) e depois na tábua ou no poste NULL onde ela deve ser amarrada.</li>
+  <li>Amarre todas as cordas antes da rajada de vento (o relógio).</li></ol>`,
+  iniciar(){ G = {nivel:1, feitas:0, v:K.distintos(4, 10, 99)}; religar(); novaMissao(); },
+  auto(){
+    const r = G.m && G.m.req.find(x => !G.m.feitas.has(x.id)); if (!r) return;
+    if (G.sel !== r.id) { selecionar(r.id); return true; }
+    let d = r.certo; if (d === 'NULL') d = (r.id.endsWith('prev') || r.id === 'head') ? 'NULL-e' : 'NULL-d';
+    destino(d, el(d)); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

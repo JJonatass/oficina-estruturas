@@ -1,0 +1,895 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pilha, Fila e Deque</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="bad"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .mode-tabs{display:flex; gap:6px; padding:4px; background:var(--paper); border:1px solid var(--line); border-radius:11px;}
+  .mode-tab{
+    flex:1 1 0; text-align:center; padding:9px 10px; border-radius:8px; border:1px solid transparent;
+    background:transparent; color:var(--ink-soft); font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:0.86rem; cursor:pointer;
+  }
+  .mode-tab[aria-selected="true"]{ background:var(--card); border-color:var(--line-strong); color:var(--accent-ink); box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .mode-note{font-size:0.82rem; color:var(--ink-soft); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .mode-note .arrow{color:var(--ink-faint);}
+  .mode-note .end-tag{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.74rem; padding:2px 7px; border-radius:999px;}
+  .mode-note .end-tag.front{background:var(--accent-soft); color:var(--accent-ink);}
+  .mode-note .end-tag.rear{background:var(--violet-soft); color:var(--violet);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .cq-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .cq-svg, .cq-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .cq-slot-circle{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease; }
+  .cq-slot-circle.occupied{ fill:var(--accent-soft); }
+  .cq-slot-circle.unused-end{ opacity:0.45; }
+  .cq-slot-value{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .cq-slot-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .cq-slot-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .cq-slot[data-state="new"] .cq-slot-circle{ stroke:var(--gold); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .cq-slot[data-state="cursor"] .cq-slot-circle{ stroke:var(--accent); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .cq-slot[data-state="bad"] .cq-slot-circle{ stroke:var(--rust); stroke-width:2.4; }
+
+  .cq-arc{ fill:none; stroke:var(--accent); stroke-opacity:0.35; stroke-width:9; stroke-linecap:round; transition: d .3s ease; }
+  .cq-ring-track{ fill:none; stroke:var(--line); stroke-width:9; }
+  .cq-center-count{ font-size:20px; font-weight:700; text-anchor:middle; dominant-baseline:central; fill:var(--ink); font-family:'IBM Plex Mono',monospace; }
+  .cq-center-cap{ font-size:10px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .cq-center-status{ font-size:10.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-soft); font-weight:600; }
+
+  .cq-tag-pill{ font-size:10px; font-weight:700; text-anchor:middle; dominant-baseline:central; fill:#fff; }
+  .cq-tag-bg{ fill:var(--ink-soft); }
+  .cq-tag-bg.front{ fill:var(--accent); }
+  .cq-tag-bg.rear{ fill:var(--violet); }
+  .cq-tag-line{ stroke:var(--line-strong); stroke-width:1.2; }
+  .cq-tag-dim{ opacity:0.35; }
+
+  .cq-strip-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; }
+  .cq-strip-rect.occupied{ fill:var(--accent-soft); }
+  .cq-strip-rect[data-state="new"]{ stroke:var(--gold); stroke-width:2.6; }
+  .cq-strip-rect[data-state="cursor"]{ stroke:var(--accent); stroke-width:2.6; }
+  .cq-strip-rect[data-state="bad"]{ stroke:var(--rust); stroke-width:2.2; }
+  .cq-strip-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .cq-strip-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .cq-strip-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .cq-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.new{border-color:var(--gold);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.front{background:var(--accent); border-color:transparent;}
+  .legend .swatch.rear{background:var(--violet); border-color:transparent;}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+  @media (max-width:760px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .compare-card ul{margin:0; padding-left:1.1em; display:flex; flex-direction:column; gap:3px;}
+  .compare-card li{color:var(--ink-soft); font-size:0.88rem;}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Estrutura linear · buffer circular de tamanho fixo</span>
+    <h1>Pilha, Fila e Deque</h1>
+    <p class="prose">As três são o <em>mesmo</em> buffer circular — o da ferramenta anterior, agora com inserir/remover nas <strong>duas pontas</strong>. O que muda entre elas não é a estrutura, é a <strong>disciplina de uso</strong>: uma pilha só mexe numa ponta, uma fila insere numa e remove na outra, e um deque libera as duas. Escolha um modo abaixo e repare que o código por trás é idêntico.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador de pilha, fila e deque">
+    <div class="mode-tabs" role="tablist" aria-label="Modo de uso">
+      <button class="mode-tab" id="tabPilha" role="tab" data-mode="pilha">Pilha (LIFO)</button>
+      <button class="mode-tab" id="tabFila" role="tab" data-mode="fila">Fila (FIFO)</button>
+      <button class="mode-tab" id="tabDeque" role="tab" data-mode="deque">Deque (as duas pontas)</button>
+    </div>
+    <div class="mode-note" id="modeNote"></div>
+
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="cq-svg" id="cqSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch front"></span>front</span>
+      <span class="item"><span class="swatch rear"></span>rear</span>
+      <span class="item"><span class="swatch occ"></span>ocupado</span>
+      <span class="item"><span class="swatch cursor"></span>lendo / afetado</span>
+      <span class="item"><span class="swatch new"></span>recém-inserido</span>
+      <span class="item"><span class="swatch bad"></span>operação inválida</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnPushFront">+ Inserir na frente</button>
+        <button class="primary" id="btnPushBack">+ Inserir no fim</button>
+        <button class="danger" id="btnPopFront">− Remover da frente</button>
+        <button class="danger" id="btnPopBack">− Remover do fim</button>
+      </div>
+      <div class="controls-row">
+        <button id="btnPeekFront">Ver frente</button>
+        <button id="btnPeekRear">Ver fim</button>
+        <button id="btnCheckEmpty">Está vazio?</button>
+        <button id="btnCheckFull">Está cheio?</button>
+        <button class="danger" id="btnClear">Limpar</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Capacidade
+          <input type="range" class="mini" id="capSlider" min="3" max="10" value="6" step="1">
+          <span class="mono" id="capLabel">6</span>
+        </label>
+        <button class="violet" id="btnNewEmpty">↺ Novo deque vazio</button>
+        <button class="violet" id="btnNewRandom">🎲 Preencher aleatoriamente</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>A mesma estrutura, três disciplinas de uso</h2>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <span class="tag">Pilha · LIFO</span>
+        <p class="prose">Insere e remove sempre na <strong>mesma ponta</strong> (aqui, o fim/<code>rear</code>). O último que entrou é o primeiro que sai.</p>
+        <ul>
+          <li>Pilha de chamadas de função</li>
+          <li>Desfazer/refazer (undo/redo)</li>
+          <li>Avaliação de expressões, parênteses balanceados</li>
+        </ul>
+      </div>
+      <div class="compare-card">
+        <span class="tag">Fila · FIFO</span>
+        <p class="prose">Insere numa ponta (<code>rear</code>) e remove na outra (<code>front</code>). O primeiro que entrou é o primeiro que sai.</p>
+        <ul>
+          <li>Fila de impressão, de atendimento</li>
+          <li>BFS (busca em largura) em grafos</li>
+          <li>Processamento de tarefas em ordem de chegada</li>
+        </ul>
+      </div>
+      <div class="compare-card">
+        <span class="tag">Deque · as duas pontas</span>
+        <p class="prose">Insere e remove livremente em <code>front</code> <em>e</em> <code>rear</code> — generaliza pilha e fila ao mesmo tempo.</p>
+        <ul>
+          <li>Histórico do navegador (voltar/avançar)</li>
+          <li>Janela deslizante (sliding window maximum)</li>
+          <li>Work-stealing deques em escalonadores</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>front === rear: vazio ou cheio?</h2>
+    <p class="prose">A mesma ambiguidade da fila circular aparece aqui — e numa pilha ou fila construídas sobre este buffer, não só num deque genérico. Esta ferramenta resolve com um contador explícito:</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Contador extra (usado aqui)</span><span class="prose">Guardar <code>count</code> à parte. Vazio quando <code>count == 0</code>, cheio quando <code>count == capacidade</code>.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Desperdiçar uma posição</span><span class="prose">Nunca deixar <code>rear</code> encostar em <code>front</code> por completo — cheio com <code>capacidade - 1</code> elementos.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Uma flag booleana</span><span class="prose">Guardar um <code>cheio: bool</code>, atualizado a cada inserção/remoção que afeta a ponta em questão.</span></div></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada operação</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Operação</th><th>Custo</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Inserir na frente / no fim</td><td class="mono">O(1)</td><td>Escreve direto em <code>buffer[front-1]</code> ou <code>buffer[rear]</code> com módulo — nunca percorre nada.</td></tr>
+          <tr><td class="op">Remover da frente / do fim</td><td class="mono">O(1)</td><td>Lê <code>buffer[front]</code> ou <code>buffer[rear-1]</code> e avança o índice correspondente com módulo.</td></tr>
+          <tr><td class="op">Ver frente / fim</td><td class="mono">O(1)</td><td>Acesso direto por índice.</td></tr>
+          <tr><td class="op">Vazio? / Cheio?</td><td class="mono">O(1)</td><td>Só compara <code>count</code> com <code>0</code> ou com a capacidade.</td></tr>
+          <tr><td class="op">Acessar o meio</td><td class="mono">O(1) por índice, mas não é o objetivo</td><td>Pilha/fila/deque só expõem as pontas de propósito — é isso que garante O(1) nas operações que importam.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Por que generalizar</span>
+      <h3>Um deque contém pilha e fila "de graça"</h3>
+      <p class="prose">Se você já implementou um deque eficiente, pilha e fila saem de graça — são só chamadas restritas às mesmas quatro operações (<code>pushFront</code>, <code>pushBack</code>, <code>popFront</code>, <code>popBack</code>). É por isso que bibliotecas padrão (como <code>collections.deque</code> em Python ou <code>std::deque</code> em C++) costumam oferecer o deque como a estrutura base.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">O custo da liberdade</span>
+      <h3>Capacidade fixa, decidida na criação</h3>
+      <p class="prose">Como na fila circular, o preço de O(1) garantido nas duas pontas é uma capacidade definida de antemão. Deques dinâmicos de verdade (como os de bibliotecas padrão) resolvem isso recriando um buffer maior quando ele enche — o princípio de wrap-around continua o mesmo.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de um deque circular (ring buffer de duas pontas) com capacidade fixa. Inserir/remover em qualquer ponta, ver frente/fim e verificar vazio/cheio custam O(1); pilha e fila são, aqui, apenas padrões de uso restritos do mesmo deque.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Circular deque engine (records one step per mutation/comparison) =================
+  function createCircularDequeEngine(capacity) {
+    if (!(capacity >= 1)) throw new Error("capacity must be >= 1");
+    var nextId = 1;
+    var buffer = new Array(capacity).fill(null);
+    var front = 0, rear = 0, count = 0;
+    var steps = [];
+
+    function cloneBuffer() {
+      return buffer.map(function (slot) { return slot ? { id: slot.id, value: slot.value } : null; });
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message,
+        buffer: cloneBuffer(),
+        front: front, rear: rear, count: count, capacity: capacity,
+        op: opts.op || "info",
+        cursorIndex: opts.cursorIndex != null ? opts.cursorIndex : null,
+        highlightIndices: opts.highlightIndices || [],
+        wrapped: !!opts.wrapped
+      });
+    }
+
+    function isEmpty() { return count === 0; }
+    function isFull() { return count === capacity; }
+
+    function pushBack(value) {
+      if (count === capacity) { snapshot("Deque cheio (capacidade " + capacity + ") — não é possível inserir \"" + value + "\" no fim.", { op: "bad" }); return false; }
+      var id = nextId++;
+      var writeIndex = rear;
+      buffer[writeIndex] = { id: id, value: value };
+      snapshot('"' + value + '" inserido no fim, posição ' + writeIndex + ' (rear).', { op: "insert", cursorIndex: writeIndex, highlightIndices: [writeIndex] });
+      var newRear = (rear + 1) % capacity;
+      var wrapped = newRear === 0 && rear === capacity - 1;
+      rear = newRear;
+      count++;
+      snapshot("rear avança para " + rear + (wrapped ? " — deu a volta no buffer (wrap-around): (" + (capacity - 1) + " + 1) % " + capacity + " = 0." : "."), { op: "insert", cursorIndex: rear, wrapped: wrapped });
+      return true;
+    }
+
+    function pushFront(value) {
+      if (count === capacity) { snapshot("Deque cheio (capacidade " + capacity + ") — não é possível inserir \"" + value + "\" na frente.", { op: "bad" }); return false; }
+      var id = nextId++;
+      var newFront = (front - 1 + capacity) % capacity;
+      var wrapped = newFront === capacity - 1 && front === 0;
+      buffer[newFront] = { id: id, value: value };
+      front = newFront;
+      count++;
+      snapshot('"' + value + '" inserido na frente, posição ' + front + ' (front).' + (wrapped ? " front avança para trás e deu a volta no buffer (wrap-around): (0 - 1 + " + capacity + ") % " + capacity + " = " + (capacity - 1) + "." : ""), { op: "insert", cursorIndex: front, highlightIndices: [front], wrapped: wrapped });
+      return true;
+    }
+
+    function popBack() {
+      if (count === 0) { snapshot("Deque vazio — não há o que remover do fim.", { op: "bad" }); return null; }
+      var backIndex = (rear - 1 + capacity) % capacity;
+      var v = buffer[backIndex].value;
+      snapshot('Removendo "' + v + '" do fim, posição ' + backIndex + ' (último antes de rear).', { op: "remove", cursorIndex: backIndex, highlightIndices: [backIndex] });
+      buffer[backIndex] = null;
+      var wrapped = rear === 0 && backIndex === capacity - 1;
+      rear = backIndex;
+      count--;
+      snapshot('"' + v + '" removido do fim. rear recua para ' + rear + (wrapped ? " — deu a volta no buffer (wrap-around)." : "."), { op: "remove", cursorIndex: rear, wrapped: wrapped });
+      return v;
+    }
+
+    function popFront() {
+      if (count === 0) { snapshot("Deque vazio — não há o que remover da frente.", { op: "bad" }); return null; }
+      var frontIndex = front;
+      var v = buffer[frontIndex].value;
+      snapshot('Removendo "' + v + '" da frente, posição ' + frontIndex + ' (front).', { op: "remove", cursorIndex: frontIndex, highlightIndices: [frontIndex] });
+      buffer[frontIndex] = null;
+      var newFront = (front + 1) % capacity;
+      var wrapped = newFront === 0 && front === capacity - 1;
+      front = newFront;
+      count--;
+      snapshot('"' + v + '" removido da frente. front avança para ' + front + (wrapped ? " — deu a volta no buffer (wrap-around): (" + (capacity - 1) + " + 1) % " + capacity + " = 0." : "."), { op: "remove", cursorIndex: front, wrapped: wrapped });
+      return v;
+    }
+
+    function peekFront() {
+      if (count === 0) { snapshot("Deque vazio — não há frente para espiar.", { op: "bad" }); return null; }
+      var v = buffer[front].value;
+      snapshot('Frente do deque (posição ' + front + '): "' + v + '".', { op: "search", cursorIndex: front, highlightIndices: [front] });
+      return v;
+    }
+
+    function peekBack() {
+      if (count === 0) { snapshot("Deque vazio — não há fim para espiar.", { op: "bad" }); return null; }
+      var lastIndex = (rear - 1 + capacity) % capacity;
+      var v = buffer[lastIndex].value;
+      snapshot('Fim do deque (posição ' + lastIndex + ', último inserido no fim): "' + v + '".', { op: "search", cursorIndex: lastIndex, highlightIndices: [lastIndex] });
+      return v;
+    }
+
+    function checkEmpty() {
+      snapshot(isEmpty() ? "count == 0 — o deque está vazio." : "count == " + count + " — o deque NÃO está vazio.", { op: isEmpty() ? "info" : "search" });
+      return isEmpty();
+    }
+
+    function checkFull() {
+      snapshot(isFull() ? "count == capacity (" + capacity + ") — o deque está cheio." : "count == " + count + " de " + capacity + " — o deque NÃO está cheio.", { op: isFull() ? "info" : "search" });
+      return isFull();
+    }
+
+    function clear() {
+      buffer = new Array(capacity).fill(null);
+      front = 0; rear = 0; count = 0;
+      snapshot("Deque limpo — front e rear voltam a 0.", { op: "info" });
+    }
+
+    function toArray() {
+      var out = [];
+      for (var i = 0; i < count; i++) out.push(buffer[(front + i) % capacity].value);
+      return out;
+    }
+
+    snapshot("Deque vazio (capacidade " + capacity + ").", { op: "info" });
+
+    return {
+      pushBack: pushBack, pushFront: pushFront, popBack: popBack, popFront: popFront,
+      peekFront: peekFront, peekBack: peekBack,
+      isEmpty: isEmpty, isFull: isFull, checkEmpty: checkEmpty, checkFull: checkFull,
+      clear: clear, toArray: toArray,
+      getCapacity: function () { return capacity; },
+      getFront: function () { return front; }, getRear: function () { return rear; }, getCount: function () { return count; },
+      getBuffer: function () { return buffer; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= Mode configuration =================
+  var MODES = {
+    pilha: {
+      label: "Pilha (LIFO)",
+      buttons: ["pushBack", "popBack"],
+      note: 'Insere e remove sempre na mesma ponta: <span class="end-tag rear">rear</span> (o "topo" da pilha).',
+      labels: { pushBack: "Empilhar (push)", popBack: "Desempilhar (pop)" }
+    },
+    fila: {
+      label: "Fila (FIFO)",
+      buttons: ["pushBack", "popFront"],
+      note: 'Insere no <span class="end-tag rear">rear</span>, remove do <span class="end-tag front">front</span> — exatamente a fila circular.',
+      labels: { pushBack: "Enfileirar (rear)", popFront: "Desenfileirar (front)" }
+    },
+    deque: {
+      label: "Deque",
+      buttons: ["pushFront", "pushBack", "popFront", "popBack"],
+      note: 'As quatro operações liberadas: <span class="end-tag front">front</span> e <span class="end-tag rear">rear</span> aceitam inserir e remover.',
+      labels: { pushFront: "+ Inserir na frente", pushBack: "+ Inserir no fim", popFront: "− Remover da frente", popBack: "− Remover do fim" }
+    }
+  };
+  var currentMode = "deque";
+
+  // ================= Renderer =================
+  var NS = "http://www.w3.org/2000/svg";
+  var els = {
+    opPill: document.getElementById("opPill"), opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"), cqSvg: document.getElementById("cqSvg"),
+    message: document.getElementById("message"), scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"), btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"), btnNext: document.getElementById("btnNext"), speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnPushFront: document.getElementById("btnPushFront"), btnPushBack: document.getElementById("btnPushBack"),
+    btnPopFront: document.getElementById("btnPopFront"), btnPopBack: document.getElementById("btnPopBack"),
+    btnPeekFront: document.getElementById("btnPeekFront"), btnPeekRear: document.getElementById("btnPeekRear"),
+    btnCheckEmpty: document.getElementById("btnCheckEmpty"), btnCheckFull: document.getElementById("btnCheckFull"),
+    btnClear: document.getElementById("btnClear"),
+    capSlider: document.getElementById("capSlider"), capLabel: document.getElementById("capLabel"),
+    btnNewEmpty: document.getElementById("btnNewEmpty"), btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText"),
+    modeNote: document.getElementById("modeNote"),
+    tabPilha: document.getElementById("tabPilha"), tabFila: document.getElementById("tabFila"), tabDeque: document.getElementById("tabDeque")
+  };
+
+  var engine = createCircularDequeEngine(6);
+  var state = { stepIndex: 0, playing: false, timer: null };
+  var ringEls = {}, stripEls = {}, frontTag = null, rearTag = null, frontStripTag = null, rearStripTag = null;
+  var arcPathEl = null, ringTrackEl = null, centerCount = null, centerCap = null, centerStatus = null;
+
+  var RING_R_SLOT = 23;
+  var STRIP_W = 54, STRIP_H = 46, STRIP_GAP = 10;
+
+  function ringRadius(n) {
+    var circumference = n * (RING_R_SLOT * 2 + 16);
+    return Math.max(78, circumference / (2 * Math.PI));
+  }
+
+  function polar(cx, cy, r, angleDeg) {
+    var rad = (angleDeg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function describeArc(cx, cy, r, startAngle, endAngle) {
+    if (endAngle - startAngle >= 359.999) {
+      var mid = startAngle + 180;
+      var p0 = polar(cx, cy, r, startAngle), pMid = polar(cx, cy, r, mid), p1 = polar(cx, cy, r, startAngle + 359.999);
+      return ["M", p0.x, p0.y, "A", r, r, 0, 1, 1, pMid.x, pMid.y, "A", r, r, 0, 1, 1, p1.x, p1.y].join(" ");
+    }
+    if (endAngle <= startAngle) return "";
+    var start = polar(cx, cy, r, startAngle), end = polar(cx, cy, r, endAngle);
+    var largeArc = endAngle - startAngle <= 180 ? 0 : 1;
+    return ["M", start.x, start.y, "A", r, r, 0, largeArc, 1, end.x, end.y].join(" ");
+  }
+
+  function buildStatics() {
+    els.cqSvg.innerHTML = "";
+    ringEls = {}; stripEls = {};
+    var capacity = engine.getCapacity();
+    var R = ringRadius(capacity);
+    var cx = R + 72, cy = R + 72;
+    var ringTrackR = R - RING_R_SLOT - 13;
+
+    var ringW = cx + R + 72;
+    var ringH = cy + R + 72;
+    var stripTop = ringH + 20;
+    var stripTotalW = capacity * (STRIP_W + STRIP_GAP) - STRIP_GAP + 40;
+    var width = Math.max(ringW, stripTotalW, 360);
+    var height = stripTop + STRIP_H + 50;
+
+    els.cqSvg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    els.cqSvg.setAttribute("width", width);
+    els.cqSvg.setAttribute("height", height);
+
+    var ringTrack = document.createElementNS(NS, "circle"); ringTrack.setAttribute("class", "cq-ring-track");
+    ringTrack.setAttribute("cx", cx); ringTrack.setAttribute("cy", cy); ringTrack.setAttribute("r", ringTrackR);
+    els.cqSvg.appendChild(ringTrack);
+    ringTrackEl = ringTrack;
+
+    arcPathEl = document.createElementNS(NS, "path"); arcPathEl.setAttribute("class", "cq-arc");
+    els.cqSvg.appendChild(arcPathEl);
+
+    var slotLayer = document.createElementNS(NS, "g"); slotLayer.setAttribute("id", "ringSlotLayer");
+    els.cqSvg.appendChild(slotLayer);
+    for (var i = 0; i < capacity; i++) {
+      var angle = i * (360 / capacity);
+      var pos = polar(cx, cy, R, angle);
+      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "cq-slot");
+      var circle = document.createElementNS(NS, "circle"); circle.setAttribute("class", "cq-slot-circle");
+      circle.setAttribute("cx", pos.x); circle.setAttribute("cy", pos.y); circle.setAttribute("r", RING_R_SLOT);
+      var idxText = document.createElementNS(NS, "text"); idxText.setAttribute("class", "cq-slot-index");
+      var idxPos = polar(cx, cy, R + RING_R_SLOT + 11, angle);
+      idxText.setAttribute("x", idxPos.x); idxText.setAttribute("y", idxPos.y); idxText.textContent = String(i);
+      var valText = document.createElementNS(NS, "text"); valText.setAttribute("class", "cq-slot-value");
+      valText.setAttribute("x", pos.x); valText.setAttribute("y", pos.y + 0.5);
+      g.appendChild(circle); g.appendChild(valText); g.appendChild(idxText);
+      slotLayer.appendChild(g);
+      ringEls[i] = { g: g, circle: circle, valText: valText, angle: angle, x: pos.x, y: pos.y };
+    }
+
+    centerCount = document.createElementNS(NS, "text"); centerCount.setAttribute("class", "cq-center-count");
+    centerCount.setAttribute("x", cx); centerCount.setAttribute("y", cy - 6);
+    centerCap = document.createElementNS(NS, "text"); centerCap.setAttribute("class", "cq-center-cap");
+    centerCap.setAttribute("x", cx); centerCap.setAttribute("y", cy + 11);
+    centerStatus = document.createElementNS(NS, "text"); centerStatus.setAttribute("class", "cq-center-status");
+    centerStatus.setAttribute("x", cx); centerStatus.setAttribute("y", cy + 26);
+    els.cqSvg.appendChild(centerCount); els.cqSvg.appendChild(centerCap); els.cqSvg.appendChild(centerStatus);
+
+    var tagLayer = document.createElementNS(NS, "g"); tagLayer.setAttribute("id", "ringTagLayer");
+    els.cqSvg.appendChild(tagLayer);
+    function makeRingTag(cls) {
+      var g = document.createElementNS(NS, "g");
+      var line = document.createElementNS(NS, "line"); line.setAttribute("class", "cq-tag-line");
+      var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "cq-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 44); bg.setAttribute("height", 18);
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "cq-tag-pill"); text.textContent = cls;
+      g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+      tagLayer.appendChild(g);
+      return { g: g, line: line, bg: bg, text: text, cls: cls };
+    }
+    frontTag = makeRingTag("front");
+    rearTag = makeRingTag("rear");
+
+    var stripLeft = (width - (capacity * (STRIP_W + STRIP_GAP) - STRIP_GAP)) / 2;
+    var stripLabel = document.createElementNS(NS, "text"); stripLabel.setAttribute("class", "cq-section-label");
+    stripLabel.setAttribute("x", width / 2); stripLabel.setAttribute("y", stripTop - 10); stripLabel.setAttribute("text-anchor", "middle");
+    stripLabel.textContent = "o vetor por baixo";
+    els.cqSvg.appendChild(stripLabel);
+
+    var stripTagLayer = document.createElementNS(NS, "g");
+    var stripBoxLayer = document.createElementNS(NS, "g");
+    els.cqSvg.appendChild(stripBoxLayer); els.cqSvg.appendChild(stripTagLayer);
+    for (var j = 0; j < capacity; j++) {
+      var bx = stripLeft + j * (STRIP_W + STRIP_GAP);
+      var g2 = document.createElementNS(NS, "g");
+      var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "cq-strip-rect");
+      rect.setAttribute("x", bx); rect.setAttribute("y", stripTop); rect.setAttribute("width", STRIP_W); rect.setAttribute("height", STRIP_H); rect.setAttribute("rx", 8);
+      var idx2 = document.createElementNS(NS, "text"); idx2.setAttribute("class", "cq-strip-index");
+      idx2.setAttribute("x", bx + STRIP_W / 2); idx2.setAttribute("y", stripTop - 2); idx2.textContent = String(j);
+      var val2 = document.createElementNS(NS, "text"); val2.setAttribute("class", "cq-strip-value");
+      val2.setAttribute("x", bx + STRIP_W / 2); val2.setAttribute("y", stripTop + STRIP_H / 2 + 0.5);
+      g2.appendChild(rect); g2.appendChild(val2);
+      stripBoxLayer.appendChild(g2); els.cqSvg.appendChild(idx2);
+      stripEls[j] = { g: g2, rect: rect, valText: val2, x: bx };
+    }
+    function makeStripTag(cls) {
+      var g = document.createElementNS(NS, "g");
+      var line = document.createElementNS(NS, "line"); line.setAttribute("class", "cq-tag-line");
+      var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "cq-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 44); bg.setAttribute("height", 18);
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "cq-tag-pill"); text.textContent = cls;
+      g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+      stripTagLayer.appendChild(g);
+      return { g: g, line: line, bg: bg, text: text, cls: cls, stripTop: stripTop };
+    }
+    frontStripTag = makeStripTag("front");
+    rearStripTag = makeStripTag("rear");
+
+    render();
+  }
+
+  function placeRingTag(tag, index, offsetAngle, R, cx, cy) {
+    if (index == null) { tag.g.style.display = "none"; return; }
+    tag.g.style.display = "";
+    var angle = ringEls[index].angle + offsetAngle;
+    var innerPos = polar(cx, cy, R + RING_R_SLOT + 2, angle);
+    var outerPos = polar(cx, cy, R + RING_R_SLOT + 34, angle);
+    tag.line.setAttribute("x1", innerPos.x); tag.line.setAttribute("y1", innerPos.y);
+    tag.line.setAttribute("x2", outerPos.x); tag.line.setAttribute("y2", outerPos.y);
+    tag.bg.setAttribute("x", outerPos.x - 22); tag.bg.setAttribute("y", outerPos.y - 9);
+    tag.text.setAttribute("x", outerPos.x); tag.text.setAttribute("y", outerPos.y + 0.5);
+  }
+
+  var frontStripTagSameCell = false;
+
+  function placeStripTag(tag, index) {
+    if (index == null) { tag.g.style.display = "none"; return; }
+    tag.g.style.display = "";
+    var rec = stripEls[index];
+    var cxOff = rec.x + STRIP_W / 2;
+    var topY = tag.stripTop;
+    tag.bg.setAttribute("x", cxOff - 22); tag.bg.setAttribute("y", topY + STRIP_H + 14 + (tag.cls === "rear" && frontStripTagSameCell ? 22 : 0));
+    tag.text.setAttribute("x", cxOff); tag.text.setAttribute("y", topY + STRIP_H + 23 + (tag.cls === "rear" && frontStripTagSameCell ? 22 : 0));
+    tag.line.setAttribute("x1", cxOff); tag.line.setAttribute("x2", cxOff);
+    tag.line.setAttribute("y1", topY + STRIP_H); tag.line.setAttribute("y2", topY + STRIP_H + (tag.cls === "rear" && frontStripTagSameCell ? 28 : 10));
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Consultando", bad: "Operação inválida", info: "Início" };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var capacity = step.capacity;
+    var R = ringRadius(capacity);
+    var cx = R + 72, cy = R + 72;
+    var ringTrackR = R - RING_R_SLOT - 13;
+
+    var modeUsesFront = MODES[currentMode].buttons.indexOf("pushFront") !== -1 || MODES[currentMode].buttons.indexOf("popFront") !== -1;
+
+    for (var i = 0; i < capacity; i++) {
+      var rec = ringEls[i];
+      var slot = step.buffer[i];
+      var occupied = slot !== null;
+      rec.circle.classList.toggle("occupied", occupied);
+      rec.valText.textContent = occupied ? slot.value : "—";
+      rec.valText.classList.toggle("empty", !occupied);
+
+      var st = null;
+      if ((step.highlightIndices || []).indexOf(i) !== -1) {
+        if (step.op === "bad") st = "bad";
+        else if (step.op === "insert") st = "new";
+        else st = "cursor";
+      }
+      if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+
+      var sRec = stripEls[i];
+      sRec.rect.classList.toggle("occupied", occupied);
+      sRec.valText.textContent = occupied ? slot.value : "—";
+      sRec.valText.classList.toggle("empty", !occupied);
+      if (st) sRec.rect.setAttribute("data-state", st); else sRec.rect.removeAttribute("data-state");
+    }
+
+    if (step.count === 0) {
+      arcPathEl.setAttribute("d", "");
+    } else {
+      var perSlot = 360 / capacity;
+      var startAngle = capacity ? (step.front * perSlot) : 0;
+      var endAngle = startAngle + step.count * perSlot;
+      arcPathEl.setAttribute("d", describeArc(cx, cy, ringTrackR, startAngle, Math.min(endAngle, startAngle + 359.999)));
+    }
+
+    centerCount.textContent = step.count + "/" + capacity;
+    centerCap.textContent = "count / capacidade";
+    centerStatus.textContent = step.count === 0 ? "vazio" : (step.count === capacity ? "cheio" : "");
+
+    var tagsCoincide = step.front === step.rear;
+    placeRingTag(frontTag, step.front, tagsCoincide ? -14 : 0, R, cx, cy);
+    placeRingTag(rearTag, step.rear, tagsCoincide ? 14 : 0, R, cx, cy);
+    frontTag.g.classList.toggle("cq-tag-dim", !modeUsesFront);
+
+    frontStripTagSameCell = step.front === step.rear;
+    placeStripTag(frontStripTag, step.front);
+    placeStripTag(rearStripTag, step.rear);
+    frontStripTag.g.classList.toggle("cq-tag-dim", !modeUsesFront);
+  }
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+
+  function goTo(idx) {
+    var max = engine.getSteps().length - 1;
+    state.stepIndex = Math.max(0, Math.min(max, idx));
+    render();
+    if (state.stepIndex >= max) stopPlaying();
+  }
+
+  function showError(msg) {
+    if (!msg) { els.errorText.hidden = true; els.errorText.textContent = ""; return; }
+    els.errorText.hidden = false; els.errorText.textContent = msg;
+  }
+
+  function readValue() {
+    var raw = els.valueInput.value.trim();
+    if (raw === "") { showError("Digite um valor."); return null; }
+    showError(null);
+    return raw;
+  }
+
+  function applyMode(mode) {
+    currentMode = mode;
+    var cfg = MODES[mode];
+    [els.tabPilha, els.tabFila, els.tabDeque].forEach(function (tab) {
+      tab.setAttribute("aria-selected", tab.dataset.mode === mode ? "true" : "false");
+    });
+    els.modeNote.innerHTML = cfg.note;
+
+    var ALL = ["pushFront", "pushBack", "popFront", "popBack"];
+    var BTN = { pushFront: els.btnPushFront, pushBack: els.btnPushBack, popFront: els.btnPopFront, popBack: els.btnPopBack };
+    var DEFAULT_LABEL = { pushFront: "+ Inserir na frente", pushBack: "+ Inserir no fim", popFront: "− Remover da frente", popBack: "− Remover do fim" };
+    ALL.forEach(function (key) {
+      var visible = cfg.buttons.indexOf(key) !== -1;
+      BTN[key].hidden = !visible;
+      BTN[key].textContent = (cfg.labels && cfg.labels[key]) || DEFAULT_LABEL[key];
+    });
+    render();
+  }
+
+  els.tabPilha.addEventListener("click", function () { applyMode("pilha"); });
+  els.tabFila.addEventListener("click", function () { applyMode("fila"); });
+  els.tabDeque.addEventListener("click", function () { applyMode("deque"); });
+
+  els.btnPushFront.addEventListener("click", function () {
+    var v = readValue(); if (v === null) return;
+    engine.pushFront(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnPushBack.addEventListener("click", function () {
+    var v = readValue(); if (v === null) return;
+    engine.pushBack(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnPopFront.addEventListener("click", function () { engine.popFront(); jumpToLiveEnd(); });
+  els.btnPopBack.addEventListener("click", function () { engine.popBack(); jumpToLiveEnd(); });
+  els.btnPeekFront.addEventListener("click", function () { engine.peekFront(); jumpToLiveEnd(); });
+  els.btnPeekRear.addEventListener("click", function () { engine.peekBack(); jumpToLiveEnd(); });
+  els.btnCheckEmpty.addEventListener("click", function () { engine.checkEmpty(); jumpToLiveEnd(); });
+  els.btnCheckFull.addEventListener("click", function () { engine.checkFull(); jumpToLiveEnd(); });
+  els.btnClear.addEventListener("click", function () { engine.clear(); jumpToLiveEnd(); });
+
+  els.capSlider.addEventListener("input", function () { els.capLabel.textContent = els.capSlider.value; });
+  els.btnNewEmpty.addEventListener("click", function () {
+    engine = createCircularDequeEngine(Number(els.capSlider.value));
+    state.stepIndex = 0;
+    buildStatics();
+    jumpToLiveEnd();
+  });
+  els.btnNewRandom.addEventListener("click", function () {
+    var capacity = Number(els.capSlider.value);
+    engine = createCircularDequeEngine(capacity);
+    buildStatics();
+    var fillCount = Math.floor(Math.random() * capacity);
+    var preSpin = Math.floor(Math.random() * capacity);
+    for (var s = 0; s < preSpin; s++) { engine.pushBack("x"); engine.popFront(); }
+    for (var k = 0; k < fillCount; k++) {
+      if (Math.random() < 0.5) engine.pushBack(10 * (k + 1)); else engine.pushFront(10 * (k + 1));
+    }
+    state.stepIndex = 0;
+    jumpToLiveEnd();
+  });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex + 1); });
+  els.btnPlay.addEventListener("click", function () {
+    if (state.playing) { stopPlaying(); return; }
+    var max = engine.getSteps().length - 1;
+    if (state.stepIndex >= max) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      var m = engine.getSteps().length - 1;
+      if (state.stepIndex >= m) { stopPlaying(); return; }
+      state.stepIndex++;
+      render();
+      if (state.stepIndex >= m) stopPlaying();
+    }, Number(els.speed.value));
+  });
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) stopPlaying(); });
+  els.valueInput.addEventListener("keydown", function (e) { if (e.key === "Enter") els.btnPushBack.click(); });
+
+  // ---- boot: a small pre-filled, partially-wrapped demo so the page is meaningful at rest ----
+  engine = createCircularDequeEngine(6);
+  buildStatics();
+  engine.pushBack(10); engine.pushBack(20); engine.pushFront(5);
+  engine.popBack(); engine.pushBack(30); engine.pushBack(40); engine.pushFront(1);
+  els.scrubber.max = String(engine.getSteps().length - 1);
+  state.stepIndex = engine.getSteps().length - 1;
+  applyMode("deque");
+  render();
+})();
+</script>
+
+</body></html>

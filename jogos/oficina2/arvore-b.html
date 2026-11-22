@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Os Cofres do Rei Anão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 50% 0%,rgba(242,193,78,.14),transparent 60%),linear-gradient(#211a16,#16120f);min-height:380px;padding:16px;overflow-x:auto}
+.arvore{position:relative;margin:70px auto 10px}
+svg.linhas{position:absolute;inset:0;overflow:visible;pointer-events:none}
+svg.linhas line{stroke:#6b5236;stroke-width:4}
+.no{position:absolute;display:flex;align-items:center;height:46px;padding:0 4px;border-radius:10px;background:linear-gradient(#5a4535,#3a2c22);box-shadow:inset 0 0 0 3px #2a1f17,0 5px 0 #0008;transition:left .45s,top .45s}
+.no.ativo{box-shadow:inset 0 0 0 3px var(--ouro),0 0 20px rgba(242,193,78,.45)}
+.no.cheio{box-shadow:inset 0 0 0 3px var(--verm),0 0 20px rgba(255,122,107,.45);animation:kbrilha 1s infinite}
+.no.errou{animation:ktreme .4s}
+.ch{min-width:38px;height:34px;display:grid;place-items:center;font:700 17px var(--mono);color:#F2C14E;background:#1d1611;border-radius:7px;margin:0 2px;border:0;padding:0 4px}
+.no.cheio .ch{cursor:pointer}
+.no.cheio .ch:hover{outline:2px solid var(--ouro)}
+.fr{width:12px;height:34px;border:0;padding:0;background:transparent;border-radius:5px}
+.no.ativo .fr{width:22px;background:rgba(242,193,78,.18);cursor:pointer;border:2px dashed var(--ouro)}
+.no.ativo .fr:hover{background:rgba(242,193,78,.45)}
+.fr.k-dica{background:var(--ouro)!important}
+.ch.k-dica{outline:3px solid var(--ouro)}
+.chave{position:absolute;z-index:5;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font:800 19px var(--mono);color:#1d1408;background:radial-gradient(circle at 35% 30%,#fff1b8,#F2C14E 55%,#b8862a);box-shadow:0 0 22px rgba(242,193,78,.7),0 4px 0 #0008;transition:left .4s cubic-bezier(.4,1.3,.6,1),top .4s cubic-bezier(.4,1.3,.6,1);pointer-events:none}
+.legenda{position:absolute;left:14px;top:12px;font-size:13px;color:var(--mudo)}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena" id="cena"><span class="legenda" id="leg"></span><div class="arvore" id="arv"><svg class="linhas" id="lin"></svg></div></section>
+  <div class="ordem"><span id="ordem">…</span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null, NID = 0;
+const T = 2, MAXK = 3;
+const novoNo = folha => ({id:'n'+(NID++), folha, k:[], c:[]});
+function dividir(x, i){ const y = x.c[i], z = novoNo(y.folha), meio = y.k[1]; z.k = y.k.slice(2); y.k = y.k.slice(0,1); if (!y.folha) { z.c = y.c.slice(2); y.c = y.c.slice(0,2); } x.k.splice(i,0,meio); x.c.splice(i+1,0,z); }
+function inserirDireto(raiz, k){
+  if (raiz.k.length === MAXK) { const s = novoNo(false); s.c = [raiz]; dividir(s, 0); raiz = s; }
+  let x = raiz;
+  while (!x.folha) { let i = 0; while (i < x.k.length && k > x.k[i]) i++; if (x.c[i].k.length === MAXK) { dividir(x, i); if (k > x.k[i]) i++; } x = x.c[i]; }
+  let p = 0; while (p < x.k.length && k > x.k[p]) p++; x.k.splice(p, 0, k);
+  return raiz;
+}
+const todas = n => n.folha ? n.k.slice() : n.c.flatMap((f,i) => todas(f).concat(i < n.k.length ? [n.k[i]] : []));
+const altura = n => n.folha ? 1 : 1 + altura(n.c[0]);
+
+/* ---------- desenho ---------- */
+const larg = n => 8 + n.k.length * 42 + (n.k.length + 1) * 16;
+function layout(){
+  const pos = new Map(); let x = 0;
+  (function lay(n, d){ if (n.folha) { const w = larg(n); pos.set(n, {x, y: d*92, w}); x += w + 22; return; }
+    n.c.forEach(f => lay(f, d+1)); const a = pos.get(n.c[0]), b = pos.get(n.c[n.c.length-1]), w = larg(n);
+    pos.set(n, {x: (a.x + b.x + b.w)/2 - w/2, y: d*92, w}); })(G.raiz, 0);
+  return {pos, W: x - 22, H: altura(G.raiz) * 92};
+}
+function desenhar(){
+  const {pos, W, H} = layout(), arv = $('#arv');
+  arv.style.width = Math.max(W, 300) + 'px'; arv.style.height = H + 'px';
+  let lin = '', h = '';
+  pos.forEach((p, n) => {
+    n.c.forEach((f, i) => { const q = pos.get(f); const gx = p.x + 4 + i * 58 + 8; lin += `<line x1="${gx}" y1="${p.y + 44}" x2="${q.x + q.w/2}" y2="${q.y + 2}"/>`; });
+    const cls = ['no', G.at === n ? (G.fase === 'dividir' && G.alvoDiv === n ? '' : 'ativo') : '', G.fase === 'dividir' && G.alvoDiv === n ? 'cheio' : ''].join(' ');
+    let corpo = '';
+    for (let i = 0; i <= n.k.length; i++) { corpo += `<button class="fr" data-n="${n.id}" data-g="${i}" aria-label="fresta ${i}"></button>`; if (i < n.k.length) corpo += `<button class="ch" data-n="${n.id}" data-k="${n.k[i]}">${n.k[i]}</button>`; }
+    h += `<div class="${cls}" data-id="${n.id}" style="left:${p.x}px;top:${p.y}px;width:${p.w}px">${corpo}</div>`;
+  });
+  arv.innerHTML = `<svg class="linhas" style="width:${W}px;height:${H}px">${lin}</svg>${h}<div class="chave" id="chave">${G.k ?? ''}</div>`;
+  arv.querySelectorAll('.fr').forEach(b => b.onclick = () => fresta(b.dataset.n, +b.dataset.g, b));
+  arv.querySelectorAll('.ch').forEach(b => b.onclick = () => chaveClicada(b.dataset.n, +b.dataset.k, b));
+  const alvo = G.fase === 'dividir' ? G.alvoDiv : G.at, pa = alvo && pos.get(alvo);
+  const ch = $('#chave'); if (pa) { ch.style.left = (pa.x + pa.w/2 - 27) + 'px'; ch.style.top = (pa.y - 62) + 'px'; } else ch.style.display = 'none';
+  $('#leg').textContent = `${todas(G.raiz).length} chaves · altura ${altura(G.raiz)} · cada cofre guarda de 1 a 3 chaves`;
+}
+const noPorId = (id, n = G.raiz) => { if (n.id === id) return n; for (const f of n.c) { const r = noPorId(id, f); if (r) return r; } return null; };
+
+/* ---------- jogada ---------- */
+function novaChave(){
+  if (altura(G.raiz) >= 4 || todas(G.raiz).length >= 22) { G.raiz = novoNo(true); for (const k of K.distintos(5,1,99)) G.raiz = inserirDireto(G.raiz, k); K.banner('Cofre novo!<small>o rei abriu outra câmara</small>'); }
+  const ex = new Set(todas(G.raiz)); let k; do { k = K.rnd(1,99); } while (ex.has(k));
+  G.k = k; G.at = G.raiz; G.fase = 'descer';
+  if (G.raiz.k.length === MAXK) { G.fase = 'dividir'; G.alvoDiv = G.raiz; G.paiDiv = null; }
+  passo();
+}
+function tempo(){ return Math.max(4, 11 - G.nivel * 1.2); }
+function passo(){
+  desenhar();
+  if (G.fase === 'dividir') {
+    $('#ordem').innerHTML = `O cofre [${G.alvoDiv.k.join(' · ')}] está <b>cheio</b>${G.paiDiv ? ' bem no caminho' : ' (é a raiz)'}. Clique na chave que sobe${G.paiDiv ? ' para o cofre de cima' : ' e vira a nova raiz'}.`;
+    K.turno(tempo(), () => falhou(null, true), () => ['Divide-se pelo meio: uma chave para cada lado.', `A do meio é ${G.alvoDiv.k[1]}.`]);
+  } else if (G.at.folha) {
+    $('#ordem').innerHTML = `Chegou ao cofre do fundo. Clique na <b>fresta</b> onde a chave <b>${G.k}</b> entra.`;
+    K.turno(tempo(), () => falhou(null, true), () => ['As chaves de um cofre ficam em ordem crescente.', `Fresta ${posFolha()} (contando da esquerda, a partir de 0).`]);
+  } else {
+    $('#ordem').innerHTML = `Chave <b>${G.k}</b> no cofre [${G.at.k.join(' · ')}]: clique na <b>fresta</b> do caminho para descer.`;
+    K.turno(tempo(), () => falhou(null, true), () => ['Cada fresta leva a um filho: menores à esquerda da chave, maiores à direita.', `Fresta ${filhoIdx()}.`]);
+  }
+}
+const filhoIdx = () => { let i = 0; while (i < G.at.k.length && G.k > G.at.k[i]) i++; return i; };
+const posFolha = () => { let p = 0; while (p < G.at.k.length && G.k > G.at.k[p]) p++; return p; };
+function fresta(nid, g, el){
+  if (!K.s.rodando || K.s.ocupado || !G || !G.at || G.fase !== 'descer' || nid !== G.at.id) return;
+  if (G.at.folha) {
+    if (g !== posFolha()) return falhou(el);
+    G.at.k.splice(g, 0, G.k); K.acerto(el, 120); G.feitas++; K.timer.parar();
+    G.at = null; G.k = null; desenhar();
+    K.s.ocupado = true;
+    return setTimeout(() => { K.s.ocupado = false; if (G.feitas % 5 === 0) { G.nivel++; K.subirNivel(G.nivel, 'Menos tempo em cada cofre'); setTimeout(novaChave, 1000); } else novaChave(); }, 550);
+  }
+  const i = filhoIdx();
+  if (g !== i) return falhou(el);
+  K.SFX.passo(); K.acerto(null, 30);
+  const f = G.at.c[i];
+  if (f.k.length === MAXK) { G.fase = 'dividir'; G.alvoDiv = f; G.paiDiv = G.at; G.idxDiv = i; }
+  else G.at = f;
+  passo();
+}
+function chaveClicada(nid, k, el){
+  if (!K.s.rodando || K.s.ocupado || !G || G.fase !== 'dividir' || nid !== G.alvoDiv.id) return;
+  if (k !== G.alvoDiv.k[1]) return falhou(el);
+  K.SFX.whoosh(); K.acerto(el, 100); K.banner('Cofre dividido!');
+  if (!G.paiDiv) { const s = novoNo(false); s.c = [G.raiz]; dividir(s, 0); G.raiz = s; G.at = s; }
+  else { dividir(G.paiDiv, G.idxDiv); G.at = G.paiDiv; }
+  G.fase = 'descer'; passo();
+}
+function falhou(el, tempo){
+  if (el) K.anima(el, 'errou');
+  let html;
+  if (G.fase === 'dividir') html = `<p>Um cofre com 3 chaves está cheio. Antes de descer por ele, a árvore B o divide: a chave do meio (<b>${G.alvoDiv.k[1]}</b>) sobe ${G.paiDiv ? 'para o cofre de cima' : 'e vira a nova raiz (é assim que a árvore cresce: pela raiz)'}, e as outras duas viram cofres separados.</p>`;
+  else if (G.at.folha) html = `<p>No cofre do fundo, a chave entra mantendo a ordem: [${G.at.k.join(', ')}] com ${G.k} fica [${[...G.at.k, G.k].sort((a,b)=>a-b).join(', ')}]. Era a fresta <b>${posFolha()}</b>.</p>`;
+  else { const i = filhoIdx(); html = `<p>As chaves do cofre separam as faixas: ${i === 0 ? `${G.k} &lt; ${G.at.k[0]}, então desce pela primeira fresta` : (i === G.at.k.length ? `${G.k} &gt; ${G.at.k[i-1]}, então desce pela última fresta` : `${G.at.k[i-1]} &lt; ${G.k} &lt; ${G.at.k[i]}, então desce pela fresta ${i}`)}.</p>`; }
+  K.erro(html, () => { G.raiz = inserirDireto(G.raiz, G.k); G.feitas++; novaChave(); }, {kicker: tempo ? 'O tempo acabou' : 'O cofre emperrou'});
+}
+
+K.init({
+  id:'arvore-b', titulo:'Os Cofres do Rei Anão', kicker:'Masmorra · Árvore B', vidas:3, comecar:'Descer aos cofres',
+  ajuda:`<p>O tesouro do rei fica numa <b>árvore B</b> de cofres: cada cofre guarda de 1 a 3 chaves em ordem, e as frestas entre elas levam aos cofres de baixo. Cada chave nova que você guarda continua lá para a próxima rodada.</p>
+  <ol><li>Clique na <b>fresta</b> por onde a chave desce (menores à esquerda de cada chave, maiores à direita).</li>
+  <li>Se o próximo cofre do caminho estiver <b>cheio</b> (3 chaves), ele treme: clique na chave do meio para dividi-lo antes de descer.</li>
+  <li>No cofre do fundo, clique na fresta onde a chave entra.</li></ol>
+  <p class="nota">Quando a árvore fica grande, o rei abre uma câmara nova.</p>`,
+  iniciar(){ NID = 0; G = {nivel:1, feitas:0, raiz:novoNo(true)}; for (const k of K.distintos(6,1,99)) G.raiz = inserirDireto(G.raiz, k); novaChave(); },
+  auto(){
+    if (!G.at && G.fase !== 'dividir') return;
+    if (G.fase === 'dividir') { const k = G.alvoDiv.k[1]; chaveClicada(G.alvoDiv.id, k, document.querySelector(`.ch[data-n="${G.alvoDiv.id}"][data-k="${k}"]`)); return true; }
+    const g = G.at.folha ? posFolha() : filhoIdx(); fresta(G.at.id, g, document.querySelector(`.fr[data-n="${G.at.id}"][data-g="${g}"]`)); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

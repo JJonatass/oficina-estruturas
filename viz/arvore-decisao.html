@@ -1,0 +1,1078 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore de Decisão (Gini)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    --lemon:#7E8C1B; --lemon-soft:#EEF1D6;
+    --tangerine:#C1701F; --tangerine-soft:#F7E7D3;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      --lemon:#C9D65A; --lemon-soft:#2B2E12;
+      --tangerine:#E2963F; --tangerine-soft:#332212;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    --lemon:#C9D65A; --lemon-soft:#2B2E12;
+    --tangerine:#E2963F; --tangerine-soft:#332212;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="eval"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="eval"] .dot{background:var(--accent);}
+  .op-pill[data-op="split"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="split"] .dot{background:var(--gold);}
+  .op-pill[data-op="leaf"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="leaf"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .viz-grid{display:flex; flex-wrap:wrap; gap:20px;}
+  .panel{flex:1 1 380px; min-width:0; display:flex; flex-direction:column; gap:8px;}
+  .panel-title{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .stage-scroll{overflow-x:auto; padding-block:4px;}
+  .panel svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+  @media (prefers-reduced-motion: reduce){ svg, svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .axis-line{stroke:var(--line-strong); stroke-width:1;}
+  .axis-tick{stroke:var(--line-strong); stroke-width:1;}
+  .axis-label{fill:var(--ink-faint); font-size:9.5px;}
+  .axis-title{fill:var(--ink-soft); font-size:10px; font-weight:600;}
+  .pt{stroke:var(--card); stroke-width:1.2;}
+  .leaf-region{stroke:none; opacity:0.16; transition: opacity .3s ease, fill .3s ease;}
+  .split-line{stroke:var(--ink-soft); stroke-width:1.4; stroke-dasharray:4 3; opacity:0.8;}
+  .active-region{fill:none; stroke:var(--accent); stroke-width:2; stroke-dasharray:5 4; opacity:0; transition:opacity .25s ease, x .3s ease, y .3s ease, width .3s ease, height .3s ease;}
+  .active-region.on{opacity:0.9;}
+  .query-marker{opacity:0; transition:opacity .25s ease, cx .3s ease, cy .3s ease;}
+  .query-marker.on{opacity:1;}
+
+  .dt-node-rect{fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; rx:9; transition: x .35s ease, y .35s ease, stroke .2s ease, fill .2s ease;}
+  .dt-node[data-kind="pending"] .dt-node-rect{stroke-dasharray:4 3; fill:var(--paper); opacity:0.75;}
+  .dt-node[data-kind="evaluating"] .dt-line2{font-style:italic; opacity:0.7;}
+  .dt-node[data-kind="leaf"] .dt-node-rect{stroke-width:2;}
+  .dt-node[data-state="active"] .dt-node-rect{stroke:var(--accent); stroke-width:2.6; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent));}
+  .dt-node[data-state="path"] .dt-node-rect{stroke:var(--violet); stroke-width:2.6; stroke-dasharray:3 2;}
+  .dt-line1{font-weight:600; font-size:11px; text-anchor:middle; fill:var(--ink); transition: x .35s ease, y .35s ease;}
+  .dt-line2{font-size:9.5px; text-anchor:middle; fill:var(--ink-soft); transition: x .35s ease, y .35s ease;}
+  .dt-line2.leaf-label{font-weight:700; font-size:10.5px;}
+  .dt-pending-text{font-size:14px; text-anchor:middle; fill:var(--ink-faint);}
+  .dt-edge-line{stroke:var(--line-strong); stroke-width:1.6; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease;}
+  .dt-edge-label{font-size:9px; fill:var(--ink-faint); text-anchor:middle;}
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.dot-limao{background:var(--lemon); border-color:transparent;}
+  .legend .swatch.dot-maca{background:var(--rust); border-color:transparent;}
+  .legend .swatch.dot-laranja{background:var(--tangerine); border-color:transparent;}
+  .legend .swatch.active{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.pending{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+  .legend .swatch.path{background:var(--card); border-color:var(--violet); border-style:dashed;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .gini-meter{display:flex; flex-direction:column; gap:6px;}
+  .gini-meter-top{display:flex; justify-content:space-between; align-items:baseline; font-size:0.78rem; color:var(--ink-soft);}
+  .gini-meter-top .val{font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .gini-meter-track{position:relative; height:8px; border-radius:4px; background:var(--line); overflow:visible;}
+  .gini-meter-fill{position:absolute; top:0; left:0; height:100%; border-radius:4px; background:var(--success); transition: width .3s ease, background .3s ease;}
+
+  .candidates{border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:8px; background:var(--paper);}
+  .candidates-title{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .candidate-row{display:flex; align-items:center; gap:8px; font-size:0.8rem;}
+  .candidate-rank{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); width:1.2em; flex:0 0 auto;}
+  .candidate-label{flex:0 0 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;}
+  .candidate-bar-track{flex:1 1 auto; height:7px; border-radius:4px; background:var(--line); overflow:hidden;}
+  .candidate-bar-fill{height:100%; border-radius:4px; background:var(--line-strong);}
+  .candidate-row.winner .candidate-bar-fill{background:var(--gold);}
+  .candidate-row.winner .candidate-label{font-weight:700; color:var(--ink);}
+  .candidate-gain{font-family:'IBM Plex Mono',monospace; font-size:0.76rem; color:var(--ink-faint); flex:0 0 auto; width:4.2em; text-align:right;}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Aprendizado supervisionado · critério de divisão: impureza de Gini</span>
+    <h1>Árvore de Decisão (Gini)</h1>
+    <p class="prose">Diferente das árvores anteriores desta série, esta não guarda valores para buscar depois — ela <strong>aprende</strong> a partir de exemplos rotulados. A cada nó, testamos toda divisão possível dos dados (uma condição do tipo "atributo ≤ limiar") e ficamos com a que mais reduz a <strong>impureza de Gini</strong>: quão misturadas estão as classes ali dentro. O exemplo abaixo classifica frutas por peso e diâmetro em Limão, Maçã ou Laranja — repare que duas amostras "ruidosas" atravessam a fronteira entre Maçã e Laranja, então a árvore precisa decidir entre aceitar um pouco de impureza ou aprofundar mais uma divisão para tentar isolá-las.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da árvore de decisão">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="viz-grid">
+      <div class="panel">
+        <span class="panel-title">Espaço de atributos</span>
+        <div class="stage-scroll"><svg class="scatter-svg" id="scatterSvg"></svg></div>
+      </div>
+      <div class="panel">
+        <span class="panel-title">Árvore construída</span>
+        <div class="stage-scroll"><svg class="tree-svg" id="treeSvg"></svg></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch dot-limao"></span>Limão</span>
+      <span class="item"><span class="swatch dot-maca"></span>Maçã</span>
+      <span class="item"><span class="swatch dot-laranja"></span>Laranja</span>
+      <span class="item"><span class="swatch active"></span>nó ativo</span>
+      <span class="item"><span class="swatch pending"></span>pendente</span>
+      <span class="item"><span class="swatch path"></span>caminho da classificação</span>
+    </div>
+
+    <div class="gini-meter">
+      <div class="gini-meter-top">
+        <span>Impureza do nó ativo (Gini)</span>
+        <span class="val" id="giniLabel">—</span>
+      </div>
+      <div class="gini-meter-track">
+        <div class="gini-meter-fill" id="giniFill"></div>
+      </div>
+    </div>
+
+    <div class="candidates" id="candidatesBox" hidden>
+      <span class="candidates-title">Principais divisões candidatas</span>
+      <div id="candidatesList"></div>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Profundidade máxima
+          <input type="range" class="mini" id="depthSlider" min="0" max="6" value="3" step="1">
+          <span class="mono" id="depthLabel">3</span>
+        </label>
+        <button id="btnNewDataset">↺ Novo conjunto de dados</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Peso (g)
+          <input type="number" id="inputPeso" placeholder="ex: 160">
+        </label>
+        <label class="small">Diâmetro (cm)
+          <input type="number" id="inputDiametro" placeholder="ex: 7.8" step="0.1">
+        </label>
+        <button class="violet" id="btnClassify">◆ Classificar</button>
+        <button id="btnClearQuery">Limpar classificação</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Como o Gini escolhe a divisão</h2>
+    <p class="prose">Para um nó com amostras de várias classes, a impureza de Gini é <code>1 − Σ p&#7522;²</code>, onde <code>p&#7522;</code> é a fração de amostras da classe <em>i</em>. Vale 0 quando o nó é puro (uma só classe) e cresce conforme as classes se misturam. Para cada divisão candidata, calculamos a Gini ponderada dos dois filhos e o <strong>ganho</strong> — quanto a impureza caiu. A árvore escolhe, gulosamente, a divisão de maior ganho em cada nó, sem olhar para o futuro.</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Nó puro</span><span class="prose">Todas as amostras são da mesma classe — Gini = 0, vira folha imediatamente.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Profundidade máxima</span><span class="prose">A árvore atingiu o limite de níveis permitido — vira folha prevendo a classe majoritária, mesmo que ainda misturada.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Poucas amostras</span><span class="prose">Restam amostras demais poucas para justificar outra divisão — vira folha.</span></div></div>
+      <div class="delete-case"><span class="badge">4</span><div class="body"><span class="title">Nenhum ganho</span><span class="prose">Nenhuma divisão testada reduz a impureza — as amostras restantes têm os mesmos atributos, então a única saída é virar folha.</span></div></div>
+    </div>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Impureza de Gini (usada aqui)</span>
+      <p class="prose">Rápida de calcular (sem logaritmos) e é o critério padrão do algoritmo CART. Para <code>k</code> classes igualmente distribuídas, o máximo é <code>1 − 1/k</code> — por isso, com 3 classes, a barra de impureza acima satura perto de <code>0,667</code>.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Entropia (alternativa)</span>
+      <p class="prose">Algoritmos como ID3 e C4.5 usam entropia (<code>−Σ p&#7522; log₂ p&#7522;</code>) em vez de Gini. Na prática, as duas quase sempre escolhem a mesma divisão — a diferença está mais na forma da curva do que no resultado final.</p>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Profundidade rasa</span>
+      <h3>Viés alto (underfitting)</h3>
+      <p class="prose">Poucos níveis param cedo, deixando folhas impuras — a árvore ainda mistura Maçã e Laranja. Simples e generaliza bem, mas erra mais nos casos difíceis.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Profundidade grande</span>
+      <h3>Variância alta (overfitting)</h3>
+      <p class="prose">Divisões extras conseguem isolar até os dois pontos ruidosos — a árvore "decora" o conjunto de treino em vez de aprender o padrão geral. Use o controle de profundidade acima para ver essa troca acontecer.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática do algoritmo CART (Classification and Regression Trees) de Breiman, Friedman, Olshen &amp; Stone (1984), usando impureza de Gini como critério de divisão. Cada nó testa todas as divisões possíveis em cada atributo contínuo e escolhe a de maior ganho de Gini, de forma gulosa e recursiva.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Decision-tree engine (records one step per node processed) =================
+  var FEATURES = ["x", "y"];
+
+  function gini(counts, total) {
+    if (total === 0) return 0;
+    var sum = 0;
+    for (var k in counts) { if (counts.hasOwnProperty(k)) { var p = counts[k] / total; sum += p * p; } }
+    return 1 - sum;
+  }
+
+  function countLabels(points, idx) {
+    var counts = {};
+    for (var i = 0; i < idx.length; i++) {
+      var l = points[idx[i]].label;
+      counts[l] = (counts[l] || 0) + 1;
+    }
+    return counts;
+  }
+
+  function majorityClass(counts) {
+    var classes = Object.keys(counts).sort();
+    var best = null, bestCount = -1;
+    classes.forEach(function (c) { if (counts[c] > bestCount) { bestCount = counts[c]; best = c; } });
+    return best;
+  }
+
+  function uniqueSortedValues(points, idx, feature) {
+    var seen = {};
+    var out = [];
+    idx.forEach(function (i) {
+      var v = points[i][feature];
+      if (!seen[v]) { seen[v] = true; out.push(v); }
+    });
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  function findBestSplit(points, idx) {
+    var total = idx.length;
+    var parentCounts = countLabels(points, idx);
+    var parentGini = gini(parentCounts, total);
+    var candidates = [];
+
+    FEATURES.forEach(function (feature) {
+      var values = uniqueSortedValues(points, idx, feature);
+      for (var k = 0; k < values.length - 1; k++) {
+        var threshold = (values[k] + values[k + 1]) / 2;
+        var leftIdx = [], rightIdx = [];
+        idx.forEach(function (i) { if (points[i][feature] <= threshold) leftIdx.push(i); else rightIdx.push(i); });
+        if (leftIdx.length === 0 || rightIdx.length === 0) continue;
+        var leftCounts = countLabels(points, leftIdx);
+        var rightCounts = countLabels(points, rightIdx);
+        var giniLeft = gini(leftCounts, leftIdx.length);
+        var giniRight = gini(rightCounts, rightIdx.length);
+        var weighted = (leftIdx.length / total) * giniLeft + (rightIdx.length / total) * giniRight;
+        var gain = parentGini - weighted;
+        candidates.push({
+          feature: feature, threshold: threshold, gain: gain, weightedGini: weighted,
+          giniLeft: giniLeft, giniRight: giniRight, leftIdx: leftIdx, rightIdx: rightIdx,
+          leftCounts: leftCounts, rightCounts: rightCounts
+        });
+      }
+    });
+
+    candidates.sort(function (a, b) {
+      if (b.gain !== a.gain) return b.gain - a.gain;
+      if (a.feature !== b.feature) return FEATURES.indexOf(a.feature) - FEATURES.indexOf(b.feature);
+      return a.threshold - b.threshold;
+    });
+
+    return { parentGini: parentGini, parentCounts: parentCounts, total: total, candidates: candidates };
+  }
+
+  function createDecisionTreeEngine(points, options) {
+    options = options || {};
+    var maxDepth = options.maxDepth != null ? options.maxDepth : 4;
+    var minSamplesSplit = options.minSamplesSplit != null ? options.minSamplesSplit : 2;
+    var minGain = options.minGain != null ? options.minGain : 1e-9;
+
+    var nextId = 1;
+    var steps = [];
+    var root = null;
+
+    function cloneNode(node) {
+      if (!node) return null;
+      return {
+        id: node.id, depth: node.depth, sampleIdx: node.sampleIdx.slice(),
+        giniValue: node.giniValue, counts: node.counts ? Object.assign({}, node.counts) : null,
+        total: node.total, isLeaf: node.isLeaf, pending: node.pending,
+        predictedClass: node.predictedClass, splitFeature: node.splitFeature, threshold: node.threshold,
+        region: Object.assign({}, node.region),
+        left: cloneNode(node.left), right: cloneNode(node.right)
+      };
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message, root: cloneNode(root), op: opts.op || "info",
+        activeNodeId: opts.activeNodeId != null ? opts.activeNodeId : null,
+        candidates: opts.candidates || null
+      });
+    }
+
+    function makeNode(idx, depth, region) {
+      return {
+        id: nextId++, depth: depth, sampleIdx: idx, region: region,
+        giniValue: null, counts: null, total: idx.length,
+        isLeaf: false, pending: true, predictedClass: null,
+        splitFeature: null, threshold: null, left: null, right: null
+      };
+    }
+
+    function processNode(node) {
+      var idx = node.sampleIdx;
+      var counts = countLabels(points, idx);
+      var total = idx.length;
+      var giniValue = gini(counts, total);
+      node.counts = counts; node.total = total; node.giniValue = giniValue; node.pending = false;
+
+      snapshot("Nó " + node.id + " (profundidade " + node.depth + "): " + total + " amostra" + (total === 1 ? "" : "s") + ", impureza de Gini = " + giniValue.toFixed(3) + ".",
+        { op: "eval", activeNodeId: node.id });
+
+      var reason = null;
+      if (giniValue === 0) reason = "puro";
+      else if (node.depth >= maxDepth) reason = "profundidade-maxima";
+      else if (total < minSamplesSplit) reason = "poucas-amostras";
+
+      var splitInfo = null;
+      if (!reason) {
+        splitInfo = findBestSplit(points, idx);
+        if (splitInfo.candidates.length === 0 || splitInfo.candidates[0].gain <= minGain) reason = "sem-ganho";
+      }
+
+      if (reason) {
+        node.isLeaf = true;
+        node.predictedClass = majorityClass(counts);
+        var reasonMsg = {
+          "puro": "Nó puro — todas as amostras pertencem à mesma classe.",
+          "profundidade-maxima": "Profundidade máxima atingida.",
+          "poucas-amostras": "Amostras insuficientes para dividir.",
+          "sem-ganho": "Nenhuma divisão reduz a impureza."
+        }[reason];
+        snapshot(reasonMsg + " Nó " + node.id + " vira folha, prevendo \"" + node.predictedClass + "\".",
+          { op: "leaf", activeNodeId: node.id });
+        return;
+      }
+
+      var best = splitInfo.candidates[0];
+      node.splitFeature = best.feature;
+      node.threshold = best.threshold;
+
+      var leftRegion = Object.assign({}, node.region);
+      var rightRegion = Object.assign({}, node.region);
+      if (best.feature === "x") { leftRegion.xMax = best.threshold; rightRegion.xMin = best.threshold; }
+      else { leftRegion.yMax = best.threshold; rightRegion.yMin = best.threshold; }
+
+      var leftNode = makeNode(best.leftIdx, node.depth + 1, leftRegion);
+      var rightNode = makeNode(best.rightIdx, node.depth + 1, rightRegion);
+      node.left = leftNode;
+      node.right = rightNode;
+
+      var featLabel = best.feature === "x" ? "peso" : "diâmetro";
+      snapshot("Melhor divisão no nó " + node.id + ": " + featLabel + " ≤ " + best.threshold.toFixed(2) +
+        " (ganho de Gini = " + best.gain.toFixed(3) + " — testamos " + splitInfo.candidates.length + " divisões possíveis).",
+        {
+          op: "split", activeNodeId: node.id,
+          candidates: splitInfo.candidates.slice(0, 5).map(function (c) { return { feature: c.feature, threshold: c.threshold, gain: c.gain }; })
+        });
+
+      processNode(leftNode);
+      processNode(rightNode);
+    }
+
+    function computeInitialRegion() {
+      var xs = points.map(function (p) { return p.x; });
+      var ys = points.map(function (p) { return p.y; });
+      var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
+      var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
+      var padX = Math.max(1, (xMax - xMin) * 0.08);
+      var padY = Math.max(0.1, (yMax - yMin) * 0.08);
+      return { xMin: xMin - padX, xMax: xMax + padX, yMin: yMin - padY, yMax: yMax + padY };
+    }
+
+    var allIdx = points.map(function (_, i) { return i; });
+    root = makeNode(allIdx, 0, computeInitialRegion());
+    processNode(root);
+
+    function predict(point) {
+      var path = [];
+      var node = root;
+      while (node) {
+        path.push(node.id);
+        if (node.isLeaf) return { predictedClass: node.predictedClass, path: path, node: node };
+        var v = point[node.splitFeature];
+        node = v <= node.threshold ? node.left : node.right;
+      }
+      return { predictedClass: null, path: path, node: null };
+    }
+
+    function collectLeaves() {
+      var out = [];
+      (function walk(n) { if (!n) return; if (n.isLeaf) out.push(n); else { walk(n.left); walk(n.right); } })(root);
+      return out;
+    }
+
+    return {
+      getRoot: function () { return root; },
+      getSteps: function () { return steps; },
+      predict: predict,
+      collectLeaves: collectLeaves,
+      getMaxDepth: function () { return maxDepth; }
+    };
+  }
+
+  // ================= dataset =================
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  var DEFAULT_POINTS = [
+    { x: 62, y: 4.1, label: "Limão" }, { x: 68, y: 4.4, label: "Limão" }, { x: 71, y: 4.0, label: "Limão" },
+    { x: 75, y: 4.6, label: "Limão" }, { x: 79, y: 4.3, label: "Limão" }, { x: 83, y: 4.8, label: "Limão" },
+    { x: 87, y: 5.0, label: "Limão" }, { x: 91, y: 4.7, label: "Limão" }, { x: 95, y: 5.2, label: "Limão" },
+    { x: 65, y: 4.5, label: "Limão" }, { x: 73, y: 5.1, label: "Limão" }, { x: 85, y: 5.4, label: "Limão" },
+
+    { x: 145, y: 7.1, label: "Maçã" }, { x: 150, y: 7.3, label: "Maçã" }, { x: 155, y: 7.0, label: "Maçã" },
+    { x: 160, y: 7.5, label: "Maçã" }, { x: 165, y: 7.2, label: "Maçã" }, { x: 170, y: 7.6, label: "Maçã" },
+    { x: 175, y: 7.4, label: "Maçã" }, { x: 180, y: 7.7, label: "Maçã" }, { x: 185, y: 7.3, label: "Maçã" },
+    { x: 190, y: 7.8, label: "Maçã" }, { x: 148, y: 7.2, label: "Maçã" }, { x: 158, y: 7.5, label: "Maçã" },
+    { x: 178, y: 8.0, label: "Maçã" },
+
+    { x: 150, y: 8.1, label: "Laranja" }, { x: 155, y: 8.3, label: "Laranja" }, { x: 160, y: 8.0, label: "Laranja" },
+    { x: 165, y: 8.4, label: "Laranja" }, { x: 170, y: 8.2, label: "Laranja" }, { x: 175, y: 8.6, label: "Laranja" },
+    { x: 180, y: 8.3, label: "Laranja" }, { x: 185, y: 8.8, label: "Laranja" }, { x: 190, y: 8.5, label: "Laranja" },
+    { x: 195, y: 9.0, label: "Laranja" }, { x: 200, y: 8.7, label: "Laranja" }, { x: 158, y: 8.1, label: "Laranja" },
+    { x: 152, y: 7.6, label: "Laranja" }
+  ];
+
+  var CLASSES = ["Limão", "Maçã", "Laranja"];
+  var CLASS_CENTERS = {
+    "Limão": { x: [60, 98], y: [4.0, 5.5] },
+    "Maçã": { x: [140, 195], y: [7.0, 7.9] },
+    "Laranja": { x: [148, 202], y: [8.0, 9.1] }
+  };
+
+  function generateRandomDataset(seed, perClass) {
+    perClass = perClass || 12;
+    var rnd = mulberry32(seed);
+    var points = [];
+    CLASSES.forEach(function (label) {
+      var rx = CLASS_CENTERS[label].x, ry = CLASS_CENTERS[label].y;
+      for (var i = 0; i < perClass; i++) {
+        var x = rx[0] + rnd() * (rx[1] - rx[0]);
+        var y = ry[0] + rnd() * (ry[1] - ry[0]);
+        points.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 100) / 100, label: label });
+      }
+    });
+    points.push({ x: Math.round((170 + rnd() * 20) * 10) / 10, y: Math.round((7.8 + rnd() * 0.3) * 100) / 100, label: "Maçã" });
+    points.push({ x: Math.round((148 + rnd() * 10) * 10) / 10, y: Math.round((7.5 + rnd() * 0.3) * 100) / 100, label: "Laranja" });
+    return points;
+  }
+
+  var CLASS_COLOR_VAR = { "Limão": "--lemon", "Maçã": "--rust", "Laranja": "--tangerine" };
+  function classColor(label) { return "var(" + CLASS_COLOR_VAR[label] + ")"; }
+
+  // ================= app state =================
+  var els = {
+    scatterSvg: document.getElementById("scatterSvg"),
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    depthSlider: document.getElementById("depthSlider"),
+    depthLabel: document.getElementById("depthLabel"),
+    btnNewDataset: document.getElementById("btnNewDataset"),
+    inputPeso: document.getElementById("inputPeso"),
+    inputDiametro: document.getElementById("inputDiametro"),
+    btnClassify: document.getElementById("btnClassify"),
+    btnClearQuery: document.getElementById("btnClearQuery"),
+    errorText: document.getElementById("errorText"),
+    giniLabel: document.getElementById("giniLabel"),
+    giniFill: document.getElementById("giniFill"),
+    candidatesBox: document.getElementById("candidatesBox"),
+    candidatesList: document.getElementById("candidatesList")
+  };
+
+  var NS = "http://www.w3.org/2000/svg";
+  var seedCounter = 1;
+  var currentPoints = DEFAULT_POINTS;
+  var engine = createDecisionTreeEngine(currentPoints, { maxDepth: 3 });
+  var state = { stepIndex: 0, playing: false, timer: null, query: null };
+
+  // ---- tree panel persistent elements ----
+  var TREE_CELL_W = 118, TREE_ROW_H = 90, TREE_NODE_W = 106, TREE_NODE_H = 50, TREE_TOP_PAD = 14, TREE_SIDE_PAD = 20;
+  var treeNodeEls = {}, treeEdgeEls = {};
+
+  // ---- scatter panel persistent elements ----
+  var SCATTER_W = 460, SCATTER_H = 340, SCATTER_ML = 40, SCATTER_MR = 12, SCATTER_MT = 12, SCATTER_MB = 34;
+  var X_DOMAIN = [40, 222], Y_DOMAIN = [3.4, 9.6];
+  var pointEls = {}, leafRegionEls = {}, splitLineEls = {};
+  var activeRegionEl = null, queryMarkerEl = null;
+
+  function sx(v) { return SCATTER_ML + (v - X_DOMAIN[0]) / (X_DOMAIN[1] - X_DOMAIN[0]) * (SCATTER_W - SCATTER_ML - SCATTER_MR); }
+  function sy(v) { return SCATTER_MT + (1 - (v - Y_DOMAIN[0]) / (Y_DOMAIN[1] - Y_DOMAIN[0])) * (SCATTER_H - SCATTER_MT - SCATTER_MB); }
+
+  function buildScatterStatics() {
+    els.scatterSvg.setAttribute("viewBox", "0 0 " + SCATTER_W + " " + SCATTER_H);
+    els.scatterSvg.setAttribute("width", SCATTER_W);
+    els.scatterSvg.setAttribute("height", SCATTER_H);
+    els.scatterSvg.innerHTML = "";
+    pointEls = {}; leafRegionEls = {}; splitLineEls = {};
+
+    var axisLayer = document.createElementNS(NS, "g"); axisLayer.setAttribute("id", "axisLayer");
+    var regionLayer = document.createElementNS(NS, "g"); regionLayer.setAttribute("id", "regionLayer");
+    var lineLayer = document.createElementNS(NS, "g"); lineLayer.setAttribute("id", "lineLayer");
+    var activeLayer = document.createElementNS(NS, "g"); activeLayer.setAttribute("id", "activeLayer");
+    var pointLayer = document.createElementNS(NS, "g"); pointLayer.setAttribute("id", "pointLayer");
+    var markerLayer = document.createElementNS(NS, "g"); markerLayer.setAttribute("id", "markerLayer");
+    els.scatterSvg.appendChild(axisLayer);
+    els.scatterSvg.appendChild(regionLayer);
+    els.scatterSvg.appendChild(lineLayer);
+    els.scatterSvg.appendChild(activeLayer);
+    els.scatterSvg.appendChild(pointLayer);
+    els.scatterSvg.appendChild(markerLayer);
+
+    // axes
+    var xAxisLine = document.createElementNS(NS, "line");
+    xAxisLine.setAttribute("class", "axis-line");
+    xAxisLine.setAttribute("x1", SCATTER_ML); xAxisLine.setAttribute("y1", SCATTER_H - SCATTER_MB);
+    xAxisLine.setAttribute("x2", SCATTER_W - SCATTER_MR); xAxisLine.setAttribute("y2", SCATTER_H - SCATTER_MB);
+    axisLayer.appendChild(xAxisLine);
+    var yAxisLine = document.createElementNS(NS, "line");
+    yAxisLine.setAttribute("class", "axis-line");
+    yAxisLine.setAttribute("x1", SCATTER_ML); yAxisLine.setAttribute("y1", SCATTER_MT);
+    yAxisLine.setAttribute("x2", SCATTER_ML); yAxisLine.setAttribute("y2", SCATTER_H - SCATTER_MB);
+    axisLayer.appendChild(yAxisLine);
+
+    [50, 100, 150, 200].forEach(function (v) {
+      var t = document.createElementNS(NS, "text");
+      t.setAttribute("class", "axis-label"); t.setAttribute("x", sx(v)); t.setAttribute("y", SCATTER_H - SCATTER_MB + 14);
+      t.setAttribute("text-anchor", "middle"); t.textContent = v;
+      axisLayer.appendChild(t);
+    });
+    [4, 5, 6, 7, 8, 9].forEach(function (v) {
+      var t = document.createElementNS(NS, "text");
+      t.setAttribute("class", "axis-label"); t.setAttribute("x", SCATTER_ML - 8); t.setAttribute("y", sy(v) + 3);
+      t.setAttribute("text-anchor", "end"); t.textContent = v;
+      axisLayer.appendChild(t);
+    });
+    var xTitle = document.createElementNS(NS, "text");
+    xTitle.setAttribute("class", "axis-title"); xTitle.setAttribute("x", (SCATTER_ML + SCATTER_W - SCATTER_MR) / 2); xTitle.setAttribute("y", SCATTER_H - 4);
+    xTitle.setAttribute("text-anchor", "middle"); xTitle.textContent = "peso (g)";
+    axisLayer.appendChild(xTitle);
+    var yTitle = document.createElementNS(NS, "text");
+    yTitle.setAttribute("class", "axis-title"); yTitle.setAttribute("x", -(SCATTER_MT + SCATTER_H - SCATTER_MB) / 2); yTitle.setAttribute("y", 11);
+    yTitle.setAttribute("text-anchor", "middle"); yTitle.setAttribute("transform", "rotate(-90)");
+    yTitle.textContent = "diâmetro (cm)";
+    axisLayer.appendChild(yTitle);
+
+    currentPoints.forEach(function (p, i) {
+      var c = document.createElementNS(NS, "circle");
+      c.setAttribute("class", "pt"); c.setAttribute("r", 4.2);
+      c.setAttribute("cx", sx(p.x)); c.setAttribute("cy", sy(p.y));
+      c.setAttribute("fill", classColor(p.label));
+      pointLayer.appendChild(c);
+      pointEls[i] = c;
+    });
+
+    activeRegionEl = document.createElementNS(NS, "rect");
+    activeRegionEl.setAttribute("class", "active-region");
+    activeLayer.appendChild(activeRegionEl);
+
+    queryMarkerEl = document.createElementNS(NS, "path");
+    queryMarkerEl.setAttribute("class", "query-marker");
+    queryMarkerEl.setAttribute("fill", "var(--violet)");
+    queryMarkerEl.setAttribute("stroke", "var(--card)");
+    queryMarkerEl.setAttribute("stroke-width", "1.4");
+    markerLayer.appendChild(queryMarkerEl);
+  }
+
+  function diamondPath(cx, cy, r) {
+    return "M " + cx + " " + (cy - r) + " L " + (cx + r) + " " + cy + " L " + cx + " " + (cy + r) + " L " + (cx - r) + " " + cy + " Z";
+  }
+
+  function findNodeById(root, id) {
+    if (!root) return null;
+    if (root.id === id) return root;
+    return findNodeById(root.left, id) || findNodeById(root.right, id);
+  }
+
+  function renderScatterOverlays(step) {
+    var regionLayer = document.getElementById("regionLayer");
+    var lineLayer = document.getElementById("lineLayer");
+    var presentRegionIds = {}, presentLineIds = {};
+
+    (function walk(n) {
+      if (!n) return;
+      if (n.isLeaf) {
+        presentRegionIds[n.id] = true;
+        var rect = leafRegionEls[n.id];
+        if (!rect) { rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "leaf-region"); regionLayer.appendChild(rect); leafRegionEls[n.id] = rect; }
+        var x0 = sx(n.region.xMin), x1 = sx(n.region.xMax), y0 = sy(n.region.yMax), y1 = sy(n.region.yMin);
+        rect.setAttribute("x", Math.min(x0, x1)); rect.setAttribute("y", Math.min(y0, y1));
+        rect.setAttribute("width", Math.abs(x1 - x0)); rect.setAttribute("height", Math.abs(y1 - y0));
+        rect.setAttribute("fill", classColor(n.predictedClass));
+      } else if (n.splitFeature != null) {
+        presentLineIds[n.id] = true;
+        var line = splitLineEls[n.id];
+        if (!line) { line = document.createElementNS(NS, "line"); line.setAttribute("class", "split-line"); lineLayer.appendChild(line); splitLineEls[n.id] = line; }
+        if (n.splitFeature === "x") {
+          var lx = sx(n.threshold);
+          line.setAttribute("x1", lx); line.setAttribute("x2", lx);
+          line.setAttribute("y1", sy(n.region.yMax)); line.setAttribute("y2", sy(n.region.yMin));
+        } else {
+          var ly = sy(n.threshold);
+          line.setAttribute("y1", ly); line.setAttribute("y2", ly);
+          line.setAttribute("x1", sx(n.region.xMin)); line.setAttribute("x2", sx(n.region.xMax));
+        }
+      }
+      walk(n.left); walk(n.right);
+    })(step.root);
+
+    Object.keys(leafRegionEls).forEach(function (id) { if (!presentRegionIds[id]) { leafRegionEls[id].remove(); delete leafRegionEls[id]; } });
+    Object.keys(splitLineEls).forEach(function (id) { if (!presentLineIds[id]) { splitLineEls[id].remove(); delete splitLineEls[id]; } });
+
+    var activeNode = step.activeNodeId != null ? findNodeById(step.root, step.activeNodeId) : null;
+    if (activeNode) {
+      var ax0 = sx(activeNode.region.xMin), ax1 = sx(activeNode.region.xMax);
+      var ay0 = sy(activeNode.region.yMax), ay1 = sy(activeNode.region.yMin);
+      activeRegionEl.setAttribute("x", Math.min(ax0, ax1)); activeRegionEl.setAttribute("y", Math.min(ay0, ay1));
+      activeRegionEl.setAttribute("width", Math.abs(ax1 - ax0)); activeRegionEl.setAttribute("height", Math.abs(ay1 - ay0));
+      activeRegionEl.classList.add("on");
+    } else {
+      activeRegionEl.classList.remove("on");
+    }
+
+    var showQuery = state.query && state.stepIndex === engine.getSteps().length - 1;
+    if (showQuery) {
+      queryMarkerEl.setAttribute("d", diamondPath(sx(state.query.x), sy(state.query.y), 7));
+      queryMarkerEl.classList.add("on");
+    } else {
+      queryMarkerEl.classList.remove("on");
+    }
+  }
+
+  // ---- tree layout: leaves (or pending/unprocessed nodes) get sequential x slots; internal x = mean of children ----
+  function computeTreeLayout(root) {
+    var xOf = {}; var slotCount = 0;
+    (function assignX(n) {
+      if (!n) return;
+      if (!n.left && !n.right) { xOf[n.id] = slotCount; slotCount++; return; }
+      assignX(n.left); assignX(n.right);
+      xOf[n.id] = (xOf[n.left.id] + xOf[n.right.id]) / 2;
+    })(root);
+    var positions = {}; var maxDepth = 0;
+    (function assignY(n, depth) {
+      if (!n) return;
+      positions[n.id] = { x: xOf[n.id], depth: depth, node: n };
+      if (depth > maxDepth) maxDepth = depth;
+      assignY(n.left, depth + 1); assignY(n.right, depth + 1);
+    })(root, 0);
+    return { positions: positions, count: Math.max(slotCount, 1), maxDepth: maxDepth };
+  }
+
+  function renderTree(step, showQueryPath) {
+    var layout = computeTreeLayout(step.root);
+    var width = TREE_SIDE_PAD * 2 + Math.max(0, layout.count - 1) * TREE_CELL_W + TREE_NODE_W;
+    var heightPx = TREE_TOP_PAD + (layout.maxDepth + 1) * TREE_ROW_H;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix) { return TREE_SIDE_PAD + TREE_NODE_W / 2 + ix * TREE_CELL_W; }
+    function yFor(depth) { return TREE_TOP_PAD + depth * TREE_ROW_H + TREE_NODE_H / 2; }
+
+    var presentIds = {}, presentEdgeIds = {};
+    var pathSet = {};
+    if (showQueryPath) state.query.path.forEach(function (id) { pathSet[id] = true; });
+
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var n = p.node;
+      var cx = xFor(p.x), cy = yFor(p.depth);
+
+      var rec = treeNodeEls[id];
+      if (!rec) {
+        var g = document.createElementNS(NS, "g"); g.setAttribute("class", "dt-node");
+        var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "dt-node-rect");
+        rect.setAttribute("width", TREE_NODE_W); rect.setAttribute("height", TREE_NODE_H); rect.setAttribute("rx", 9);
+        var line1 = document.createElementNS(NS, "text"); line1.setAttribute("class", "dt-line1");
+        var line2 = document.createElementNS(NS, "text"); line2.setAttribute("class", "dt-line2");
+        var pendingText = document.createElementNS(NS, "text"); pendingText.setAttribute("class", "dt-pending-text"); pendingText.textContent = "…";
+        g.appendChild(rect); g.appendChild(line1); g.appendChild(line2); g.appendChild(pendingText);
+        rec = { g: g, rect: rect, line1: line1, line2: line2, pendingText: pendingText };
+        treeNodeEls[id] = rec;
+      }
+
+      rec.rect.setAttribute("x", cx - TREE_NODE_W / 2); rec.rect.setAttribute("y", cy - TREE_NODE_H / 2);
+      rec.line1.setAttribute("x", cx); rec.line1.setAttribute("y", cy - TREE_NODE_H / 2 + 19);
+      rec.line2.setAttribute("x", cx); rec.line2.setAttribute("y", cy + TREE_NODE_H / 2 - 10);
+      rec.pendingText.setAttribute("x", cx); rec.pendingText.setAttribute("y", cy + 5);
+
+      if (n.pending) {
+        rec.g.setAttribute("data-kind", "pending");
+        rec.line1.textContent = ""; rec.line2.textContent = "";
+        rec.pendingText.style.display = "";
+      } else {
+        rec.pendingText.style.display = "none";
+        rec.line1.textContent = "n=" + n.total + " · G=" + n.giniValue.toFixed(3);
+        if (n.isLeaf) {
+          rec.g.setAttribute("data-kind", "leaf");
+          rec.line2.setAttribute("class", "dt-line2 leaf-label");
+          rec.line2.setAttribute("fill", classColor(n.predictedClass));
+          rec.line2.textContent = n.predictedClass;
+        } else if (n.splitFeature != null) {
+          // split decision already made (this is a later step revisiting the node)
+          rec.g.setAttribute("data-kind", "internal");
+          rec.line2.setAttribute("class", "dt-line2");
+          rec.line2.removeAttribute("fill");
+          var featLabel = n.splitFeature === "x" ? "peso" : "diâmetro";
+          rec.line2.textContent = featLabel + " ≤ " + n.threshold.toFixed(2);
+        } else {
+          // transitional: gini just computed, but whether it's a leaf or where it
+          // splits hasn't been decided yet -- this is exactly the node the "eval"
+          // step's message is talking about.
+          rec.g.setAttribute("data-kind", "evaluating");
+          rec.line2.setAttribute("class", "dt-line2");
+          rec.line2.removeAttribute("fill");
+          rec.line2.textContent = "avaliando…";
+        }
+      }
+
+      if (step.activeNodeId === id) rec.g.setAttribute("data-state", "active");
+      else if (pathSet[id]) rec.g.setAttribute("data-state", "path");
+      else rec.g.removeAttribute("data-state");
+    });
+
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      var n = p.node;
+      [n.left, n.right].forEach(function (child) {
+        if (!child) return;
+        presentEdgeIds[child.id] = true;
+        var line = treeEdgeEls[child.id];
+        if (!line) { line = document.createElementNS(NS, "line"); line.setAttribute("class", "dt-edge-line"); treeEdgeEls[child.id] = line; }
+        var cp = layout.positions[child.id];
+        line.setAttribute("x1", xFor(p.x)); line.setAttribute("y1", yFor(p.depth) + TREE_NODE_H / 2);
+        line.setAttribute("x2", xFor(cp.x)); line.setAttribute("y2", yFor(cp.depth) - TREE_NODE_H / 2);
+      });
+    });
+
+    Object.keys(treeNodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { treeNodeEls[id].g.remove(); delete treeNodeEls[id]; } });
+    Object.keys(treeEdgeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentEdgeIds[id]) { treeEdgeEls[id].remove(); delete treeEdgeEls[id]; } });
+
+    els.treeSvg.innerHTML = "";
+    Object.keys(treeEdgeEls).forEach(function (id) { els.treeSvg.appendChild(treeEdgeEls[id]); });
+    Object.keys(treeNodeEls).forEach(function (id) { els.treeSvg.appendChild(treeNodeEls[id].g); });
+  }
+
+  var OP_LABELS = { eval: "Avaliando nó", split: "Dividindo", leaf: "Virou folha", info: "Início" };
+
+  function updateGiniMeter(step) {
+    var activeNode = step.activeNodeId != null ? findNodeById(step.root, step.activeNodeId) : null;
+    if (!activeNode || activeNode.giniValue == null) {
+      els.giniLabel.textContent = "—";
+      els.giniFill.style.width = "0%";
+      els.giniFill.style.background = "var(--line-strong)";
+      return;
+    }
+    var k = CLASSES.length;
+    var maxGini = 1 - 1 / k;
+    var g = activeNode.giniValue;
+    els.giniLabel.textContent = g.toFixed(3) + " (máx. " + maxGini.toFixed(3) + " para " + k + " classes)";
+    var pct = Math.min(100, (g / maxGini) * 100);
+    els.giniFill.style.width = pct + "%";
+    var ratio = g / maxGini;
+    els.giniFill.style.background = ratio <= 0.33 ? "var(--success)" : (ratio <= 0.66 ? "var(--gold)" : "var(--rust)");
+  }
+
+  function updateCandidates(step) {
+    if (!step.candidates) { els.candidatesBox.hidden = true; els.candidatesList.innerHTML = ""; return; }
+    els.candidatesBox.hidden = false;
+    var maxGain = step.candidates.length ? step.candidates[0].gain : 0;
+    els.candidatesList.innerHTML = "";
+    step.candidates.forEach(function (c, i) {
+      var row = document.createElement("div");
+      row.className = "candidate-row" + (i === 0 ? " winner" : "");
+      var rank = document.createElement("span"); rank.className = "candidate-rank"; rank.textContent = (i + 1) + ".";
+      var label = document.createElement("span"); label.className = "candidate-label";
+      var featLabel = c.feature === "x" ? "peso" : "diâmetro";
+      label.textContent = featLabel + " ≤ " + c.threshold.toFixed(2);
+      var barTrack = document.createElement("span"); barTrack.className = "candidate-bar-track";
+      var barFill = document.createElement("span"); barFill.className = "candidate-bar-fill";
+      barFill.style.width = (maxGain > 0 ? Math.max(2, (c.gain / maxGain) * 100) : 0) + "%";
+      barTrack.appendChild(barFill);
+      var gainText = document.createElement("span"); gainText.className = "candidate-gain"; gainText.textContent = c.gain.toFixed(3);
+      row.appendChild(rank); row.appendChild(label); row.appendChild(barTrack); row.appendChild(gainText);
+      els.candidatesList.appendChild(row);
+    });
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var showQueryPath = !!(state.query && state.stepIndex === steps.length - 1);
+    renderTree(step, showQueryPath);
+    renderScatterOverlays(step);
+    updateGiniMeter(step);
+    updateCandidates(step);
+
+    if (showQueryPath) {
+      els.message.textContent = step.message + " — Classificação de (" + state.query.x + ", " + state.query.y + "): " + state.query.predictedClass + ".";
+    }
+  }
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  // ================= playback controls =================
+  function goTo(i) {
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function stepBy(delta) { goTo(state.stepIndex + delta); }
+  function stopPlaying() {
+    state.playing = false;
+    els.btnPlay.textContent = "▶ Reproduzir";
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  }
+  function togglePlay() {
+    if (state.playing) { stopPlaying(); return; }
+    var steps = engine.getSteps();
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      if (state.stepIndex >= steps.length - 1) { stopPlaying(); return; }
+      state.stepIndex++; render();
+    }, Number(els.speed.value));
+  }
+
+  els.btnReset.addEventListener("click", function () { goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stepBy(-1); });
+  els.btnNext.addEventListener("click", function () { stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) { togglePlay(); togglePlay(); } });
+
+  function showError(msg) { els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError() { els.errorText.hidden = true; }
+
+  function rebuildEngine(newPoints, maxDepth) {
+    currentPoints = newPoints;
+    engine = createDecisionTreeEngine(currentPoints, { maxDepth: maxDepth });
+    state.query = null;
+    buildScatterStatics();
+    treeNodeEls = {}; treeEdgeEls = {};
+    jumpToLiveEnd();
+  }
+
+  els.depthSlider.addEventListener("input", function () {
+    els.depthLabel.textContent = els.depthSlider.value;
+  });
+  els.depthSlider.addEventListener("change", function () {
+    rebuildEngine(currentPoints, Number(els.depthSlider.value));
+  });
+  els.btnNewDataset.addEventListener("click", function () {
+    seedCounter++;
+    rebuildEngine(generateRandomDataset(seedCounter), Number(els.depthSlider.value));
+  });
+
+  function parseNum(el, min, max, label) {
+    var raw = el.value.trim();
+    if (raw === "") { showError("Preencha " + label + "."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v)) { showError('"' + raw + '" não é um número válido para ' + label + "."); return null; }
+    if (v < min || v > max) { showError(label + " deve estar entre " + min + " e " + max + "."); return null; }
+    return v;
+  }
+
+  els.btnClassify.addEventListener("click", function () {
+    var peso = parseNum(els.inputPeso, 1, 999, "o peso");
+    if (peso === null) return;
+    var diametro = parseNum(els.inputDiametro, 0.5, 20, "o diâmetro");
+    if (diametro === null) return;
+    hideError();
+    var result = engine.predict({ x: peso, y: diametro });
+    state.query = { x: peso, y: diametro, path: result.path, predictedClass: result.predictedClass };
+    goTo(engine.getSteps().length - 1);
+  });
+  els.btnClearQuery.addEventListener("click", function () {
+    hideError();
+    state.query = null;
+    render();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { stepBy(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { stepBy(-1); e.preventDefault(); }
+    else if (e.key === " ") { togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= boot =================
+  buildScatterStatics();
+  jumpToLiveEnd();
+})();
+</script>
+
+</body></html>

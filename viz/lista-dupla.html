@@ -1,0 +1,968 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lista Duplamente Encadeada</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="traverse"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="traverse"] .dot{background:var(--accent);}
+  .op-pill[data-op="reverse"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="reverse"] .dot{background:var(--violet);}
+  .op-pill[data-op="bad"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .dll-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .dll-svg, .dll-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .dll-node-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: x .35s ease, y .35s ease, stroke .2s ease; }
+  .dll-divider{ stroke:var(--line-strong); stroke-width:1.2; transition: x1 .35s ease, x2 .35s ease; }
+  .dll-dot{ fill:var(--ink-faint); transition: cx .35s ease; }
+  .dll-value{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); transition: x .35s ease; }
+  .dll-node[data-state="cursor"] .dll-node-rect{ stroke:var(--accent); stroke-width:2.6; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .dll-node[data-state="cursor"][data-dir="backward"] .dll-node-rect{ stroke:var(--violet); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .dll-node[data-state="new"] .dll-node-rect{ stroke:var(--gold); stroke-width:2.6; }
+  .dll-node[data-state="bad"] .dll-node-rect{ stroke:var(--rust); stroke-width:2.2; }
+
+  .dll-arrow{ fill:none; stroke-width:1.8; transition: d .35s ease, stroke .2s ease; }
+  .dll-arrow.next.normal{ stroke:var(--line-strong); }
+  .dll-arrow.next.crossed{ stroke:var(--gold); }
+  .dll-arrow.prev.normal{ stroke:var(--violet); }
+  .dll-arrow.prev.crossed{ stroke:var(--rust); }
+  .dll-null-box{ fill:none; stroke:var(--line-strong); stroke-width:1.4; stroke-dasharray:4 3; }
+  .dll-null-text{ font-size:10px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+
+  .dll-tag-pill{ font-size:10px; font-weight:700; text-anchor:middle; dominant-baseline:central; fill:#fff; }
+  .dll-tag-bg{ fill:var(--ink-soft); }
+  .dll-tag-bg.head{ fill:var(--accent); }
+  .dll-tag-bg.tail{ fill:var(--violet); }
+  .dll-tag-line{ stroke:var(--line-strong); stroke-width:1.2; }
+
+  .dll-empty-text{ font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); font-family:'IBM Plex Mono', monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.back{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.head{background:var(--accent); border-color:transparent;}
+  .legend .swatch.tail{background:var(--violet); border-color:transparent;}
+  .legend .swline{width:16px; height:2px; display:inline-block;}
+  .legend .swline.next{background:var(--line-strong);}
+  .legend .swline.prev{background:var(--violet);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Estrutura linear · ponteiros em dois sentidos</span>
+    <h1>Lista Duplamente Encadeada</h1>
+    <p class="prose">Cada nó aqui guarda <strong>dois</strong> ponteiros — <code>prev</code> e <code>next</code> — em vez de só um. O custo é memória extra por nó; o ganho é poder andar nos dois sentidos e, principalmente, remover o <strong>último</strong> nó em O(1): como cada nó já sabe quem vem antes dele, não é preciso percorrer a lista para achar o penúltimo. Repare também que, para acessar uma posição no meio, dá para partir do lado mais perto — da cabeça ou da cauda — o que uma lista simples nunca pode fazer.</p>
+  </header>
+
+  <section class="struct-block" aria-label="Declaração da struct em C">
+    <span class="tag">Como isso é declarado em C</span>
+    <pre class="code"><code><span class="kw">typedef struct</span> <span class="ty">No</span> {
+    <span class="ty">int</span> valor;        <span class="cm">/* o dado guardado no nó */</span>
+    <span class="kw">struct</span> <span class="ty">No</span> *prev;  <span class="cm">/* nó anterior (NULL na cabeça) */</span>
+    <span class="kw">struct</span> <span class="ty">No</span> *next;  <span class="cm">/* nó seguinte (NULL na cauda) */</span>
+} No;
+
+<span class="ty">No</span> *head = <span class="nm">NULL</span>;      <span class="cm">/* primeiro nó */</span>
+<span class="ty">No</span> *tail = <span class="nm">NULL</span>;      <span class="cm">/* último nó — é o que torna remover do fim O(1) */</span></code></pre>
+    <p class="struct-note">São dois ponteiros por nó (<code>prev</code> e <code>next</code>) e dois de entrada na lista (<code>head</code> e <code>tail</code>). Toda inserção ou remoção precisa religar <strong>os dois lados</strong> dos vizinhos — é isso que as setas nos dois sentidos mostram.</p>
+  </section>
+
+
+  <section class="card" aria-label="Visualizador da lista duplamente encadeada">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="dll-svg" id="dllSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch head"></span>head</span>
+      <span class="item"><span class="swatch tail"></span>tail</span>
+      <span class="item"><span class="swatch cursor"></span>percorrendo via next</span>
+      <span class="item"><span class="swatch back"></span>percorrendo via prev</span>
+      <span class="item"><span class="swatch new"></span>novo</span>
+      <span class="item"><span class="swatch bad"></span>não encontrado</span>
+      <span class="item"><span class="swline next"></span>ponteiro next</span>
+      <span class="item"><span class="swline prev"></span>ponteiro prev</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsertTail">+ Inserir no fim</button>
+        <button id="btnInsertHead">+ Inserir no início</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button class="danger" id="btnRemoveValue">− Remover valor</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Posição
+          <input type="number" id="indexInput" placeholder="ex: 2" min="0">
+        </label>
+        <button id="btnInsertAt">Inserir na posição</button>
+        <button class="danger" id="btnRemoveAt">Remover posição</button>
+        <button class="danger" id="btnRemoveHead">Remover início</button>
+        <button class="danger" id="btnRemoveTail">Remover fim · O(1)</button>
+      </div>
+      <div class="controls-row">
+        <button class="violet" id="btnReverse">⇄ Reverter lista</button>
+        <button class="violet" id="btnTraverseBack">◀◀ Percorrer de trás pra frente</button>
+        <label class="small">Tamanho
+          <input type="range" class="mini" id="sizeSlider" min="1" max="10" value="5" step="1">
+          <span class="mono" id="sizeLabel">5</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova lista aleatória</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>O ponteiro prev muda tudo</h2>
+    <p class="prose">Três consequências diretas de cada nó também apontar para trás:</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Remover do fim vira O(1)</span><span class="prose">A lista simples precisa percorrer tudo para achar o penúltimo nó. Aqui, <code>tail.prev</code> já <em>é</em> o penúltimo — zero percorrimento.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Remover um nó já encontrado é direto</span><span class="prose">Numa lista simples, remover o nó <code>X</code> exige ter guardado o nó anterior durante a busca. Aqui, <code>X.prev</code> e <code>X.next</code> já bastam: <code>X.prev.next = X.next</code> e <code>X.next.prev = X.prev</code>.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Acesso pelo lado mais perto</span><span class="prose">Para achar a posição <code>i</code>, dá para comparar <code>i</code> com <code>i</code> a partir do fim e percorrer a partir de quem estiver mais perto — cabeça ou cauda.</span></div></div>
+    </div>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Lista simples</span>
+      <p class="prose">Um ponteiro por nó (<code>next</code>). Menos memória, mas só anda para frente: remover do fim é <code>O(n)</code>, e remover um nó dado exige rastrear o anterior durante a busca.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Lista dupla</span>
+      <p class="prose">Dois ponteiros por nó (<code>prev</code> e <code>next</code>). Mais memória (um ponteiro extra por nó), mas anda nos dois sentidos: remover do fim é <code>O(1)</code>, e remover um nó já encontrado nunca precisa de rastreamento extra.</p>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Ambas as pontas</span>
+      <h3>Inserir/remover: O(1)</h3>
+      <p class="prose">Com ponteiros <code>head</code>, <code>tail</code>, <code>prev</code> e <code>next</code>, as duas extremidades custam o mesmo: uma troca de ponteiros, não importa o tamanho da lista.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Posição i / valor</span>
+      <h3>Ainda O(n)</h3>
+      <p class="prose">Achar o meio da lista continua exigindo percorrer nó a nó — só que agora dá pra escolher o lado mais curto, o que corta o percorrimento pela metade no pior caso.</p>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Onde isso aparece de verdade</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Uso</th><th>Por que a lista dupla ajuda</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Cache LRU</td><td>Mover um item usado para a frente e remover o menos usado do fim — ambos O(1) com um nó já em mãos (combinado com um hash map id → nó).</td></tr>
+          <tr><td class="op">Histórico do navegador</td><td>Voltar e avançar são travessias nos dois sentidos a partir da página atual.</td></tr>
+          <tr><td class="op"><code>java.util.LinkedList</code>, <code>std::list</code></td><td>Implementações de biblioteca padrão usam lista dupla internamente, exatamente por esses dois ganhos de O(1).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma lista duplamente encadeada (doubly linked list). Complexidade O(1) para inserir/remover em qualquer extremidade; O(n) para busca e acesso por posição (reduzido pela metade no pior caso ao escolher o lado mais perto).</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Doubly linked list engine (records one step per mutation/comparison) =================
+  function createDoublyLinkedListEngine() {
+    var nextId = 1;
+    var nodes = {};
+    var headId = null;
+    var tailId = null;
+    var steps = [];
+
+    function cloneNodes() {
+      var out = {};
+      for (var id in nodes) { if (nodes.hasOwnProperty(id)) out[id] = { id: nodes[id].id, value: nodes[id].value, prev: nodes[id].prev, next: nodes[id].next }; }
+      return out;
+    }
+
+    function chainOrderForward(nodesSnapshot, startId) {
+      var out = []; var seen = {}; var cur = startId;
+      while (cur != null) { if (seen[cur]) return null; seen[cur] = true; out.push(cur); cur = nodesSnapshot[cur].next; }
+      return out;
+    }
+
+    function chainOrderBackward(nodesSnapshot, startId) {
+      var out = []; var seen = {}; var cur = startId;
+      while (cur != null) { if (seen[cur]) return null; seen[cur] = true; out.push(cur); cur = nodesSnapshot[cur].prev; }
+      return out;
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message, nodes: cloneNodes(), headId: headId, tailId: tailId,
+        op: opts.op || "info",
+        cursorId: opts.cursorId != null ? opts.cursorId : null,
+        highlightIds: opts.highlightIds || [],
+        direction: opts.direction || null,
+        slotOrder: opts.slotOrder || null
+      });
+    }
+
+    function length() { var order = chainOrderForward(nodes, headId); return order ? order.length : -1; }
+
+    function insertAtHead(value) {
+      var id = nextId++;
+      nodes[id] = { id: id, value: value, prev: null, next: headId };
+      if (headId !== null) nodes[headId].prev = id; else tailId = id;
+      headId = id;
+      snapshot('"' + value + '" inserido no início — O(1), só ajustamos head e o prev do antigo primeiro nó.', { op: "insert", cursorId: id, highlightIds: [id] });
+      return id;
+    }
+
+    function insertAtTail(value) {
+      var id = nextId++;
+      nodes[id] = { id: id, value: value, prev: tailId, next: null };
+      if (tailId !== null) nodes[tailId].next = id; else headId = id;
+      tailId = id;
+      snapshot('"' + value + '" inserido no fim — O(1) graças ao ponteiro tail.', { op: "insert", cursorId: id, highlightIds: [id] });
+      return id;
+    }
+
+    function locateByIndex(index) {
+      var n = length();
+      var fromHead = index <= n - 1 - index;
+      var cur, i;
+      if (fromHead) {
+        cur = headId;
+        for (i = 0; i < index; i++) {
+          snapshot('Percorrendo a partir do início (posição ' + i + ' de ' + index + ') — mais perto da cabeça.', { op: "traverse", cursorId: cur, highlightIds: [cur], direction: "forward" });
+          cur = nodes[cur].next;
+        }
+      } else {
+        cur = tailId;
+        var stepsFromTail = n - 1 - index;
+        for (i = 0; i < stepsFromTail; i++) {
+          snapshot('Percorrendo a partir do fim (faltam ' + (stepsFromTail - i) + ') — mais perto da cauda.', { op: "traverse", cursorId: cur, highlightIds: [cur], direction: "backward" });
+          cur = nodes[cur].prev;
+        }
+      }
+      return cur;
+    }
+
+    function insertAt(index, value) {
+      var n = length();
+      if (index < 0 || index > n) { snapshot('Posição ' + index + ' inválida (lista tem ' + n + ' nós).', { op: "bad" }); return false; }
+      if (index === 0) { insertAtHead(value); return true; }
+      if (index === n) { insertAtTail(value); return true; }
+      var targetId = locateByIndex(index);
+      var id = nextId++;
+      var p = nodes[targetId].prev;
+      nodes[id] = { id: id, value: value, prev: p, next: targetId };
+      nodes[p].next = id;
+      nodes[targetId].prev = id;
+      snapshot('"' + value + '" inserido na posição ' + index + '.', { op: "insert", cursorId: id, highlightIds: [id] });
+      return true;
+    }
+
+    function removeHead() {
+      if (headId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      var oldHead = headId; var v = nodes[oldHead].value;
+      snapshot('Removendo "' + v + '" do início — O(1), já temos o ponteiro head.', { op: "remove", cursorId: oldHead, highlightIds: [oldHead] });
+      var newHead = nodes[oldHead].next;
+      if (newHead !== null) nodes[newHead].prev = null; else tailId = null;
+      headId = newHead;
+      delete nodes[oldHead];
+      snapshot('"' + v + '" removido do início.', { op: "remove" });
+      return true;
+    }
+
+    function removeTail() {
+      if (tailId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      var oldTail = tailId; var v = nodes[oldTail].value;
+      snapshot('Removendo "' + v + '" do fim — O(1): o ponteiro prev já nos dá o penúltimo nó, sem percorrer nada.', { op: "remove", cursorId: oldTail, highlightIds: [oldTail] });
+      var newTail = nodes[oldTail].prev;
+      if (newTail !== null) nodes[newTail].next = null; else headId = null;
+      tailId = newTail;
+      delete nodes[oldTail];
+      snapshot('"' + v + '" removido do fim — O(1), sem precisar achar o penúltimo nó percorrendo a lista.', { op: "remove" });
+      return true;
+    }
+
+    function unlinkKnown(id) {
+      if (id === headId) { removeHead(); return; }
+      if (id === tailId) { removeTail(); return; }
+      var v = nodes[id].value;
+      snapshot('Encontrado "' + v + '" — removendo direto com node.prev e node.next (não precisamos ter guardado o nó anterior).', { op: "remove", cursorId: id, highlightIds: [id] });
+      var p = nodes[id].prev, n = nodes[id].next;
+      nodes[p].next = n; nodes[n].prev = p;
+      delete nodes[id];
+      snapshot('"' + v + '" removido.', { op: "remove" });
+    }
+
+    function removeValue(value) {
+      var cur = headId;
+      while (cur !== null) {
+        snapshot('Comparando "' + value + '" com "' + nodes[cur].value + '"...', { op: "search", cursorId: cur, highlightIds: [cur], direction: "forward" });
+        if (nodes[cur].value === value) { unlinkKnown(cur); return true; }
+        cur = nodes[cur].next;
+      }
+      snapshot('"' + value + '" não encontrado na lista.', { op: "bad" });
+      return false;
+    }
+
+    function removeAt(index) {
+      var n = length();
+      if (index < 0 || index > n - 1) { snapshot('Posição ' + index + ' inválida (lista tem ' + n + ' nós).', { op: "bad" }); return false; }
+      var targetId = locateByIndex(index);
+      unlinkKnown(targetId);
+      return true;
+    }
+
+    function search(value) {
+      var cur = headId; var idx = 0;
+      while (cur !== null) {
+        snapshot('Comparando "' + value + '" com "' + nodes[cur].value + '" (posição ' + idx + ')...', { op: "search", cursorId: cur, highlightIds: [cur], direction: "forward" });
+        if (nodes[cur].value === value) { snapshot('"' + value + '" encontrado na posição ' + idx + '.', { op: "search", cursorId: cur, highlightIds: [cur] }); return idx; }
+        cur = nodes[cur].next; idx++;
+      }
+      snapshot('"' + value + '" não encontrado na lista.', { op: "bad" });
+      return -1;
+    }
+
+    function traverseBackward() {
+      if (tailId === null) { snapshot("Lista vazia — nada para percorrer.", { op: "info" }); return []; }
+      var cur = tailId; var values = [];
+      while (cur !== null) {
+        values.push(nodes[cur].value);
+        snapshot('Percorrendo de trás pra frente: "' + nodes[cur].value + '" (via prev).', { op: "traverse", cursorId: cur, highlightIds: [cur], direction: "backward" });
+        cur = nodes[cur].prev;
+      }
+      snapshot('Ordem de trás pra frente: ' + values.map(function (v) { return '"' + v + '"'; }).join(' → ') + '.', { op: "traverse" });
+      return values;
+    }
+
+    function reverse() {
+      var order = chainOrderForward(nodes, headId);
+      if (!order || order.length < 2) { snapshot(order && order.length === 1 ? "Lista de um nó só — reverter não muda nada." : "Lista vazia — nada para reverter.", { op: "info", slotOrder: order || [] }); return; }
+      var slotOrder = order.slice();
+      for (var i = 0; i < order.length; i++) {
+        var id = order[i];
+        var oldPrev = nodes[id].prev, oldNext = nodes[id].next;
+        snapshot('Olhando "' + nodes[id].value + '": prev e next vão trocar de lugar.', { op: "reverse", cursorId: id, highlightIds: [id], slotOrder: slotOrder });
+        nodes[id].prev = oldNext; nodes[id].next = oldPrev;
+        snapshot('"' + nodes[id].value + '" invertido: agora prev e next estão trocados.', { op: "reverse", cursorId: id, highlightIds: [id], slotOrder: slotOrder });
+      }
+      var oldHead = headId, oldTail = tailId;
+      headId = oldTail; tailId = oldHead;
+      snapshot('Fim: cabeça e cauda trocadas — "' + nodes[headId].value + '" agora é a cabeça, "' + nodes[tailId].value + '" é a cauda.', { op: "reverse", highlightIds: [headId, oldTail], slotOrder: slotOrder });
+    }
+
+    function toArray() { var order = chainOrderForward(nodes, headId); return order ? order.map(function (id) { return nodes[id].value; }) : null; }
+    function toArrayBackward() { var order = chainOrderBackward(nodes, tailId); return order ? order.map(function (id) { return nodes[id].value; }) : null; }
+
+    snapshot("Lista vazia.", { op: "info" });
+
+    return {
+      insertAtHead: insertAtHead, insertAtTail: insertAtTail, insertAt: insertAt,
+      removeHead: removeHead, removeTail: removeTail, removeValue: removeValue, removeAt: removeAt,
+      search: search, traverseBackward: traverseBackward, reverse: reverse,
+      length: length, toArray: toArray, toArrayBackward: toArrayBackward,
+      getHeadId: function () { return headId; }, getTailId: function () { return tailId; },
+      getNodes: function () { return nodes; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= app state =================
+  var els = {
+    dllSvg: document.getElementById("dllSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    indexInput: document.getElementById("indexInput"),
+    btnInsertTail: document.getElementById("btnInsertTail"),
+    btnInsertHead: document.getElementById("btnInsertHead"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnRemoveValue: document.getElementById("btnRemoveValue"),
+    btnInsertAt: document.getElementById("btnInsertAt"),
+    btnRemoveAt: document.getElementById("btnRemoveAt"),
+    btnRemoveHead: document.getElementById("btnRemoveHead"),
+    btnRemoveTail: document.getElementById("btnRemoveTail"),
+    btnReverse: document.getElementById("btnReverse"),
+    btnTraverseBack: document.getElementById("btnTraverseBack"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var NS = "http://www.w3.org/2000/svg";
+  var NODE_W = 104, NODE_H = 52, PTR_W = 24, CELL_W = 150;
+  var TOP_PAD = 58, BOTTOM_PAD = 54, SIDE_PAD = 26;
+  var NULL_W = 48, NULL_GAP = 22;
+
+  var engine = createDoublyLinkedListEngine();
+  var state = { stepIndex: 0, playing: false, timer: null };
+  var nodeEls = {}, nextArrowEls = {}, prevArrowEls = {};
+  var headTag = null, tailTag = null;
+  var nullBoxR = null, nullTextR = null, nullBoxL = null, nullTextL = null, emptyTextEl = null;
+
+  function buildStatics() {
+    els.dllSvg.innerHTML = "";
+    nodeEls = {}; nextArrowEls = {}; prevArrowEls = {};
+
+    var defs = document.createElementNS(NS, "defs");
+    [["arrowNextNormal", "var(--line-strong)"], ["arrowNextCrossed", "var(--gold)"],
+     ["arrowPrevNormal", "var(--violet)"], ["arrowPrevCrossed", "var(--rust)"]].forEach(function (pair) {
+      var marker = document.createElementNS(NS, "marker");
+      marker.setAttribute("id", pair[0]); marker.setAttribute("viewBox", "0 0 10 10");
+      marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+      marker.setAttribute("markerWidth", "6.5"); marker.setAttribute("markerHeight", "6.5"); marker.setAttribute("orient", "auto-start-reverse");
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); path.setAttribute("fill", pair[1]);
+      marker.appendChild(path); defs.appendChild(marker);
+    });
+    els.dllSvg.appendChild(defs);
+
+    var prevArrowLayer = document.createElementNS(NS, "g"); prevArrowLayer.setAttribute("id", "prevArrowLayer");
+    var nextArrowLayer = document.createElementNS(NS, "g"); nextArrowLayer.setAttribute("id", "nextArrowLayer");
+    var nodeLayer = document.createElementNS(NS, "g"); nodeLayer.setAttribute("id", "nodeLayer");
+    var tagLayer = document.createElementNS(NS, "g"); tagLayer.setAttribute("id", "tagLayer");
+    els.dllSvg.appendChild(prevArrowLayer); els.dllSvg.appendChild(nextArrowLayer);
+    els.dllSvg.appendChild(nodeLayer); els.dllSvg.appendChild(tagLayer);
+
+    function makeNullBox() {
+      var box = document.createElementNS(NS, "rect"); box.setAttribute("class", "dll-null-box");
+      box.setAttribute("width", NULL_W); box.setAttribute("height", NODE_H); box.setAttribute("rx", 8);
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "dll-null-text"); text.textContent = "null";
+      nodeLayer.appendChild(box); nodeLayer.appendChild(text);
+      return { box: box, text: text };
+    }
+    var nr = makeNullBox(); nullBoxR = nr.box; nullTextR = nr.text;
+    var nl = makeNullBox(); nullBoxL = nl.box; nullTextL = nl.text;
+
+    emptyTextEl = document.createElementNS(NS, "text"); emptyTextEl.setAttribute("class", "dll-empty-text"); emptyTextEl.textContent = "lista vazia";
+    nodeLayer.appendChild(emptyTextEl);
+
+    function makeTag(cls) {
+      var g = document.createElementNS(NS, "g");
+      var line = document.createElementNS(NS, "line"); line.setAttribute("class", "dll-tag-line");
+      var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "dll-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 40); bg.setAttribute("height", 18);
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "dll-tag-pill"); text.textContent = cls;
+      g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+      tagLayer.appendChild(g);
+      return { g: g, line: line, bg: bg, text: text };
+    }
+    headTag = makeTag("head");
+    tailTag = makeTag("tail");
+  }
+
+  function xFor(i) { return SIDE_PAD + NULL_W + NULL_GAP + i * CELL_W + NODE_W / 2; }
+  var CY = TOP_PAD + NODE_H / 2;
+
+  function arcPath(x1, y1, x2, y2, bow) {
+    var midX = (x1 + x2) / 2;
+    var midY = (y1 + y2) / 2 + bow;
+    return "M " + x1 + " " + y1 + " Q " + midX + " " + midY + " " + x2 + " " + y2;
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Buscando", traverse: "Percorrendo", reverse: "Revertendo", bad: "Não encontrado", info: "Início" };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var order = step.slotOrder ? step.slotOrder : (function () {
+      var out = []; var seen = {}; var cur = step.headId;
+      while (cur != null && !seen[cur]) { seen[cur] = true; out.push(cur); cur = step.nodes[cur].next; }
+      return out;
+    })();
+    var isReverseLayout = !!step.slotOrder;
+    var slotIndex = {};
+    order.forEach(function (id, i) { slotIndex[id] = i; });
+
+    var width = SIDE_PAD * 2 + NULL_W + NULL_GAP + Math.max(0, order.length) * CELL_W + (isReverseLayout ? 0 : (NULL_W + NULL_GAP));
+    width = Math.max(width, 320);
+    var height = TOP_PAD + NODE_H + BOTTOM_PAD;
+    els.dllSvg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    els.dllSvg.setAttribute("width", width);
+    els.dllSvg.setAttribute("height", height);
+
+    if (order.length === 0) {
+      emptyTextEl.setAttribute("x", width / 2); emptyTextEl.setAttribute("y", CY);
+      emptyTextEl.style.display = "";
+    } else {
+      emptyTextEl.style.display = "none";
+    }
+
+    function leftDotX(cx) { return cx - NODE_W / 2 + PTR_W / 2; }
+    function rightDotX(cx) { return cx + NODE_W / 2 - PTR_W / 2; }
+
+    var presentIds = {};
+    order.forEach(function (id) {
+      presentIds[id] = true;
+      var n = step.nodes[id];
+      var cx = xFor(slotIndex[id]);
+      var rec = nodeEls[id];
+      if (!rec) {
+        var g = document.createElementNS(NS, "g"); g.setAttribute("class", "dll-node");
+        var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "dll-node-rect");
+        rect.setAttribute("width", NODE_W); rect.setAttribute("height", NODE_H); rect.setAttribute("rx", 10);
+        var dividerL = document.createElementNS(NS, "line"); dividerL.setAttribute("class", "dll-divider");
+        var dividerR = document.createElementNS(NS, "line"); dividerR.setAttribute("class", "dll-divider");
+        var dotL = document.createElementNS(NS, "circle"); dotL.setAttribute("class", "dll-dot"); dotL.setAttribute("r", 3.2);
+        var dotR = document.createElementNS(NS, "circle"); dotR.setAttribute("class", "dll-dot"); dotR.setAttribute("r", 3.2);
+        var text = document.createElementNS(NS, "text"); text.setAttribute("class", "dll-value");
+        g.appendChild(rect); g.appendChild(dividerL); g.appendChild(dividerR); g.appendChild(dotL); g.appendChild(dotR); g.appendChild(text);
+        document.getElementById("nodeLayer").appendChild(g);
+        rec = { g: g, rect: rect, dividerL: dividerL, dividerR: dividerR, dotL: dotL, dotR: dotR, text: text };
+        nodeEls[id] = rec;
+      }
+      var left = cx - NODE_W / 2, top = CY - NODE_H / 2;
+      rec.rect.setAttribute("x", left); rec.rect.setAttribute("y", top);
+      var dxL = left + PTR_W, dxR = left + NODE_W - PTR_W;
+      rec.dividerL.setAttribute("x1", dxL); rec.dividerL.setAttribute("x2", dxL); rec.dividerL.setAttribute("y1", top); rec.dividerL.setAttribute("y2", top + NODE_H);
+      rec.dividerR.setAttribute("x1", dxR); rec.dividerR.setAttribute("x2", dxR); rec.dividerR.setAttribute("y1", top); rec.dividerR.setAttribute("y2", top + NODE_H);
+      rec.dotL.setAttribute("cx", leftDotX(cx)); rec.dotL.setAttribute("cy", CY);
+      rec.dotR.setAttribute("cx", rightDotX(cx)); rec.dotR.setAttribute("cy", CY);
+      rec.text.setAttribute("x", cx); rec.text.setAttribute("y", CY + 0.5);
+      rec.text.textContent = n.value;
+
+      var st = null;
+      var dir = (step.highlightIds || []).indexOf(id) !== -1 ? step.direction : null;
+      if ((step.highlightIds || []).indexOf(id) !== -1) {
+        if (step.op === "bad") st = "bad";
+        else if (step.op === "insert" && id === step.cursorId) st = "new";
+        else st = "cursor";
+      }
+      if (step.cursorId === id && !st) st = "cursor";
+      if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+      if (dir === "backward") rec.g.setAttribute("data-dir", "backward"); else rec.g.removeAttribute("data-dir");
+    });
+    Object.keys(nodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; } });
+
+    // ---- next arrows (below the row) ----
+    var presentNext = {};
+    order.forEach(function (id) {
+      var n = step.nodes[id];
+      if (n.next == null) return;
+      if (!presentIds[n.next] && !isReverseLayout) return;
+      presentNext[id] = true;
+      var path = nextArrowEls[id];
+      if (!path) { path = document.createElementNS(NS, "path"); path.setAttribute("class", "dll-arrow next"); document.getElementById("nextArrowLayer").appendChild(path); nextArrowEls[id] = path; }
+      var fromSlot = slotIndex[id], toSlot = slotIndex[n.next];
+      var fromX = rightDotX(xFor(fromSlot));
+      var toX = leftDotX(xFor(toSlot));
+      var normal = toSlot > fromSlot;
+      var bow = normal ? 20 : 54;
+      path.setAttribute("class", "dll-arrow next " + (normal ? "normal" : "crossed"));
+      path.setAttribute("marker-end", "url(#" + (normal ? "arrowNextNormal" : "arrowNextCrossed") + ")");
+      path.setAttribute("d", arcPath(fromX, CY, toX, CY, bow));
+    });
+    Object.keys(nextArrowEls).forEach(function (idStr) {
+      if (idStr === "nullR") return; // the null-terminator arrow is managed separately below, never by numeric id
+      var id = Number(idStr);
+      if (!presentNext[id]) { nextArrowEls[id].remove(); delete nextArrowEls[id]; }
+    });
+
+    // ---- prev arrows (above the row) ----
+    var presentPrev = {};
+    order.forEach(function (id) {
+      var n = step.nodes[id];
+      if (n.prev == null) return;
+      if (!presentIds[n.prev] && !isReverseLayout) return;
+      presentPrev[id] = true;
+      var path = prevArrowEls[id];
+      if (!path) { path = document.createElementNS(NS, "path"); path.setAttribute("class", "dll-arrow prev"); document.getElementById("prevArrowLayer").appendChild(path); prevArrowEls[id] = path; }
+      var fromSlot = slotIndex[id], toSlot = slotIndex[n.prev];
+      var fromX = leftDotX(xFor(fromSlot));
+      var toX = rightDotX(xFor(toSlot));
+      var normal = toSlot < fromSlot;
+      var bow = normal ? -20 : -54;
+      path.setAttribute("class", "dll-arrow prev " + (normal ? "normal" : "crossed"));
+      path.setAttribute("marker-end", "url(#" + (normal ? "arrowPrevNormal" : "arrowPrevCrossed") + ")");
+      path.setAttribute("d", arcPath(fromX, CY, toX, CY, bow));
+    });
+    Object.keys(prevArrowEls).forEach(function (idStr) {
+      if (idStr === "nullL") return; // the null-terminator arrow is managed separately below, never by numeric id
+      var id = Number(idStr);
+      if (!presentPrev[id]) { prevArrowEls[id].remove(); delete prevArrowEls[id]; }
+    });
+
+    // ---- null terminators (both ends, normal layout only) ----
+    var headInOrder = order.length && !isReverseLayout ? order[0] : null;
+    var tailInOrder = order.length && !isReverseLayout ? order[order.length - 1] : null;
+    if (tailInOrder != null && step.nodes[tailInOrder].next == null) {
+      var nxR = xFor(order.length) - NODE_W / 2 + 14;
+      nullBoxR.setAttribute("x", nxR); nullBoxR.setAttribute("y", CY - NODE_H / 2);
+      nullTextR.setAttribute("x", nxR + NULL_W / 2); nullTextR.setAttribute("y", CY);
+      nullBoxR.style.display = ""; nullTextR.style.display = "";
+      var pathR = nextArrowEls["nullR"];
+      if (!pathR) { pathR = document.createElementNS(NS, "path"); pathR.setAttribute("class", "dll-arrow next normal"); pathR.setAttribute("marker-end", "url(#arrowNextNormal)"); document.getElementById("nextArrowLayer").appendChild(pathR); nextArrowEls["nullR"] = pathR; }
+      pathR.setAttribute("d", arcPath(rightDotX(xFor(order.length - 1)), CY, nxR, CY, 20));
+      pathR.style.display = "";
+    } else {
+      nullBoxR.style.display = "none"; nullTextR.style.display = "none";
+      if (nextArrowEls["nullR"]) nextArrowEls["nullR"].style.display = "none";
+    }
+    if (headInOrder != null && step.nodes[headInOrder].prev == null) {
+      var nxL = xFor(0) - NODE_W / 2 - NULL_GAP - NULL_W;
+      nullBoxL.setAttribute("x", nxL); nullBoxL.setAttribute("y", CY - NODE_H / 2);
+      nullTextL.setAttribute("x", nxL + NULL_W / 2); nullTextL.setAttribute("y", CY);
+      nullBoxL.style.display = ""; nullTextL.style.display = "";
+      var pathL = prevArrowEls["nullL"];
+      if (!pathL) { pathL = document.createElementNS(NS, "path"); pathL.setAttribute("class", "dll-arrow prev normal"); pathL.setAttribute("marker-end", "url(#arrowPrevNormal)"); document.getElementById("prevArrowLayer").appendChild(pathL); prevArrowEls["nullL"] = pathL; }
+      pathL.setAttribute("d", arcPath(leftDotX(xFor(0)), CY, nxL + NULL_W, CY, -20));
+      pathL.style.display = "";
+    } else {
+      nullBoxL.style.display = "none"; nullTextL.style.display = "none";
+      if (prevArrowEls["nullL"]) prevArrowEls["nullL"].style.display = "none";
+    }
+
+    // head / tail tags
+    function placeTag(tag, id, labelOffset) {
+      if (id == null || !presentIds[id]) { tag.g.style.display = "none"; return; }
+      tag.g.style.display = "";
+      var cx = xFor(slotIndex[id]) + labelOffset;
+      var top = CY - NODE_H / 2;
+      tag.bg.setAttribute("x", cx - 20); tag.bg.setAttribute("y", top - 30);
+      tag.text.setAttribute("x", cx); tag.text.setAttribute("y", top - 21);
+      tag.line.setAttribute("x1", cx); tag.line.setAttribute("x2", cx);
+      tag.line.setAttribute("y1", top - 12); tag.line.setAttribute("y2", top);
+    }
+    var headNodeId = order.length ? (isReverseLayout ? (step.headId != null && presentIds[step.headId] ? step.headId : null) : order[0]) : null;
+    var tailNodeId = order.length ? (isReverseLayout ? (step.tailId != null && presentIds[step.tailId] ? step.tailId : null) : order[order.length - 1]) : null;
+    if (headNodeId != null && headNodeId === tailNodeId) {
+      placeTag(headTag, headNodeId, -22);
+      placeTag(tailTag, tailNodeId, 22);
+    } else {
+      placeTag(headTag, headNodeId, 0);
+      placeTag(tailTag, tailNodeId, 0);
+    }
+  }
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  // ================= playback controls =================
+  function goTo(i) {
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function stepBy(delta) { goTo(state.stepIndex + delta); }
+  function stopPlaying() {
+    state.playing = false;
+    els.btnPlay.textContent = "▶ Reproduzir";
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  }
+  function togglePlay() {
+    if (state.playing) { stopPlaying(); return; }
+    var steps = engine.getSteps();
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      if (state.stepIndex >= steps.length - 1) { stopPlaying(); return; }
+      state.stepIndex++; render();
+    }, Number(els.speed.value));
+  }
+
+  els.btnReset.addEventListener("click", function () { goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stepBy(-1); });
+  els.btnNext.addEventListener("click", function () { stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) { togglePlay(); togglePlay(); } });
+
+  function showError(msg) { els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError() { els.errorText.hidden = true; }
+
+  function parseValueInput() {
+    var raw = els.valueInput.value.trim();
+    if (raw === "") { showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v)) { showError('"' + raw + '" não é um número inteiro válido.'); return null; }
+    if (v < -999 || v > 999) { showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+  function parseIndexInput() {
+    var raw = els.indexInput.value.trim();
+    if (raw === "") { showError("Digite uma posição."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) { showError('"' + raw + '" não é uma posição válida.'); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsertTail.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insertAtTail(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnInsertHead.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insertAtHead(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnRemoveValue.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.removeValue(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnInsertAt.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    var idx = parseIndexInput(); if (idx === null) return;
+    engine.insertAt(idx, v); jumpToLiveEnd();
+  });
+  els.btnRemoveAt.addEventListener("click", function () {
+    var idx = parseIndexInput(); if (idx === null) return;
+    engine.removeAt(idx); jumpToLiveEnd();
+  });
+  els.btnRemoveHead.addEventListener("click", function () { hideError(); engine.removeHead(); jumpToLiveEnd(); });
+  els.btnRemoveTail.addEventListener("click", function () { hideError(); engine.removeTail(); jumpToLiveEnd(); });
+  els.btnReverse.addEventListener("click", function () { hideError(); engine.reverse(); jumpToLiveEnd(); });
+  els.btnTraverseBack.addEventListener("click", function () { hideError(); engine.traverseBackward(); jumpToLiveEnd(); });
+
+  els.sizeSlider.addEventListener("input", function () { els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function () {
+    hideError();
+    engine = createDoublyLinkedListEngine();
+    buildStatics();
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insertAtTail(v);
+    }
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { stepBy(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { stepBy(-1); e.preventDefault(); }
+    else if (e.key === " ") { togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= boot =================
+  buildStatics();
+  (function boot() {
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insertAtTail(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

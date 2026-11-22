@@ -1,0 +1,856 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Smoothsort Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512;
+      --card:#191D19;
+      --ink:#E9EEEA;
+      --ink-soft:#AEB8B1;
+      --ink-faint:#79837C;
+      --line:#2B322D;
+      --line-strong:#3B443C;
+      --accent:#3FBE97;
+      --accent-ink:#8FE0C4;
+      --accent-soft:#173129;
+      --gold:#E0AA4E;
+      --gold-soft:#332711;
+      --rust:#E08267;
+      --rust-soft:#382019;
+      --violet:#B6A1DE;
+      --violet-soft:#292236;
+      --success:#5FCB8D;
+      --success-soft:#173226;
+      --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512;
+    --card:#191D19;
+    --ink:#E9EEEA;
+    --ink-soft:#AEB8B1;
+    --ink-faint:#79837C;
+    --line:#2B322D;
+    --line-strong:#3B443C;
+    --accent:#3FBE97;
+    --accent-ink:#8FE0C4;
+    --accent-soft:#173129;
+    --gold:#E0AA4E;
+    --gold-soft:#332711;
+    --rust:#E08267;
+    --rust-soft:#382019;
+    --violet:#B6A1DE;
+    --violet-soft:#292236;
+    --success:#5FCB8D;
+    --success-soft:#173226;
+    --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px;
+    padding-block:32px 64px;
+    font-size:15px;
+    line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    font-size:0.72rem;
+    color:var(--accent-ink);
+    font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+
+  /* ---------- header ---------- */
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  /* ---------- leonardo numbers strip ---------- */
+  .lnums{
+    display:flex; gap:8px; overflow-x:auto; padding-block:2px 4px;
+  }
+  .lnums .tile{
+    flex:0 0 auto;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 12px;
+    text-align:center;
+    min-width:58px;
+  }
+  .lnums .tile .k{font-size:0.68rem; color:var(--ink-faint); font-family:'IBM Plex Mono',monospace;}
+  .lnums .tile .v{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:1.05rem;}
+
+  /* ---------- main card ---------- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .statusbar{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .phase-pill{
+    display:inline-flex; align-items:center; gap:7px;
+    border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600;
+    border:1px solid var(--line-strong);
+    color:var(--ink-soft);
+  }
+  .phase-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .phase-pill[data-phase="build"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .phase-pill[data-phase="build"] .dot{background:var(--gold);}
+  .phase-pill[data-phase="extract"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .phase-pill[data-phase="extract"] .dot{background:var(--accent);}
+  .phase-pill[data-phase="done"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .phase-pill[data-phase="done"] .dot{background:var(--success);}
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:4px;}
+  .stage{display:flex; flex-direction:column; gap:2px;}
+
+  .array-row{display:flex;}
+  .cell{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.95rem;
+    border:1.5px solid var(--line-strong);
+    background:var(--paper);
+    color:var(--ink);
+    transition: background .25s ease, border-color .25s ease, color .25s ease, transform .2s ease;
+    position:relative;
+  }
+  .cell + .cell{margin-left:4px;}
+  .cell .idx{
+    position:absolute; bottom:-18px; left:0; right:0; text-align:center;
+    font-size:0.62rem; color:var(--ink-faint); font-weight:400;
+  }
+  .cell[data-state="sorted"]{ background:var(--success-soft); border-color:var(--success); color:var(--success); }
+  .cell[data-state="new"]{ background:var(--gold-soft); border-color:var(--gold); color:var(--gold); }
+  .cell[data-state="compare"]{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft) inset; }
+  .cell[data-state="swap"]{ border-color:var(--rust); background:var(--rust-soft); color:var(--rust); transform:scale(1.06); }
+  .cell[data-state="ok"]{ border-color:var(--accent); background:var(--accent-soft); color:var(--accent-ink); }
+  .cell[data-state="split"]{ border-color:var(--violet); background:var(--violet-soft); color:var(--violet); }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .forest-svg{display:block; margin-top:22px; transition:height .2s ease, width .2s ease;}
+  @media (prefers-reduced-motion: reduce){
+    .forest-svg, .cell{ transition:none !important; }
+  }
+  .node-circle{ fill:var(--paper); stroke:var(--line-strong); stroke-width:1.6; transition: fill .25s ease, stroke .25s ease; }
+  .node-value{ fill:var(--ink); font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; }
+  .node-order{ fill:var(--ink-faint); font-size:9px; text-anchor:middle; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.6; }
+  .root-mark{ fill:none; stroke:var(--ink-faint); stroke-width:1; stroke-dasharray:2 2; }
+
+  .node[data-state="sorted"] .node-circle{ fill:var(--success-soft); stroke:var(--success); }
+  .node[data-state="sorted"] .node-value{ fill:var(--success); }
+  .node[data-state="new"] .node-circle{ fill:var(--gold-soft); stroke:var(--gold); }
+  .node[data-state="new"] .node-value{ fill:var(--gold); }
+  .node[data-state="compare"] .node-circle{ stroke:var(--accent); stroke-width:2.4; }
+  .node[data-state="swap"] .node-circle{ fill:var(--rust-soft); stroke:var(--rust); stroke-width:2.4; }
+  .node[data-state="swap"] .node-value{ fill:var(--rust); }
+  .node[data-state="ok"] .node-circle{ fill:var(--accent-soft); stroke:var(--accent); }
+  .node[data-state="ok"] .node-value{ fill:var(--accent-ink); }
+  .node[data-state="split"] .node-circle{ fill:var(--violet-soft); stroke:var(--violet); stroke-width:2.2; }
+  .node[data-state="split"] .node-value{ fill:var(--violet); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:11px;height:11px;border-radius:3px;border:1.5px solid var(--line-strong); background:var(--paper);}
+  .legend .swatch.new{background:var(--gold-soft); border-color:var(--gold);}
+  .legend .swatch.compare{border-color:var(--accent); border-width:2px;}
+  .legend .swatch.swap{background:var(--rust-soft); border-color:var(--rust);}
+  .legend .swatch.ok{background:var(--accent-soft); border-color:var(--accent);}
+  .legend .swatch.split{background:var(--violet-soft); border-color:var(--violet);}
+  .legend .swatch.sorted{background:var(--success-soft); border-color:var(--success);}
+
+  .message{
+    background:var(--accent-soft);
+    border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px;
+    padding:13px 16px;
+    color:var(--ink);
+    font-size:0.92rem;
+    min-height:2.6em;
+  }
+  .message strong{color:var(--accent-ink);}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong);
+    background:var(--card);
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="text"]{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85rem;
+    border:1px solid var(--line-strong);
+    border-radius:8px;
+    padding:7px 10px;
+    background:var(--paper);
+    color:var(--ink);
+    min-width:0;
+    flex:1 1 220px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+  hr.rule{border:none; border-top:1px solid var(--line); margin:0;}
+
+  /* ---------- explainer ---------- */
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+  .phase-card{
+    border:1px solid var(--line); border-radius:12px; background:var(--card);
+    padding:16px 18px; display:flex; flex-direction:column; gap:8px;
+  }
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+  .ref-svg-wrap{overflow-x:auto; padding-block:6px;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Ordenação in-place · Dijkstra, 1981</span>
+    <h1>Smoothsort com árvores de Leonardo</h1>
+    <p class="prose">O Smoothsort organiza o vetor como uma <strong>floresta de árvores de Leonardo</strong> — heaps de máximo encaixados uns ao lado dos outros dentro do próprio vetor, sem memória extra. Primeiro a floresta é construída, elemento a elemento; depois ela é desmontada da maior raiz para a menor, e é essa segunda fase que deixa o vetor ordenado. Use os controles abaixo para andar por esse processo, passo a passo.</p>
+  </header>
+
+  <section>
+    <div class="eyebrow" style="margin-bottom:8px; display:block;">Números de Leonardo — L(k) = L(k−1) + L(k−2) + 1</div>
+    <div class="lnums" id="lnumsStrip"></div>
+  </section>
+
+  <section class="card" aria-label="Visualizador do Smoothsort">
+    <div class="statusbar">
+      <span class="phase-pill" id="phasePill" data-phase="build"><span class="dot"></span><span id="phaseLabel">Fase 1 · Construção</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <div class="stage" id="stage">
+        <div class="array-row" id="arrayRow"></div>
+        <svg class="forest-svg" id="forestSvg"></svg>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch new"></span>nova raiz</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch swap"></span>trocando</span>
+      <span class="item"><span class="swatch ok"></span>heap restaurado</span>
+      <span class="item"><span class="swatch split"></span>árvore dividida</span>
+      <span class="item"><span class="swatch sorted"></span>posição final</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Tamanho
+          <input type="range" class="mini" id="sizeSlider" min="4" max="20" value="12" step="1">
+          <span class="mono" id="sizeLabel">12</span>
+        </label>
+        <button id="btnRandom">🎲 Novo vetor aleatório</button>
+        <div class="spacer"></div>
+        <input type="text" id="customInput" placeholder="ou digite valores: 56, 23, 89, 12…">
+        <button id="btnUseCustom">Usar estes valores</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>O que é uma árvore de Leonardo?</h2>
+    <p class="prose">Uma árvore de Leonardo de ordem <em>k</em> tem exatamente <span class="mono">L(k)</span> nós. As ordens 0 e 1 são folhas únicas; a partir da ordem 2, a raiz sempre tem uma subárvore de ordem <em>k−1</em> à esquerda e uma de ordem <em>k−2</em> à direita — por isso as árvores crescem de forma assimétrica, e não como uma árvore binária comum.</p>
+    <div class="ref-svg-wrap">
+      <svg id="refSvg" class="forest-svg" style="margin-top:6px;"></svg>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Fase 1</span>
+      <h3>Construção da floresta</h3>
+      <p class="prose">Cada posição do vetor, da esquerda para a direita, vira a raiz de uma nova árvore de Leonardo. Quando as duas últimas árvores têm ordens consecutivas, elas se fundem numa árvore maior, usando o elemento atual como nova raiz. Em seguida, essa raiz "afunda" até restaurar a propriedade de heap — o que é rápido porque as subárvores já eram heaps válidos.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Fase 2</span>
+      <h3>Extração ordenada</h3>
+      <p class="prose">A raiz da última árvore da floresta é sempre o maior valor ainda não ordenado, então ela já está na posição final. Removê-la divide sua árvore em duas menores; as novas raízes expostas podem precisar subir para restaurar o heap antes da próxima extração. Repetir isso da direita para a esquerda ordena o vetor inteiro.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática do algoritmo de Smoothsort descrito por Edsger W. Dijkstra (1981), usando árvores de Leonardo como estrutura de heap in-place. Complexidade: O(n) no melhor caso (vetor já ordenado), O(n log n) no pior caso, sempre em espaço constante.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Leonardo numbers ----------------
+  function makeLeonardo(maxOrder){
+    var L=[1,1];
+    for(var k=2;k<=maxOrder;k++) L[k]=L[k-1]+L[k-2]+1;
+    return L;
+  }
+  var L = makeLeonardo(24);
+
+  // ---------------- Smoothsort engine (records one step per operation) ----------------
+  function smoothsortWithSteps(input){
+    var a = input.slice();
+    var n = a.length;
+    var steps = [];
+    var stack = [];
+
+    function snapshot(message, opts){
+      opts = opts || {};
+      steps.push({
+        array: a.slice(),
+        stack: stack.map(function(t){ return {order:t.order, start:t.start, end:t.end}; }),
+        phase: opts.phase || "build",
+        message: message,
+        highlight: opts.highlight || {positions:[], kind:""},
+        sortedFrom: opts.sortedFrom !== undefined ? opts.sortedFrom : n
+      });
+    }
+
+    function childPositions(order, rootPos){
+      var rightPos = rootPos - 1;
+      var leftPos = rootPos - 1 - L[order-2];
+      return {leftPos:leftPos, rightPos:rightPos};
+    }
+
+    function trinkleAndSift(startPos, startChainIndex, phase, sortedFrom){
+      var r = startPos, chainIndex = startChainIndex, atRoot = true;
+      var order = stack[chainIndex].order;
+      while(true){
+        var candidates = [];
+        if(order >= 2){
+          var cp = childPositions(order, r);
+          candidates.push({pos:cp.leftPos, val:a[cp.leftPos], kind:"left"});
+          candidates.push({pos:cp.rightPos, val:a[cp.rightPos], kind:"right"});
+        }
+        if(atRoot && chainIndex > 0){
+          var prevPos = stack[chainIndex-1].end;
+          candidates.push({pos:prevPos, val:a[prevPos], kind:"cross"});
+        }
+        if(candidates.length === 0) break;
+        var best = candidates[0];
+        for(var i=1;i<candidates.length;i++) if(candidates[i].val > best.val) best = candidates[i];
+
+        snapshot(
+          "Comparando o nó em [" + r + "] (valor " + a[r] + ") com " +
+          (best.kind==="cross" ? "a raiz da árvore anterior" : best.kind==="left" ? "seu filho maior (subárvore esquerda)" : "seu filho menor (subárvore direita)") +
+          " em [" + best.pos + "] (valor " + a[best.pos] + ").",
+          {phase:phase, sortedFrom:sortedFrom, highlight:{positions:[r, best.pos], kind:"compare"}}
+        );
+
+        if(a[r] >= best.val){
+          snapshot("[" + r + "] já é maior ou igual ao candidato — a propriedade de heap está restaurada aqui.",
+            {phase:phase, sortedFrom:sortedFrom, highlight:{positions:[r], kind:"ok"}});
+          break;
+        }
+
+        var from=r, to=best.pos, smallerValue=a[from], largerValue=a[to];
+        var tmp=a[from]; a[from]=a[to]; a[to]=tmp;
+
+        snapshot(
+          best.kind==="cross"
+            ? smallerValue+" era menor que a raiz anterior ("+largerValue+"): trocamos, e "+largerValue+" sobe para ["+to+"]. Continuamos verificando a partir de ["+to+"], onde "+smallerValue+" agora está."
+            : smallerValue+" era menor que seu filho ("+largerValue+"): trocamos, e "+largerValue+" sobe para ["+to+"]. A verificação continua descendo dentro da árvore.",
+          {phase:phase, sortedFrom:sortedFrom, highlight:{positions:[from,to], kind:"swap"}}
+        );
+
+        if(best.kind === "cross"){
+          chainIndex -= 1; r = to; order = stack[chainIndex].order; atRoot = true;
+        } else {
+          r = to; order = (best.kind==="left") ? order-1 : order-2; atRoot = false;
+        }
+      }
+    }
+
+    if(n === 0){
+      snapshot("Vetor vazio — nada para ordenar.", {phase:"done", sortedFrom:0});
+      return {sorted:a, steps:steps};
+    }
+
+    snapshot("Vamos ordenar "+n+" elementos com Smoothsort. Fase 1: construir uma floresta de árvores de Leonardo, uma posição de cada vez.",
+      {phase:"build", sortedFrom:n});
+
+    for(var idx=0; idx<n; idx++){
+      var merged = false;
+      if(stack.length >= 2){
+        var t1 = stack[stack.length-2], t2 = stack[stack.length-1];
+        if(t1.order === t2.order + 1){
+          var newOrder = t2.order + 2;
+          stack.pop(); stack.pop();
+          stack.push({order:newOrder, start:t1.start, end:idx});
+          merged = true;
+          snapshot("Posição ["+idx+"] = "+a[idx]+": as duas últimas árvores (ordens "+t1.order+" e "+t2.order+") são consecutivas, então elas se fundem em uma nova árvore de ordem "+newOrder+", com "+a[idx]+" como nova raiz.",
+            {phase:"build", sortedFrom:n, highlight:{positions:[idx], kind:"new"}});
+        }
+      }
+      if(!merged){
+        var newOrder2 = (stack.length>0 && stack[stack.length-1].order===1) ? 0 : 1;
+        stack.push({order:newOrder2, start:idx, end:idx});
+        snapshot("Posição ["+idx+"] = "+a[idx]+": nenhuma fusão é possível agora, então "+a[idx]+" entra como uma nova árvore-folha de ordem "+newOrder2+".",
+          {phase:"build", sortedFrom:n, highlight:{positions:[idx], kind:"new"}});
+      }
+      trinkleAndSift(idx, stack.length-1, "build", n);
+    }
+
+    snapshot("A floresta de árvores de Leonardo está completa e cada árvore obedece a propriedade de heap (máximo). Fase 2: extrair repetidamente o maior elemento.",
+      {phase:"extract", sortedFrom:n});
+
+    for(var i=n-1; i>=1; i--){
+      var last = stack.pop();
+      snapshot("A raiz da última árvore, em ["+last.end+"] (valor "+a[last.end]+"), é o maior valor entre os elementos ainda não ordenados — ela já está na posição final correta.",
+        {phase:"extract", sortedFrom:i+1, highlight:{positions:[last.end], kind:"sorted"}});
+
+      if(last.order >= 2){
+        var rightOrder = last.order-2, leftOrder = last.order-1;
+        var rightEnd = last.end-1;
+        var rightStart = rightEnd - L[rightOrder] + 1;
+        var leftEnd = rightStart - 1;
+        var leftStart = last.start;
+        stack.push({order:leftOrder, start:leftStart, end:leftEnd});
+        stack.push({order:rightOrder, start:rightStart, end:rightEnd});
+
+        snapshot("A árvore removida tinha ordem "+last.order+", então ela se divide em duas: uma subárvore de ordem "+leftOrder+" e uma de ordem "+rightOrder+". Ambas já são heaps válidos, mas as duas novas raízes podem precisar subir.",
+          {phase:"extract", sortedFrom:i, highlight:{positions:[leftEnd, rightEnd], kind:"split"}});
+
+        trinkleAndSift(leftEnd, stack.length-2, "extract", i);
+        trinkleAndSift(rightEnd, stack.length-1, "extract", i);
+      } else {
+        snapshot("A árvore removida era uma folha (ordem "+last.order+"), então nada mais precisa ser ajustado.",
+          {phase:"extract", sortedFrom:i});
+      }
+    }
+
+    snapshot("O vetor está completamente ordenado.", {phase:"done", sortedFrom:0, highlight:{positions:[], kind:""}});
+    return {sorted:a, steps:steps};
+  }
+
+  // ---------------- tree layout (shared by live forest + static reference) ----------------
+  function buildTreeNodes(order, rootPos, depth, out){
+    out.push({pos:rootPos, order:order, depth:depth});
+    if(order >= 2){
+      var rightPos = rootPos-1;
+      var leftPos = rootPos-1-L[order-2];
+      buildTreeNodes(order-1, leftPos, depth+1, out);
+      buildTreeNodes(order-2, rightPos, depth+1, out);
+    }
+  }
+
+  // ==================================================================
+  // App state & UI wiring
+  // ==================================================================
+  var els = {
+    lnumsStrip: document.getElementById("lnumsStrip"),
+    stage: document.getElementById("stage"),
+    arrayRow: document.getElementById("arrayRow"),
+    forestSvg: document.getElementById("forestSvg"),
+    message: document.getElementById("message"),
+    phasePill: document.getElementById("phasePill"),
+    phaseLabel: document.getElementById("phaseLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnRandom: document.getElementById("btnRandom"),
+    customInput: document.getElementById("customInput"),
+    btnUseCustom: document.getElementById("btnUseCustom"),
+    errorText: document.getElementById("errorText"),
+    refSvg: document.getElementById("refSvg")
+  };
+
+  var CELL_W = 46, CELL_GAP = 4, ROW_H = 54, NODE_R = 15, TOP_PAD = 14, SIDE_PAD = 0;
+
+  var state = { array: [], steps: [], stepIndex: 0, playing: false, timer: null, maxDepth: 3 };
+
+  function randomArray(n){
+    var a = [];
+    for(var i=0;i<n;i++) a.push(1 + Math.floor(Math.random()*98));
+    return a;
+  }
+
+  function rebuild(array){
+    state.array = array.slice();
+    var result = smoothsortWithSteps(array);
+    state.steps = result.steps;
+    state.stepIndex = 0;
+    els.scrubber.max = String(Math.max(0, state.steps.length-1));
+    setupStage(array.length);
+    render();
+  }
+
+  function setupStage(n){
+    var width = n * CELL_W + Math.max(0, n-1) * CELL_GAP;
+    els.arrayRow.innerHTML = "";
+    for(var i=0;i<n;i++){
+      var cell = document.createElement("div");
+      cell.className = "cell";
+      cell.style.width = CELL_W + "px";
+      cell.style.height = CELL_W + "px";
+      cell.dataset.pos = i;
+      var idxLabel = document.createElement("span");
+      idxLabel.className = "idx mono";
+      idxLabel.textContent = i;
+      cell.appendChild(idxLabel);
+      var valSpan = document.createElement("span");
+      valSpan.className = "val";
+      cell.appendChild(valSpan);
+      els.arrayRow.appendChild(cell);
+    }
+    els.stage.style.width = width + "px";
+  }
+
+  function xForPos(pos){ return pos*(CELL_W+CELL_GAP) + CELL_W/2; }
+  function yForDepth(depth){ return TOP_PAD + depth*ROW_H + NODE_R; }
+
+  var PHASE_LABELS = {
+    build: "Fase 1 · Construção",
+    extract: "Fase 2 · Extração",
+    done: "Concluído"
+  };
+
+  function render(){
+    var step = state.steps[state.stepIndex];
+    if(!step) return;
+
+    els.phasePill.dataset.phase = step.phase;
+    els.phaseLabel.textContent = PHASE_LABELS[step.phase] || step.phase;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (state.steps.length-1);
+    els.scrubber.value = state.stepIndex;
+    els.message.innerHTML = step.message;
+
+    var highlightMap = {};
+    var kind = step.highlight.kind;
+    (step.highlight.positions || []).forEach(function(p){ highlightMap[p] = kind; });
+
+    // array strip
+    var cells = els.arrayRow.children;
+    for(var i=0;i<cells.length;i++){
+      var cell = cells[i];
+      var val = step.array[i];
+      cell.querySelector(".val").textContent = val;
+      var st = "";
+      if(i >= step.sortedFrom) st = "sorted";
+      if(highlightMap[i]) st = highlightMap[i];
+      if(st) cell.dataset.state = st; else cell.removeAttribute("data-state");
+    }
+
+    // forest
+    renderForest(step, highlightMap);
+  }
+
+  function renderForest(step, highlightMap){
+    var svg = els.forestSvg;
+    svg.innerHTML = "";
+    var ns = "http://www.w3.org/2000/svg";
+    var edgesGroup = document.createElementNS(ns, "g");
+    var nodesGroup = document.createElementNS(ns, "g");
+
+    var maxDepthStep = 0;
+    step.stack.forEach(function(tree){
+      var nodes = [];
+      buildTreeNodes(tree.order, tree.end, 0, nodes);
+      nodes.forEach(function(n){ if(n.depth > maxDepthStep) maxDepthStep = n.depth; });
+    });
+    var width = state.array.length * (CELL_W+CELL_GAP) - CELL_GAP;
+    var svgH = TOP_PAD + (maxDepthStep+1)*ROW_H + 6;
+    svg.setAttribute("viewBox", "0 0 " + width + " " + svgH);
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", svgH);
+
+    step.stack.forEach(function(tree){
+      var nodes = [];
+      buildTreeNodes(tree.order, tree.end, 0, nodes);
+      nodes.forEach(function(node){
+        if(node.order >= 2){
+          var cp2 = {leftPos: node.pos-1-L[node.order-2], rightPos: node.pos-1};
+          [cp2.leftPos, cp2.rightPos].forEach(function(childPos){
+            var line = document.createElementNS(ns, "line");
+            line.setAttribute("class", "edge-line");
+            line.setAttribute("x1", xForPos(node.pos));
+            line.setAttribute("y1", yForDepth(node.depth));
+            line.setAttribute("x2", xForPos(childPos));
+            line.setAttribute("y2", yForDepth(node.depth+1));
+            edgesGroup.appendChild(line);
+          });
+        }
+        var g = document.createElementNS(ns, "g");
+        g.setAttribute("class", "node");
+        var stateKind = (node.pos < step.array.length && highlightMap[node.pos]) ? highlightMap[node.pos] : "";
+        if(node.pos >= step.sortedFrom) stateKind = "sorted";
+        if(highlightMap[node.pos]) stateKind = highlightMap[node.pos];
+        if(stateKind) g.setAttribute("data-state", stateKind);
+
+        var circle = document.createElementNS(ns, "circle");
+        circle.setAttribute("class", "node-circle");
+        circle.setAttribute("cx", xForPos(node.pos));
+        circle.setAttribute("cy", yForDepth(node.depth));
+        circle.setAttribute("r", NODE_R);
+        g.appendChild(circle);
+
+        var text = document.createElementNS(ns, "text");
+        text.setAttribute("class", "node-value");
+        text.setAttribute("x", xForPos(node.pos));
+        text.setAttribute("y", yForDepth(node.depth) + 0.5);
+        text.textContent = step.array[node.pos];
+        g.appendChild(text);
+
+        nodesGroup.appendChild(g);
+      });
+
+      // order badge above the tree's root
+      var rootX = xForPos(tree.end);
+      var badge = document.createElementNS(ns, "text");
+      badge.setAttribute("class", "node-order");
+      badge.setAttribute("x", rootX);
+      badge.setAttribute("y", yForDepth(0) - NODE_R - 6);
+      badge.textContent = "ordem " + tree.order;
+      nodesGroup.appendChild(badge);
+    });
+
+    svg.appendChild(edgesGroup);
+    svg.appendChild(nodesGroup);
+  }
+
+  // ---------------- playback controls ----------------
+  function stopPlaying(){
+    state.playing = false;
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i){
+    stopPlaying();
+    state.stepIndex = Math.max(0, Math.min(state.steps.length-1, i));
+    render();
+  }
+  function step(delta){
+    goTo(state.stepIndex + delta);
+  }
+  function togglePlay(){
+    if(state.playing){ stopPlaying(); return; }
+    if(state.stepIndex >= state.steps.length-1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function(){
+      if(state.stepIndex >= state.steps.length-1){ stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function(){ goTo(0); });
+  els.btnPrev.addEventListener("click", function(){ step(-1); });
+  els.btnNext.addEventListener("click", function(){ step(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function(){ goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function(){
+    if(state.playing){ togglePlay(); togglePlay(); }
+  });
+
+  els.sizeSlider.addEventListener("input", function(){
+    els.sizeLabel.textContent = els.sizeSlider.value;
+  });
+  els.btnRandom.addEventListener("click", function(){
+    hideError();
+    var n = Number(els.sizeSlider.value);
+    rebuild(randomArray(n));
+  });
+  els.btnUseCustom.addEventListener("click", function(){
+    var raw = els.customInput.value.trim();
+    if(!raw){ showError("Digite alguns números separados por vírgula ou espaço."); return; }
+    var parts = raw.split(/[,\s]+/).filter(Boolean);
+    var nums = [];
+    for(var i=0;i<parts.length;i++){
+      var v = Number(parts[i]);
+      if(!Number.isFinite(v)){ showError('"'+parts[i]+'" não é um número válido.'); return; }
+      nums.push(Math.round(v));
+    }
+    if(nums.length < 1){ showError("Digite pelo menos um número."); return; }
+    if(nums.length > 24){ showError("Use no máximo 24 valores para manter o desenho legível."); return; }
+    hideError();
+    els.sizeSlider.value = nums.length;
+    els.sizeLabel.textContent = nums.length;
+    rebuild(nums);
+  });
+  function showError(msg){ els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError(){ els.errorText.hidden = true; }
+
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if(tag === "INPUT" || tag === "TEXTAREA") return;
+    if(e.key === "ArrowRight"){ step(1); e.preventDefault(); }
+    else if(e.key === "ArrowLeft"){ step(-1); e.preventDefault(); }
+    else if(e.key === " "){ togglePlay(); e.preventDefault(); }
+  });
+
+  // ---------------- Leonardo numbers strip ----------------
+  (function renderLeonardoStrip(){
+    for(var k=0;k<=8;k++){
+      var tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = '<div class="k">L(' + k + ')</div><div class="v">' + L[k] + '</div>';
+      els.lnumsStrip.appendChild(tile);
+    }
+  })();
+
+  // ---------------- static reference diagram: orders 0..4 ----------------
+  (function renderReference(){
+    var orders = [0,1,2,3,4];
+    var ns = "http://www.w3.org/2000/svg";
+    var gap = 34;
+    var cursorX = 0;
+    var allNodes = [];
+    var maxDepthRef = 0;
+    var placements = [];
+
+    orders.forEach(function(order){
+      var size = L[order];
+      var nodes = [];
+      buildTreeNodes(order, size-1, 0, nodes);
+      var minPos = 0, maxPos = size-1;
+      var rawWidth = (maxPos-minPos) * (CELL_W*0.62+CELL_GAP) + CELL_W*0.62;
+      var slotWidth = Math.max(rawWidth, 100); // leave room for the "ordem k · L=…" label
+      var centerOffset = (slotWidth - rawWidth) / 2;
+      placements.push({order:order, nodes:nodes, offsetX: cursorX + centerOffset, size:size, slotWidth:slotWidth, slotStart:cursorX});
+      nodes.forEach(function(nd){ if(nd.depth>maxDepthRef) maxDepthRef = nd.depth; });
+      cursorX += slotWidth + gap;
+    });
+
+    var totalWidth = cursorX;
+    var rowHref = 46, nodeRref = 13, topPadRef = 26;
+    var svgH = topPadRef + (maxDepthRef+1)*rowHref + 26;
+    els.refSvg.setAttribute("viewBox", "0 0 " + totalWidth + " " + svgH);
+    els.refSvg.setAttribute("width", totalWidth);
+    els.refSvg.setAttribute("height", svgH);
+
+    function rx(offsetX, pos){ return offsetX + pos*(CELL_W*0.62+CELL_GAP) + (CELL_W*0.62)/2; }
+    function ry(depth){ return topPadRef + depth*rowHref + nodeRref; }
+
+    var edgesG = document.createElementNS(ns, "g");
+    var nodesG = document.createElementNS(ns, "g");
+    var labelsG = document.createElementNS(ns, "g");
+
+    placements.forEach(function(pl){
+      pl.nodes.forEach(function(node){
+        if(node.order >= 2){
+          var leftPos = node.pos-1-L[node.order-2];
+          var rightPos = node.pos-1;
+          [leftPos, rightPos].forEach(function(cpos){
+            var line = document.createElementNS(ns, "line");
+            line.setAttribute("class","edge-line");
+            line.setAttribute("x1", rx(pl.offsetX, node.pos));
+            line.setAttribute("y1", ry(node.depth));
+            line.setAttribute("x2", rx(pl.offsetX, cpos));
+            line.setAttribute("y2", ry(node.depth+1));
+            edgesG.appendChild(line);
+          });
+        }
+        var c = document.createElementNS(ns, "circle");
+        c.setAttribute("class","node-circle");
+        c.setAttribute("cx", rx(pl.offsetX, node.pos));
+        c.setAttribute("cy", ry(node.depth));
+        c.setAttribute("r", nodeRref);
+        nodesG.appendChild(c);
+      });
+      var lbl = document.createElementNS(ns, "text");
+      lbl.setAttribute("class","node-order");
+      lbl.setAttribute("x", pl.slotStart + pl.slotWidth/2);
+      lbl.setAttribute("y", svgH - 6);
+      lbl.textContent = "ordem " + pl.order + " · L=" + pl.size;
+      labelsG.appendChild(lbl);
+    });
+
+    els.refSvg.appendChild(edgesG);
+    els.refSvg.appendChild(nodesG);
+    els.refSvg.appendChild(labelsG);
+  })();
+
+  // ---------------- boot ----------------
+  rebuild(randomArray(12));
+})();
+</script>
+
+</body></html>

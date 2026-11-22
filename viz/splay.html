@@ -1,0 +1,812 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore Splay Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="rotate"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="rotate"] .dot{background:var(--violet);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-halo{ fill:none; stroke:transparent; stroke-width:3.5; transition: cx .35s ease, cy .35s ease, stroke .25s ease; }
+  .node-circle{ fill:var(--node-fill); stroke:var(--paper); stroke-width:3; transition: cx .35s ease, cy .35s ease; }
+  .node-value{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+  .root-badge{ fill:var(--accent); }
+  .root-badge-text{ font-family:'IBM Plex Mono',monospace; font-size:9px; fill:var(--card); text-anchor:middle; dominant-baseline:central; font-weight:600; }
+
+  .node[data-state="compare"] .node-halo{ stroke:var(--accent); }
+  .node[data-state="new"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="rotate"] .node-halo{ stroke:var(--violet); }
+  .node[data-state="successor"] .node-halo{ stroke:var(--accent); stroke-dasharray:3 3; }
+  .node[data-state="bad"] .node-halo{ stroke:var(--rust); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.compare{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.new{background:var(--card); border-color:var(--gold);}
+  .legend .swatch.rotate{background:var(--card); border-color:var(--violet);}
+  .legend .swatch.succ{background:var(--card); border-color:var(--accent); border-style:dashed;}
+  .legend .swatch.bad{background:var(--card); border-color:var(--rust);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:100px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+  .prop-list{display:flex; flex-direction:column; gap:10px; padding:0; margin:0; list-style:none;}
+  .prop-list li{display:flex; gap:12px; align-items:baseline;}
+  .prop-list .n{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.82rem; flex:0 0 20px;}
+
+  .rotation-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:820px){ .rotation-grid{grid-template-columns:1fr;} }
+  .case-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .case-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+  .case-diagram{display:flex; align-items:center; gap:8px; overflow-x:auto; padding-block:4px; justify-content:center;}
+  .case-diagram svg{flex:0 0 auto;}
+  .case-arrow{font-size:1.2rem; color:var(--ink-faint); flex:0 0 auto;}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Árvore binária de busca autoajustável · Sleator &amp; Tarjan, 1985</span>
+    <h1>Árvore Splay Visual</h1>
+    <p class="prose">Uma árvore splay não guarda nenhuma informação de equilíbrio — nem altura, nem cor. Em vez disso, <strong>toda</strong> busca, inserção ou remoção termina levando o nó envolvido até a raiz através de uma sequência de rotações chamada <strong>splay</strong>. O efeito colateral é poderoso: valores acessados recentemente ficam sempre perto da raiz, e o custo amortizado de qualquer operação é O(log n), mesmo sem balanceamento explícito. Use os controles abaixo para inserir, buscar e remover valores e acompanhar cada rotação.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da árvore splay">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch"></span>nó</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch new"></span>novo / atual</span>
+      <span class="item"><span class="swatch rotate"></span>em rotação (splay)</span>
+      <span class="item"><span class="swatch succ"></span>maior da subárvore esquerda</span>
+      <span class="item"><span class="swatch bad"></span>alvo da remoção / não encontrado</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnAccess">🔍 Buscar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+        <button id="btnRandomInsert">🎲 Inserir aleatório</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Tamanho inicial
+          <input type="range" class="mini" id="sizeSlider" min="1" max="20" value="10" step="1">
+          <span class="mono" id="sizeLabel">10</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova árvore aleatória</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Por que "splay"?</h2>
+    <p class="prose">Diferente de árvores AVL ou rubro-negras, uma splay não guarda nenhum dado extra por nó — nenhuma altura, nenhuma cor. Seu equilíbrio nasce inteiramente de um único hábito: <strong>toda vez que um nó é tocado, ele sobe até a raiz</strong>. Isso significa que valores usados com frequência ficam sempre rasos (baratos de achar de novo), enquanto valores esquecidos afundam — a árvore se reorganiza sozinha em torno do que importa agora.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Os três movimentos do splay</h2>
+    <p class="prose">Subir um nó <code class="mono">x</code> até a raiz é feito em passos de dois em dois níveis (ou um, no final), escolhidos pela posição de <code class="mono">x</code> em relação ao pai e ao avô:</p>
+    <div class="rotation-grid" id="splayCaseGrid"></div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Removendo por junção</h2>
+    <p class="prose">Para remover um valor, primeiro o levamos à raiz por splay — isso reduz o problema a remover a própria raiz. Depois, as duas subárvores restantes (esquerda e direita) precisam virar uma só:</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Splay até a raiz</span><span class="prose">O valor a remover sobe ao topo pelos mesmos três movimentos — zig, zig-zig, zig-zag — usados em qualquer acesso.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Duas subárvores restantes</span><span class="prose">Removida a raiz, sobram a subárvore esquerda (só valores menores) e a direita (só valores maiores) — sem mais nenhuma ligação entre si.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Maior valor da esquerda sobe por splay</span><span class="prose">Descemos sempre à direita na subárvore esquerda até achar seu maior valor, e o trazemos ao topo dela por splay — como ele é o maior, nunca terá filho direito.</span></div></div>
+      <div class="delete-case"><span class="badge">4</span><div class="body"><span class="title">Reconexão</span><span class="prose">Como esse novo topo não tem filho direito, a subárvore direita original é encaixada ali diretamente — a junção está completa e a árvore volta a ser uma só.</span></div></div>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Qualquer operação</span>
+      <h3>O(log n) amortizado, sem balanceamento explícito</h3>
+      <p class="prose">Uma única operação pode, em teoria, custar O(n) se a árvore estiver malformada — mas o splay que a acompanha garante que uma sequência de m operações nunca custa mais que O(m log n) no total (o "método do potencial" de Sleator e Tarjan prova esse limite).</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Localidade de acesso</span>
+      <h3>Itens "quentes" ficam baratos</h3>
+      <p class="prose">Como cada acesso traz o nó à raiz, uma sequência que revisita os mesmos poucos valores repetidamente é muito mais rápida numa splay do que numa árvore balanceada comum — uma propriedade chamada "teorema do conjunto de trabalho" (working set theorem).</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma árvore splay, seguindo o algoritmo clássico de Sleator e Tarjan (1985). Complexidade: O(log n) amortizado para busca, inserção e remoção.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Splay engine (records one step per operation) =================
+  function createSplayEngine() {
+    var nextId = 1;
+    var root = null;
+    var steps = [];
+
+    function newNode(value) { return { id: nextId++, value: value, left: null, right: null }; }
+    function rotateLeft(x) { var y = x.right; x.right = y.left; y.left = x; return y; }
+    function rotateRight(x) { var y = x.left; x.left = y.right; y.right = x; return y; }
+    function cloneTree(node) { if (!node) return null; return { id: node.id, value: node.value, left: cloneTree(node.left), right: cloneTree(node.right) }; }
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ root: cloneTree(root), message: message, op: opts.op || "info", highlight: opts.highlight || { ids: [], kind: "" } });
+    }
+    function reattach(path, i, oldRef, newSubRoot, setRoot) {
+      if (i < 0) { setRoot(newSubRoot); return; }
+      var parent = path[i];
+      if (parent.left === oldRef) parent.left = newSubRoot; else parent.right = newSubRoot;
+    }
+
+    function splay(path, x, setRoot) {
+      while (path.length > 0) {
+        if (path.length === 1) {
+          var parent = path[0];
+          var xIsLeft = parent.left === x;
+          var newTop = xIsLeft ? rotateRight(parent) : rotateLeft(parent);
+          reattach(path, path.length - 2, parent, newTop, setRoot);
+          snapshot(x.value + " é filho direto do topo: uma única rotação (\"zig\") já o traz para cima.",
+            { op: "rotate", highlight: { ids: [x.id, parent.id], kind: "rotate" } });
+          path.pop();
+        } else {
+          var parent2 = path[path.length - 1];
+          var grandparent = path[path.length - 2];
+          var parentIsLeftOfGp = grandparent.left === parent2;
+          var xIsLeftOfParent = parent2.left === x;
+          var aboveIndex = path.length - 3;
+          if (parentIsLeftOfGp === xIsLeftOfParent) {
+            var t1, t2;
+            if (xIsLeftOfParent) {
+              t1 = rotateRight(grandparent); reattach(path, aboveIndex, grandparent, t1, setRoot);
+              t2 = rotateRight(t1); reattach(path, aboveIndex, t1, t2, setRoot);
+            } else {
+              t1 = rotateLeft(grandparent); reattach(path, aboveIndex, grandparent, t1, setRoot);
+              t2 = rotateLeft(t1); reattach(path, aboveIndex, t1, t2, setRoot);
+            }
+            snapshot(x.value + " e seu pai (" + parent2.value + ") pendem para o mesmo lado do avô (" + grandparent.value + "): duas rotações no mesmo sentido (\"zig-zig\").",
+              { op: "rotate", highlight: { ids: [x.id, parent2.id, grandparent.id], kind: "rotate" } });
+          } else {
+            var u1, u2;
+            if (xIsLeftOfParent) {
+              u1 = rotateRight(parent2); grandparent.right = u1;
+              u2 = rotateLeft(grandparent); reattach(path, aboveIndex, grandparent, u2, setRoot);
+            } else {
+              u1 = rotateLeft(parent2); grandparent.left = u1;
+              u2 = rotateRight(grandparent); reattach(path, aboveIndex, grandparent, u2, setRoot);
+            }
+            snapshot(x.value + " e seu pai (" + parent2.value + ") pendem para lados opostos do avô (" + grandparent.value + "): rotações em sentidos alternados (\"zig-zag\").",
+              { op: "rotate", highlight: { ids: [x.id, parent2.id, grandparent.id], kind: "rotate" } });
+          }
+          path.pop(); path.pop();
+        }
+      }
+    }
+
+    function setRootMain(r) { root = r; }
+
+    function insert(value) {
+      if (root === null) {
+        root = newNode(value);
+        snapshot(value + " se torna a raiz — a árvore estava vazia.", { op: "insert", highlight: { ids: [root.id], kind: "new" } });
+        return true;
+      }
+      var path = [], cur = root;
+      while (cur) {
+        if (value === cur.value) {
+          snapshot("O valor " + value + " já existe: em vez de inserir, apenas o levamos à raiz (splay de acesso).",
+            { op: "search", highlight: { ids: [cur.id], kind: "compare" } });
+          splay(path, cur, setRootMain);
+          return false;
+        }
+        snapshot(value + " " + (value < cur.value ? "< " : "> ") + cur.value + ", então descemos para " + (value < cur.value ? "a esquerda" : "a direita") + ".",
+          { op: "search", highlight: { ids: [cur.id], kind: "compare" } });
+        path.push(cur);
+        cur = value < cur.value ? cur.left : cur.right;
+      }
+      var node = newNode(value);
+      var parent = path[path.length - 1];
+      if (value < parent.value) parent.left = node; else parent.right = node;
+      snapshot("Nó " + value + " inserido como folha; agora sobe à raiz por splay.",
+        { op: "insert", highlight: { ids: [node.id], kind: "new" } });
+      splay(path, node, setRootMain);
+      return true;
+    }
+
+    function access(value) {
+      if (root === null) {
+        snapshot("A árvore está vazia — nada para acessar.", { op: "search", highlight: { ids: [], kind: "" } });
+        return false;
+      }
+      var path = [], cur = root;
+      while (cur && cur.value !== value) {
+        snapshot(value + " " + (value < cur.value ? "< " : "> ") + cur.value + ", então descemos para " + (value < cur.value ? "a esquerda" : "a direita") + ".",
+          { op: "search", highlight: { ids: [cur.id], kind: "compare" } });
+        path.push(cur);
+        cur = value < cur.value ? cur.left : cur.right;
+      }
+      if (cur) {
+        snapshot(value + " encontrado — sobe à raiz por splay.", { op: "search", highlight: { ids: [cur.id], kind: "successor" } });
+        splay(path, cur, setRootMain);
+        return true;
+      }
+      var last = path[path.length - 1];
+      snapshot(value + " não está na árvore; mesmo assim, o último nó visitado (" + last.value + ") sobe à raiz por splay.",
+        { op: "search", highlight: { ids: [last.id], kind: "bad" } });
+      splay(path.slice(0, -1), last, setRootMain);
+      return false;
+    }
+
+    function removeValue(value) {
+      if (root === null) {
+        snapshot("A árvore está vazia — nada para remover.", { op: "remove", highlight: { ids: [], kind: "" } });
+        return false;
+      }
+      var path = [], cur = root;
+      while (cur && cur.value !== value) {
+        snapshot(value + " " + (value < cur.value ? "< " : "> ") + cur.value + ", então descemos para " + (value < cur.value ? "a esquerda" : "a direita") + ".",
+          { op: "remove", highlight: { ids: [cur.id], kind: "compare" } });
+        path.push(cur);
+        cur = value < cur.value ? cur.left : cur.right;
+      }
+      if (!cur) {
+        var last = path[path.length - 1];
+        snapshot("O valor " + value + " não está na árvore; o último nó visitado (" + last.value + ") sobe à raiz por splay mesmo assim.",
+          { op: "remove", highlight: { ids: [last.id], kind: "bad" } });
+        splay(path.slice(0, -1), last, setRootMain);
+        return false;
+      }
+      snapshot(value + " encontrado — sobe à raiz por splay antes de ser removido.",
+        { op: "remove", highlight: { ids: [cur.id], kind: "bad" } });
+      splay(path, cur, setRootMain);
+      var L = root.left, R = root.right;
+      if (!L) {
+        root = R;
+        snapshot("Nó " + value + " removido da raiz; não tinha subárvore esquerda, então a direita assume o lugar.",
+          { op: "remove", highlight: { ids: R ? [R.id] : [], kind: "" } });
+      } else if (!R) {
+        root = L;
+        snapshot("Nó " + value + " removido da raiz; não tinha subárvore direita, então a esquerda assume o lugar.",
+          { op: "remove", highlight: { ids: [L.id], kind: "" } });
+      } else {
+        root = L;
+        snapshot("Nó " + value + " removido; restam duas subárvores. Buscamos o maior valor da subárvore esquerda para uni-las.",
+          { op: "remove", highlight: { ids: [L.id], kind: "compare" } });
+        var mpath = [], mcur = L;
+        while (mcur.right) {
+          snapshot("Descendo à direita em busca do maior valor: " + mcur.value + " → " + mcur.right.value + ".",
+            { op: "remove", highlight: { ids: [mcur.id], kind: "compare" } });
+          mpath.push(mcur);
+          mcur = mcur.right;
+        }
+        if (mpath.length > 0) {
+          snapshot("Maior valor da subárvore esquerda: " + mcur.value + ". Ele sobe ao topo por splay.",
+            { op: "remove", highlight: { ids: [mcur.id], kind: "successor" } });
+          splay(mpath, mcur, setRootMain);
+        }
+        root.right = R;
+        snapshot("A subárvore direita é reconectada como filha direita de " + root.value + " (que não tem filho direito, pois era o maior) — remoção concluída.",
+          { op: "remove", highlight: { ids: [root.id], kind: "new" } });
+      }
+      return true;
+    }
+
+    return {
+      insert: insert, access: access, remove: removeValue,
+      getRoot: function () { return root; },
+      getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= layout =================
+  function computeLayout(root){
+    var order = [];
+    (function walk(n){ if(!n) return; walk(n.left); order.push(n); walk(n.right); })(root);
+    var xIndex = {};
+    order.forEach(function(n,i){ xIndex[n.id]=i; });
+    var positions = {};
+    (function walk2(n, depth){
+      if(!n) return;
+      positions[n.id] = { x: xIndex[n.id], depth: depth, value:n.value, leftId: n.left?n.left.id:null, rightId: n.right?n.right.id:null };
+      walk2(n.left, depth+1); walk2(n.right, depth+1);
+    })(root, 0);
+    return { positions: positions, count: order.length, rootId: root ? root.id : null };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnAccess: document.getElementById("btnAccess"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnRandomInsert: document.getElementById("btnRandomInsert"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var CELL_W = 50, ROW_H = 64, NODE_R = 18, TOP_PAD = 20, SIDE_PAD = 30;
+  var NS = "http://www.w3.org/2000/svg";
+
+  var engine = createSplayEngine();
+  var state = { stepIndex: 0, playing:false, timer:null, usedValues:{} };
+  var nodeEls = {}, edgeEls = {};
+
+  function rebuildUsedValues(){
+    state.usedValues = {};
+    var root = engine.getRoot();
+    (function walk(n){ if(!n) return; state.usedValues[n.value]=true; walk(n.left); walk(n.right); })(root);
+  }
+  function jumpToLiveEnd(){
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length-1));
+    state.stepIndex = engine.getSteps().length-1;
+    rebuildUsedValues();
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert:"Inserindo", remove:"Removendo", search:"Buscando", rotate:"Splay (rotacionando)", info:"Início" };
+
+  function render(){
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if(!step){
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira valores para começar, ou gere uma árvore aleatória.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length-1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function(id){ highlightMap[id] = step.highlight.kind; });
+
+    var layout = computeLayout(step.root);
+    var count = Math.max(layout.count, 1);
+    var maxDepth = 0;
+    Object.keys(layout.positions).forEach(function(id){ if(layout.positions[id].depth > maxDepth) maxDepth = layout.positions[id].depth; });
+
+    var width = SIDE_PAD*2 + Math.max(0, count-1)*CELL_W;
+    var heightPx = TOP_PAD + (maxDepth+1)*ROW_H;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix){ return SIDE_PAD + ix*CELL_W; }
+    function yFor(depth){ return TOP_PAD + depth*ROW_H + NODE_R; }
+
+    var presentIds = {};
+    var presentEdgeChildIds = {};
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var kind = highlightMap[id] || "";
+
+      var rec = nodeEls[id];
+      if(!rec){
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "node");
+        var halo = document.createElementNS(NS, "circle");
+        halo.setAttribute("class", "node-halo");
+        halo.setAttribute("r", NODE_R+4);
+        var circle = document.createElementNS(NS, "circle");
+        circle.setAttribute("class", "node-circle");
+        circle.setAttribute("r", NODE_R);
+        var text = document.createElementNS(NS, "text");
+        text.setAttribute("class", "node-value");
+        g.appendChild(halo); g.appendChild(circle); g.appendChild(text);
+        rec = { g:g, halo:halo, circle:circle, text:text };
+        nodeEls[id] = rec;
+      }
+      if(kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+      rec.halo.setAttribute("cx", cx); rec.halo.setAttribute("cy", cy);
+      rec.circle.setAttribute("cx", cx); rec.circle.setAttribute("cy", cy);
+      rec.text.setAttribute("x", cx); rec.text.setAttribute("y", cy + 0.5);
+      rec.text.textContent = p.value;
+    });
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      [p.leftId, p.rightId].forEach(function(childId){
+        if(childId == null) return;
+        presentEdgeChildIds[childId] = true;
+        var child = layout.positions[childId];
+        var line = edgeEls[childId];
+        if(!line){ line = document.createElementNS(NS, "line"); line.setAttribute("class","edge-line"); edgeEls[childId] = line; }
+        line.setAttribute("x1", xFor(p.x)); line.setAttribute("y1", yFor(p.depth));
+        line.setAttribute("x2", xFor(child.x)); line.setAttribute("y2", yFor(child.depth));
+      });
+    });
+
+    Object.keys(nodeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentIds[id]){ nodeEls[id].g.remove(); delete nodeEls[id]; }
+    });
+    Object.keys(edgeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentEdgeChildIds[id]){ edgeEls[id].remove(); delete edgeEls[id]; }
+    });
+
+    els.treeSvg.innerHTML = "";
+    Object.keys(edgeEls).forEach(function(id){ els.treeSvg.appendChild(edgeEls[id]); });
+    Object.keys(nodeEls).forEach(function(id){ els.treeSvg.appendChild(nodeEls[id].g); });
+  }
+
+  // ================= playback controls =================
+  function stopPlaying(){
+    state.playing = false;
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i){
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length-1, i));
+    render();
+  }
+  function stepBy(delta){ goTo(state.stepIndex + delta); }
+  function togglePlay(){
+    var steps = engine.getSteps();
+    if(state.playing){ stopPlaying(); return; }
+    if(steps.length === 0) return;
+    if(state.stepIndex >= steps.length-1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function(){
+      var s = engine.getSteps();
+      if(state.stepIndex >= s.length-1){ stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function(){ goTo(0); });
+  els.btnPrev.addEventListener("click", function(){ stepBy(-1); });
+  els.btnNext.addEventListener("click", function(){ stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function(){ goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function(){ if(state.playing){ togglePlay(); togglePlay(); } });
+
+  function showError(msg){ els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError(){ els.errorText.hidden = true; }
+
+  function parseValueInput(){
+    var raw = els.valueInput.value.trim();
+    if(raw === ""){ showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if(!Number.isFinite(v) || !Number.isInteger(v)){ showError('"'+raw+'" não é um número inteiro válido.'); return null; }
+    if(v < -999 || v > 999){ showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsert.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    engine.insert(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnAccess.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    engine.access(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnRemove.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    engine.remove(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnRandomInsert.addEventListener("click", function(){
+    hideError();
+    if(Object.keys(state.usedValues).length >= 98){ showError("A árvore já cobre quase todos os valores de 1 a 98."); return; }
+    var v; do { v = 1 + Math.floor(Math.random()*98); } while(state.usedValues[v]);
+    engine.insert(v); jumpToLiveEnd();
+  });
+  els.sizeSlider.addEventListener("input", function(){ els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function(){
+    hideError();
+    engine = createSplayEngine();
+    nodeEls = {}; edgeEls = {};
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for(var i=0;i<n;i++){
+      var v; do { v = 1 + Math.floor(Math.random()*98); } while(used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if(tag === "INPUT" || tag === "TEXTAREA") return;
+    if(e.key === "ArrowRight"){ stepBy(1); e.preventDefault(); }
+    else if(e.key === "ArrowLeft"){ stepBy(-1); e.preventDefault(); }
+    else if(e.key === " "){ togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= static reference: the three splay-move diagrams =================
+  function renderMiniTree(svg, spec, w, hgt){
+    var order = [];
+    (function walk(n){ if(!n) return; walk(n.left); order.push(n); walk(n.right); })(spec);
+    var xIndexMap = new Map(); order.forEach(function(n,i){ xIndexMap.set(n, i); });
+    var n2 = order.length;
+    var r = 14, rowHm = 42, topPadm = 14;
+    var innerW = Math.max(0, n2-1) * 42;
+    var neededW = innerW + 2*(r+10);
+    w = Math.max(w, neededW);
+    svg.setAttribute("viewBox", "0 0 " + w + " " + hgt);
+    svg.setAttribute("width", w); svg.setAttribute("height", hgt);
+    var offsetX = (w - innerW) / 2;
+    var idc = 0;
+    (function tag(n){ if(!n) return; n.__id = idc++; tag(n.left); tag(n.right); })(spec);
+    var positions = {};
+    (function pos(node, depth){
+      positions[node.__id] = { x: offsetX + xIndexMap.get(node)*42, y: topPadm + depth*rowHm };
+      if(node.left) pos(node.left, depth+1);
+      if(node.right) pos(node.right, depth+1);
+    })(spec, 0);
+
+    var edgesG = document.createElementNS(NS, "g"), nodesG = document.createElementNS(NS, "g");
+    (function draw(n){
+      if(!n) return;
+      var p = positions[n.__id];
+      [n.left, n.right].forEach(function(c){
+        if(!c) return;
+        var cp = positions[c.__id];
+        var line = document.createElementNS(NS, "line");
+        line.setAttribute("class","edge-line");
+        line.setAttribute("x1", p.x); line.setAttribute("y1", p.y);
+        line.setAttribute("x2", cp.x); line.setAttribute("y2", cp.y);
+        edgesG.appendChild(line);
+      });
+      if(n.flag){
+        var halo = document.createElementNS(NS, "circle");
+        halo.setAttribute("cx", p.x); halo.setAttribute("cy", p.y); halo.setAttribute("r", r+4);
+        halo.setAttribute("fill", "none"); halo.setAttribute("stroke", "var(--violet)"); halo.setAttribute("stroke-width","2.5");
+        nodesG.appendChild(halo);
+      }
+      var circle = document.createElementNS(NS, "circle");
+      circle.setAttribute("cx", p.x); circle.setAttribute("cy", p.y); circle.setAttribute("r", r);
+      circle.setAttribute("fill", "var(--node-fill)");
+      circle.setAttribute("stroke", "var(--paper)"); circle.setAttribute("stroke-width","2.5");
+      nodesG.appendChild(circle);
+      var text = document.createElementNS(NS, "text");
+      text.setAttribute("class","node-value");
+      text.setAttribute("x", p.x); text.setAttribute("y", p.y+0.5);
+      text.setAttribute("font-size","11px");
+      text.textContent = n.v;
+      nodesG.appendChild(text);
+      draw(n.left); draw(n.right);
+    })(spec);
+    svg.appendChild(edgesG); svg.appendChild(nodesG);
+  }
+
+  var SPLAY_CASES = [
+    { name: "Zig", desc: "x é filho da raiz da região: uma única rotação já o coloca no topo. É sempre o último passo de um splay.",
+      before: {v:50, left:{v:30, flag:true}, right:{v:70}},
+      after:  {v:30, flag:true, right:{v:50, right:{v:70}}} },
+    { name: "Zig-zig", desc: "x e o pai ficam do mesmo lado do avô: rotacionamos primeiro o avô, depois o pai — sempre no mesmo sentido.",
+      before: {v:70, left:{v:50, left:{v:30, flag:true}}},
+      after:  {v:30, flag:true, right:{v:50, right:{v:70}}} },
+    { name: "Zig-zag", desc: "x e o pai ficam de lados opostos do avô: rotacionamos x sobre o pai, depois x sobre o avô — sentidos alternados.",
+      before: {v:70, left:{v:30, right:{v:50, flag:true}}},
+      after:  {v:50, flag:true, left:{v:30}, right:{v:70}} }
+  ];
+
+  (function renderSplayGrid(){
+    var grid = document.getElementById("splayCaseGrid");
+    SPLAY_CASES.forEach(function(c, idx){
+      var card = document.createElement("div");
+      card.className = "case-card";
+      var num = document.createElement("span"); num.className = "num"; num.textContent = "Movimento " + (idx+1);
+      var h3 = document.createElement("h3"); h3.textContent = c.name;
+      var p = document.createElement("p"); p.className = "prose"; p.textContent = c.desc;
+      var diagram = document.createElement("div"); diagram.className = "case-diagram";
+      var svgBefore = document.createElementNS(NS, "svg");
+      var arrow = document.createElement("span"); arrow.className = "case-arrow"; arrow.textContent = "→";
+      var svgAfter = document.createElementNS(NS, "svg");
+      diagram.appendChild(svgBefore); diagram.appendChild(arrow); diagram.appendChild(svgAfter);
+      card.appendChild(num); card.appendChild(h3); card.appendChild(p); card.appendChild(diagram);
+      grid.appendChild(card);
+      renderMiniTree(svgBefore, c.before, 116, 110);
+      renderMiniTree(svgAfter, c.after, 116, 110);
+    });
+  })();
+
+  // ================= boot =================
+  (function boot(){
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for(var i=0;i<n;i++){
+      var v; do { v = 1 + Math.floor(Math.random()*98); } while(used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

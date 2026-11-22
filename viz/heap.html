@@ -1,0 +1,795 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Heap Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="build"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="build"] .dot{background:var(--violet);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-halo{ fill:none; stroke:transparent; stroke-width:3.5; transition: cx .35s ease, cy .35s ease, stroke .25s ease; }
+  .node-circle{ fill:var(--node-fill); stroke:var(--paper); stroke-width:3; transition: cx .35s ease, cy .35s ease; }
+  .node-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+
+  .arr-halo{ fill:none; stroke:transparent; stroke-width:3; transition: x .35s ease, y .35s ease, stroke .25s ease; }
+  .arr-box{ fill:var(--node-fill); stroke:var(--paper); stroke-width:2.5; transition: x .35s ease, y .35s ease; }
+  .arr-value{ font-weight:600; font-size:12px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .arr-idx{ font-size:10px; fill:var(--ink-faint); text-anchor:middle; }
+  .conn-line{ stroke:var(--line); stroke-width:1.3; stroke-dasharray:2.5 3; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease, stroke .25s ease; }
+  .conn-line[data-active="1"]{ stroke:var(--violet); stroke-width:1.8; stroke-dasharray:none; }
+  .view-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.08em; fill:var(--ink-faint); text-transform:uppercase; }
+
+  .node[data-state="compare"] .node-halo, .arrg[data-state="compare"] .arr-halo{ stroke:var(--accent); }
+  .node[data-state="new"] .node-halo, .arrg[data-state="new"] .arr-halo{ stroke:var(--gold); }
+  .node[data-state="rotate"] .node-halo, .arrg[data-state="rotate"] .arr-halo{ stroke:var(--violet); }
+  .node[data-state="end"] .node-halo, .arrg[data-state="end"] .arr-halo{ stroke:var(--gold); }
+  .node[data-state="bad"] .node-halo, .arrg[data-state="bad"] .arr-halo{ stroke:var(--rust); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.compare{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.new{background:var(--card); border-color:var(--gold);}
+  .legend .swatch.rotate{background:var(--card); border-color:var(--violet);}
+  .legend .swatch.bad{background:var(--card); border-color:var(--rust);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:100px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .mode-toggle{display:inline-flex; border:1px solid var(--line-strong); border-radius:9px; overflow:hidden;}
+  .mode-btn{
+    border:none; border-radius:0; background:var(--card); color:var(--ink-soft);
+    padding:7px 15px; font-weight:600; font-size:0.82rem; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;
+  }
+  .mode-btn+.mode-btn{border-left:1px solid var(--line-strong);}
+  .mode-btn[aria-pressed="true"]{background:var(--accent); color:#fff;}
+  .mode-btn:hover[aria-pressed="false"]{color:var(--accent-ink);}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .formula-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  @media (max-width:620px){ .formula-grid{grid-template-columns:1fr;} }
+  .formula-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:14px 16px; display:flex; flex-direction:column; gap:6px;}
+  .formula-card .label{font-size:0.78rem; color:var(--ink-soft);}
+  .formula-card .formula{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:1.02rem; color:var(--accent-ink);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Árvore binária completa, representada em array · Williams, 1964</span>
+    <h1>Heap Visual</h1>
+    <p class="prose">Um heap é uma árvore binária que vive dentro de um <strong>array simples</strong> — sem ponteiros. O índice <code>i</code> tem filhos em <code>2i+1</code> e <code>2i+2</code>, e pai em <code>⌊(i-1)/2⌋</code>. A única regra é a <strong>propriedade de heap</strong>: cada pai tem prioridade sobre seus filhos (o menor valor no Min-Heap, o maior no Max-Heap) — não há ordem alguma entre irmãos. Isso torna o topo sempre acessível em O(1), mas a busca por um valor qualquer custa O(n). Abaixo, a mesma estrutura aparece nas duas formas ao mesmo tempo: árvore e array.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador do heap">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="controls-row">
+      <label class="small">Tipo</label>
+      <div class="mode-toggle" role="group" aria-label="Tipo de heap">
+        <button type="button" id="btnModeMin" class="mode-btn" aria-pressed="true">Min-Heap</button>
+        <button type="button" id="btnModeMax" class="mode-btn" aria-pressed="false">Max-Heap</button>
+      </div>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch"></span>nó</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch new"></span>novo / encontrado / ocupando vaga</span>
+      <span class="item"><span class="swatch rotate"></span>trocando de posição</span>
+      <span class="item"><span class="swatch bad"></span>removido / não encontrado</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+      </div>
+      <div class="controls-row">
+        <button class="danger" id="btnExtract">⏏ Extrair topo</button>
+        <button id="btnRandomInsert">🎲 Inserir aleatório</button>
+        <div class="spacer"></div>
+        <label class="small">Tamanho inicial
+          <input type="range" class="mini" id="sizeSlider" min="1" max="30" value="14" step="1">
+          <span class="mono" id="sizeLabel">14</span>
+        </label>
+        <button id="btnNewRandom">↺ Novo heap aleatório (heapify)</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Um array é uma árvore completa</h2>
+    <p class="prose">Como o heap é sempre uma árvore <em>completa</em> (cada nível cheio antes do próximo começar, preenchido da esquerda para a direita), dá para calcular a posição de pais e filhos só com aritmética de índice — sem guardar nenhum ponteiro:</p>
+    <div class="formula-grid">
+      <div class="formula-card"><span class="label">Filho esquerdo de <code>i</code></span><span class="formula">2i + 1</span></div>
+      <div class="formula-card"><span class="label">Filho direito de <code>i</code></span><span class="formula">2i + 2</span></div>
+      <div class="formula-card"><span class="label">Pai de <code>i</code></span><span class="formula">⌊(i - 1) / 2⌋</span></div>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Inserir e remover</span>
+      <h3>O(log n) — sobe ou desce só um caminho</h3>
+      <p class="prose"><strong>Inserir</strong> coloca o valor na próxima vaga livre e o deixa "flutuar" (<em>sift-up</em>) até o pai não ter mais prioridade sobre ele. <strong>Extrair o topo</strong> troca a raiz pelo último elemento e o deixa "afundar" (<em>sift-down</em>) pelo caminho de maior prioridade entre os filhos. Os dois tocam só um caminho da raiz até uma folha — O(log n).</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Buscar um valor</span>
+      <h3>O(n) — um heap não é ordenado</h3>
+      <p class="prose">Diferente de uma árvore de busca, os irmãos de um heap não têm ordem entre si — só a relação pai-filho importa. Por isso, procurar um valor qualquer exige examinar o array inteiro. O que <em>é</em> instantâneo (O(1)) é espiar o topo: ele está sempre no índice 0.</p>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Construindo em O(n): heapify</h2>
+    <p class="prose">Inserir <code>n</code> valores um a um custa O(n log n) no total. Mas dá para transformar um array qualquer num heap válido em tempo <strong>O(n)</strong>: basta preencher o array na ordem dada e aplicar <em>sift-down</em> a partir do último nó que tem filhos, andando de trás para frente até a raiz — é o que o botão "Novo heap aleatório" faz, e o motivo é a soma geométrica das alturas: a maioria dos nós está perto das folhas e custa quase nada para afundar.</p>
+  </section>
+
+  <footer>Implementação didática de um heap binário (Min-Heap / Max-Heap) representado por array, seguindo a estrutura descrita por J. W. J. Williams (1964) para o heapsort. Complexidade: O(log n) para inserir e extrair o topo, O(1) para espiar o topo, O(n) para buscar um valor qualquer, O(n) para construir a partir de um array (heapify).</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= heap engine (records one step per operation) =================
+  function createHeapEngine(initialMode) {
+    var nextId = 1;
+    var arr = [];
+    var mode = initialMode === "max" ? "max" : "min";
+    var steps = [];
+
+    function better(a, b) { return mode === "min" ? a < b : a > b; }
+    function snapshotArr() { return arr.map(function (n) { return { id: n.id, value: n.value }; }); }
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ array: snapshotArr(), mode: mode, message: message, op: opts.op || "info", highlight: opts.highlight || { ids: [], kind: "" } });
+    }
+
+    function parentIdx(i) { return Math.floor((i - 1) / 2); }
+    function leftIdx(i) { return 2 * i + 1; }
+    function rightIdx(i) { return 2 * i + 2; }
+    function swap(i, j) { var t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+    function modeName() { return mode === "min" ? "Min-Heap" : "Max-Heap"; }
+    function priorityWord() { return mode === "min" ? "menor" : "maior"; }
+
+    function siftUp(i) {
+      while (i > 0) {
+        var p = parentIdx(i);
+        snapshot("Comparando " + arr[i].value + " (posição " + i + ") com o pai " + arr[p].value + " (posição " + p + ").",
+          { op: "insert", highlight: { ids: [arr[i].id, arr[p].id], kind: "compare" } });
+        if (better(arr[i].value, arr[p].value)) {
+          swap(i, p);
+          snapshot(arr[p].value + " tem prioridade sobre o pai — sobe uma posição.",
+            { op: "insert", highlight: { ids: [arr[p].id, arr[i].id], kind: "rotate" } });
+          i = p;
+        } else {
+          snapshot("A propriedade de heap já está satisfeita aqui — paramos.",
+            { op: "insert", highlight: { ids: [arr[i].id], kind: "end" } });
+          return;
+        }
+      }
+      if (arr.length > 0) snapshot("Chegou à raiz — não há mais para onde subir.", { op: "insert", highlight: { ids: [arr[0].id], kind: "end" } });
+    }
+
+    function siftDown(i) {
+      var n = arr.length;
+      while (true) {
+        var l = leftIdx(i), r = rightIdx(i), target = i;
+        var lookIds = [arr[i].id];
+        if (l < n) lookIds.push(arr[l].id);
+        if (r < n) lookIds.push(arr[r].id);
+        snapshot("Comparando " + arr[i].value + " (posição " + i + ") com " + (l < n || r < n ? "seus filhos" : "nada — não há filhos") + ".",
+          { op: "remove", highlight: { ids: lookIds, kind: "compare" } });
+        if (l < n && better(arr[l].value, arr[target].value)) target = l;
+        if (r < n && better(arr[r].value, arr[target].value)) target = r;
+        if (target !== i) {
+          swap(i, target);
+          snapshot(arr[i].value + " tem prioridade sobre o pai — desce uma posição.",
+            { op: "remove", highlight: { ids: [arr[target].id, arr[i].id], kind: "rotate" } });
+          i = target;
+        } else {
+          snapshot("A propriedade de heap já está satisfeita aqui — paramos.",
+            { op: "remove", highlight: { ids: [arr[i].id], kind: "end" } });
+          return;
+        }
+      }
+    }
+
+    function insert(value) {
+      var node = { id: nextId++, value: value };
+      arr.push(node);
+      snapshot(value + " inserida na próxima posição livre (final do array) — a árvore continua completa.",
+        { op: "insert", highlight: { ids: [node.id], kind: "new" } });
+      siftUp(arr.length - 1);
+      return true;
+    }
+
+    function extractTop() {
+      if (arr.length === 0) { snapshot("O heap está vazio — nada para remover.", { op: "remove", highlight: { ids: [], kind: "bad" } }); return null; }
+      var top = arr[0];
+      snapshot("Removendo a raiz (" + priorityWord() + " valor do heap): " + top.value + ".",
+        { op: "remove", highlight: { ids: [top.id], kind: "bad" } });
+      var last = arr.pop();
+      if (arr.length === 0) { snapshot("O heap ficou vazio.", { op: "remove", highlight: { ids: [], kind: "bad" } }); return top.value; }
+      arr[0] = last;
+      snapshot("O último elemento (" + last.value + ") move para a raiz, para manter a árvore completa.",
+        { op: "remove", highlight: { ids: [last.id], kind: "new" } });
+      siftDown(0);
+      return top.value;
+    }
+
+    function peek() {
+      if (arr.length === 0) { snapshot("O heap está vazio.", { op: "search", highlight: { ids: [], kind: "bad" } }); return null; }
+      snapshot("O topo do heap (" + priorityWord() + " valor) é " + arr[0].value + " — sempre disponível em O(1), na raiz.",
+        { op: "search", highlight: { ids: [arr[0].id], kind: "end" } });
+      return arr[0].value;
+    }
+
+    function search(value) {
+      for (var i = 0; i < arr.length; i++) {
+        var found = arr[i].value === value;
+        snapshot("Comparando " + value + " com a posição " + i + " (" + arr[i].value + "). Um heap não é ordenado como uma BST, então a busca examina o array inteiro.",
+          { op: "search", highlight: { ids: [arr[i].id], kind: found ? "end" : "compare" } });
+        if (found) { snapshot(value + " encontrado na posição " + i + ".", { op: "search", highlight: { ids: [arr[i].id], kind: "end" } }); return true; }
+      }
+      snapshot(value + " não está no heap — chegamos ao fim do array sem encontrar (busca é O(n)).",
+        { op: "search", highlight: { ids: [], kind: "bad" } });
+      return false;
+    }
+
+    function removeAt(i) {
+      var last = arr.pop();
+      if (i === arr.length) return;
+      arr[i] = last;
+      snapshot("O último elemento (" + last.value + ") ocupa a posição aberta.",
+        { op: "remove", highlight: { ids: [last.id], kind: "new" } });
+      var p = parentIdx(i);
+      if (i > 0 && better(arr[i].value, arr[p].value)) siftUp(i);
+      else siftDown(i);
+    }
+
+    function removeValue(value) {
+      for (var i = 0; i < arr.length; i++) {
+        var found = arr[i].value === value;
+        snapshot("Procurando " + value + " para remover — comparando com a posição " + i + " (" + arr[i].value + ").",
+          { op: "remove", highlight: { ids: [arr[i].id], kind: found ? "bad" : "compare" } });
+        if (found) {
+          snapshot(value + " encontrado na posição " + i + " — removendo.", { op: "remove", highlight: { ids: [arr[i].id], kind: "bad" } });
+          removeAt(i);
+          return true;
+        }
+      }
+      snapshot(value + " não está no heap.", { op: "remove", highlight: { ids: [], kind: "bad" } });
+      return false;
+    }
+
+    function heapifyFullArray(label) {
+      if (label) snapshot(label, { op: "build", highlight: { ids: [], kind: "" } });
+      for (var i = Math.floor(arr.length / 2) - 1; i >= 0; i--) {
+        snapshot("Heapify a partir da posição " + i + " (" + arr[i].value + ").",
+          { op: "build", highlight: { ids: [arr[i].id], kind: "compare" } });
+        siftDown(i);
+      }
+    }
+
+    function buildHeap(values) {
+      arr = values.map(function (v) { return { id: nextId++, value: v }; });
+      heapifyFullArray("Array preenchido na ordem dada — ainda não é um heap válido. Heapify de baixo para cima, a partir do último nó com filhos.");
+    }
+
+    function setMode(newMode) {
+      newMode = newMode === "max" ? "max" : "min";
+      if (newMode === mode) return;
+      mode = newMode;
+      if (arr.length > 0) heapifyFullArray("Tipo alterado para " + modeName() + " — refazendo o heapify com a nova regra de prioridade.");
+      else snapshot("Tipo alterado para " + modeName() + ".", { op: "build", highlight: { ids: [], kind: "" } });
+    }
+
+    function values() { return arr.map(function (n) { return n.value; }); }
+
+    return {
+      insert: insert, extractTop: extractTop, peek: peek, search: search, remove: removeValue,
+      buildHeap: buildHeap, setMode: setMode, getMode: function () { return mode; },
+      values: values, size: function () { return arr.length; },
+      getArray: function () { return snapshotArr(); }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= dual layout: triangular tree + linear array, connected =================
+  var NODE_R = 17, TREE_CELL_W = 46, ROW_H = 62, TOP_PAD = 18, SIDE_PAD = 26;
+  var ARR_BOX_W = 34, ARR_BOX_H = 30, ARR_GAP = 6, ARR_PITCH = ARR_BOX_W + ARR_GAP;
+  var CONNECTOR_GAP = 46, LABEL_ROW_H = 16, BOTTOM_PAD = 16, TOP_LABEL_H = 16;
+
+  function computeLayout(n) {
+    var maxDepth = n > 0 ? Math.floor(Math.log2(n)) : 0;
+    var bottomRowCount = Math.pow(2, maxDepth);
+    var treeSpan = bottomRowCount * TREE_CELL_W;
+    var arrSpan = n > 0 ? n * ARR_PITCH - ARR_GAP : 0;
+    var contentWidth = Math.max(treeSpan, arrSpan, TREE_CELL_W);
+    var treeOffset = (contentWidth - treeSpan) / 2;
+    var arrOffset = (contentWidth - arrSpan) / 2;
+
+    function treeRowY(depth) { return TOP_LABEL_H + TOP_PAD + depth * ROW_H + NODE_R; }
+    var maxTreeY = treeRowY(maxDepth);
+    var arrayRowY = maxTreeY + NODE_R + CONNECTOR_GAP + ARR_BOX_H / 2;
+
+    var positions = {};
+    for (var i = 0; i < n; i++) {
+      var depth = Math.floor(Math.log2(i + 1));
+      var rowStart = Math.pow(2, depth) - 1;
+      var posInRow = i - rowStart;
+      var rowSlots = Math.pow(2, depth);
+      var slotWidth = treeSpan / rowSlots;
+      var tx = SIDE_PAD + treeOffset + slotWidth * posInRow + slotWidth / 2;
+      var ty = treeRowY(depth);
+      var ax = SIDE_PAD + arrOffset + i * ARR_PITCH + ARR_BOX_W / 2;
+      var ay = arrayRowY;
+      positions[i] = { depth: depth, tx: tx, ty: ty, ax: ax, ay: ay };
+    }
+    return { positions: positions, width: contentWidth + SIDE_PAD * 2, arrayRowY: arrayRowY, maxDepth: maxDepth };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnExtract: document.getElementById("btnExtract"),
+    btnRandomInsert: document.getElementById("btnRandomInsert"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText"),
+    btnModeMin: document.getElementById("btnModeMin"),
+    btnModeMax: document.getElementById("btnModeMax")
+  };
+
+  var NS = "http://www.w3.org/2000/svg";
+  var engine = createHeapEngine("min");
+  var state = { stepIndex: 0, playing: false, timer: null };
+  var nodeEls = {}, arrEls = {}, connEls = {}, idxLabelEls = [];
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Buscando", build: "Construindo (heapify)", info: "Início" };
+
+  function updateModeButtons(mode) {
+    els.btnModeMin.setAttribute("aria-pressed", mode === "min" ? "true" : "false");
+    els.btnModeMax.setAttribute("aria-pressed", mode === "max" ? "true" : "false");
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) {
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira valores para começar, ou gere um heap aleatório.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      nodeEls = {}; arrEls = {}; connEls = {}; idxLabelEls = [];
+      updateModeButtons(engine.getMode());
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+    updateModeButtons(step.mode);
+
+    var arrList = step.array;
+    var n = arrList.length;
+
+    if (n === 0) {
+      els.treeSvg.setAttribute("viewBox", "0 0 220 70");
+      els.treeSvg.setAttribute("width", 220); els.treeSvg.setAttribute("height", 70);
+      els.treeSvg.innerHTML = "";
+      var emptyText = document.createElementNS(NS, "text");
+      emptyText.setAttribute("x", 110); emptyText.setAttribute("y", 35);
+      emptyText.setAttribute("text-anchor", "middle"); emptyText.setAttribute("dominant-baseline", "central");
+      emptyText.setAttribute("fill", "var(--ink-faint)"); emptyText.setAttribute("font-family", "IBM Plex Mono, monospace"); emptyText.setAttribute("font-size", "13px");
+      emptyText.textContent = "heap vazio";
+      els.treeSvg.appendChild(emptyText);
+      nodeEls = {}; arrEls = {}; connEls = {}; idxLabelEls = [];
+      return;
+    }
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function (id) { highlightMap[id] = step.highlight.kind; });
+
+    var layout = computeLayout(n);
+    var heightPx = layout.arrayRowY + ARR_BOX_H / 2 + LABEL_ROW_H + BOTTOM_PAD;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + layout.width + " " + heightPx);
+    els.treeSvg.setAttribute("width", layout.width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    var presentIds = {};
+
+    for (var i = 0; i < n; i++) {
+      var id = arrList[i].id, value = arrList[i].value;
+      var p = layout.positions[i];
+      var kind = highlightMap[id] || "";
+      presentIds[id] = true;
+
+      // ---- tree node ----
+      var rec = nodeEls[id];
+      if (!rec) {
+        var g = document.createElementNS(NS, "g"); g.setAttribute("class", "node");
+        var halo = document.createElementNS(NS, "circle"); halo.setAttribute("class", "node-halo"); halo.setAttribute("r", NODE_R + 4);
+        var circle = document.createElementNS(NS, "circle"); circle.setAttribute("class", "node-circle"); circle.setAttribute("r", NODE_R);
+        var text = document.createElementNS(NS, "text"); text.setAttribute("class", "node-value");
+        g.appendChild(halo); g.appendChild(circle); g.appendChild(text);
+        rec = { g: g, halo: halo, circle: circle, text: text };
+        nodeEls[id] = rec;
+      }
+      if (kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+      rec.halo.setAttribute("cx", p.tx); rec.halo.setAttribute("cy", p.ty);
+      rec.circle.setAttribute("cx", p.tx); rec.circle.setAttribute("cy", p.ty);
+      rec.text.setAttribute("x", p.tx); rec.text.setAttribute("y", p.ty + 0.5);
+      rec.text.textContent = value;
+
+      // ---- array cell ----
+      var arec = arrEls[id];
+      if (!arec) {
+        var g2 = document.createElementNS(NS, "g"); g2.setAttribute("class", "arrg");
+        var halo2 = document.createElementNS(NS, "rect"); halo2.setAttribute("class", "arr-halo"); halo2.setAttribute("rx", 7);
+        halo2.setAttribute("width", ARR_BOX_W + 8); halo2.setAttribute("height", ARR_BOX_H + 8);
+        var box2 = document.createElementNS(NS, "rect"); box2.setAttribute("class", "arr-box"); box2.setAttribute("rx", 6);
+        box2.setAttribute("width", ARR_BOX_W); box2.setAttribute("height", ARR_BOX_H);
+        var text2 = document.createElementNS(NS, "text"); text2.setAttribute("class", "arr-value");
+        g2.appendChild(halo2); g2.appendChild(box2); g2.appendChild(text2);
+        arec = { g: g2, halo: halo2, box: box2, text: text2 };
+        arrEls[id] = arec;
+      }
+      if (kind) arec.g.setAttribute("data-state", kind); else arec.g.removeAttribute("data-state");
+      arec.halo.setAttribute("x", p.ax - ARR_BOX_W / 2 - 4); arec.halo.setAttribute("y", p.ay - ARR_BOX_H / 2 - 4);
+      arec.box.setAttribute("x", p.ax - ARR_BOX_W / 2); arec.box.setAttribute("y", p.ay - ARR_BOX_H / 2);
+      arec.text.setAttribute("x", p.ax); arec.text.setAttribute("y", p.ay + 0.5);
+      arec.text.textContent = value;
+
+      // ---- connector between the two views ----
+      var conn = connEls[id];
+      if (!conn) { conn = document.createElementNS(NS, "line"); conn.setAttribute("class", "conn-line"); connEls[id] = conn; }
+      conn.setAttribute("x1", p.tx); conn.setAttribute("y1", p.ty + NODE_R);
+      conn.setAttribute("x2", p.ax); conn.setAttribute("y2", p.ay - ARR_BOX_H / 2);
+      if (kind) conn.setAttribute("data-active", "1"); else conn.removeAttribute("data-active");
+    }
+
+    // ---- tree edges (index-derived, not persisted by id since they're cheap to recompute) ----
+    var edgeFrag = document.createDocumentFragment();
+    for (var i2 = 1; i2 < n; i2++) {
+      var parentI = Math.floor((i2 - 1) / 2);
+      var pp = layout.positions[parentI], cp = layout.positions[i2];
+      var line = document.createElementNS(NS, "line");
+      line.setAttribute("class", "edge-line");
+      line.setAttribute("x1", pp.tx); line.setAttribute("y1", pp.ty);
+      line.setAttribute("x2", cp.tx); line.setAttribute("y2", cp.ty);
+      edgeFrag.appendChild(line);
+    }
+
+    // ---- index labels under the array row (static per position, cheap to rebuild) ----
+    var idxFrag = document.createDocumentFragment();
+    for (var i3 = 0; i3 < n; i3++) {
+      var p3 = layout.positions[i3];
+      var lbl = document.createElementNS(NS, "text");
+      lbl.setAttribute("class", "arr-idx");
+      lbl.setAttribute("x", p3.ax); lbl.setAttribute("y", p3.ay + ARR_BOX_H / 2 + 13);
+      lbl.textContent = i3;
+      idxFrag.appendChild(lbl);
+    }
+
+    // ---- view captions ----
+    var capTree = document.createElementNS(NS, "text");
+    capTree.setAttribute("class", "view-label"); capTree.setAttribute("x", SIDE_PAD); capTree.setAttribute("y", TOP_LABEL_H - 4);
+    capTree.textContent = "árvore";
+    var capArr = document.createElementNS(NS, "text");
+    capArr.setAttribute("class", "view-label"); capArr.setAttribute("x", SIDE_PAD); capArr.setAttribute("y", layout.arrayRowY - ARR_BOX_H / 2 - 10);
+    capArr.textContent = "array (representação real)";
+
+    // clean up ids no longer present
+    Object.keys(nodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; } });
+    Object.keys(arrEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { arrEls[id].g.remove(); delete arrEls[id]; } });
+    Object.keys(connEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { connEls[id].remove(); delete connEls[id]; } });
+
+    els.treeSvg.innerHTML = "";
+    els.treeSvg.appendChild(capTree);
+    els.treeSvg.appendChild(capArr);
+    els.treeSvg.appendChild(edgeFrag);
+    Object.keys(connEls).forEach(function (id) { els.treeSvg.appendChild(connEls[id]); });
+    for (var k = 0; k < n; k++) { var kid = arrList[k].id; els.treeSvg.appendChild(nodeEls[kid].g); }
+    for (var k2 = 0; k2 < n; k2++) { var kid2 = arrList[k2].id; els.treeSvg.appendChild(arrEls[kid2].g); }
+    els.treeSvg.appendChild(idxFrag);
+  }
+
+  // ================= playback controls =================
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i) {
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function stepBy(delta) { goTo(state.stepIndex + delta); }
+  function togglePlay() {
+    var steps = engine.getSteps();
+    if (state.playing) { stopPlaying(); return; }
+    if (steps.length === 0) return;
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function () {
+      var s = engine.getSteps();
+      if (state.stepIndex >= s.length - 1) { stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function () { goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stepBy(-1); });
+  els.btnNext.addEventListener("click", function () { stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) { togglePlay(); togglePlay(); } });
+
+  function showError(msg) { els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError() { els.errorText.hidden = true; }
+
+  function parseValueInput() {
+    var raw = els.valueInput.value.trim();
+    if (raw === "") { showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v)) { showError('"' + raw + '" não é um número inteiro válido.'); return null; }
+    if (v < -999 || v > 999) { showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsert.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insert(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnRemove.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.remove(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnExtract.addEventListener("click", function () {
+    hideError();
+    engine.extractTop(); jumpToLiveEnd();
+  });
+  els.btnRandomInsert.addEventListener("click", function () {
+    hideError();
+    var v = -50 + Math.floor(Math.random() * 151);
+    engine.insert(v); jumpToLiveEnd();
+  });
+  els.sizeSlider.addEventListener("input", function () { els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function () {
+    hideError();
+    var mode = engine.getMode();
+    engine = createHeapEngine(mode);
+    nodeEls = {}; arrEls = {}; connEls = {};
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    var vals = [];
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      vals.push(v);
+    }
+    engine.buildHeap(vals);
+    jumpToLiveEnd();
+  });
+
+  function switchMode(newMode) {
+    hideError();
+    if (engine.getMode() === newMode) return;
+    engine.setMode(newMode);
+    jumpToLiveEnd();
+  }
+  els.btnModeMin.addEventListener("click", function () { switchMode("min"); });
+  els.btnModeMax.addEventListener("click", function () { switchMode("max"); });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { stepBy(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { stepBy(-1); e.preventDefault(); }
+    else if (e.key === " ") { togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= boot =================
+  (function boot() {
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    var vals = [];
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      vals.push(v);
+    }
+    engine.buildHeap(vals);
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

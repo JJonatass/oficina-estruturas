@@ -1,0 +1,801 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Trie Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-halo{ fill:none; stroke:transparent; stroke-width:3.5; transition: cx .35s ease, cy .35s ease, stroke .25s ease; }
+  .node-circle{ stroke:var(--paper); stroke-width:3; transition: cx .35s ease, cy .35s ease, fill .25s ease; }
+  .node-value{ font-weight:600; font-size:12px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+
+  .node[data-state="compare"] .node-halo{ stroke:var(--accent); }
+  .node[data-state="new"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="end"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="successor"] .node-halo{ stroke:var(--accent); stroke-dasharray:3 3; }
+  .node[data-state="bad"] .node-halo{ stroke:var(--rust); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.end{background:var(--accent);}
+  .legend .swatch.compare{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.new{background:var(--card); border-color:var(--gold);}
+  .legend .swatch.succ{background:var(--card); border-color:var(--accent); border-style:dashed;}
+  .legend .swatch.bad{background:var(--card); border-color:var(--rust);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .results-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:0.8rem; background:var(--accent-soft); color:var(--accent-ink);
+    border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius:999px; padding:3px 11px;
+  }
+  .results-empty{font-size:0.82rem; color:var(--ink-faint); font-style:italic;}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:140px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .example-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:18px 20px; display:flex; flex-direction:column; gap:12px;}
+  .example-diagram{display:flex; justify-content:center; overflow-x:auto; padding-block:4px;}
+
+  .case-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:820px){ .case-grid{grid-template-columns:1fr;} }
+  .case-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .case-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Árvore de prefixos · Fredkin, 1960</span>
+    <h1>Trie Visual</h1>
+    <p class="prose">Uma trie (árvore de prefixos) organiza um conjunto de palavras de um jeito bem diferente das árvores binárias de busca: cada <strong>aresta</strong> representa uma letra, e o caminho da raiz até um nó soletra um prefixo. Não existe rotação nem comparação de chaves inteiras — cada nó pode ter vários filhos (um por letra possível), e um nó é marcado quando o caminho até ele forma uma palavra completa. Use os controles abaixo para inserir, buscar, autocompletar e remover palavras.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da trie">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch"></span>nó comum</span>
+      <span class="item"><span class="swatch end"></span>fim de palavra</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch new"></span>novo / marcado</span>
+      <span class="item"><span class="swatch succ"></span>subárvore do prefixo</span>
+      <span class="item"><span class="swatch bad"></span>não encontrado</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="results-row" id="resultsRow" hidden>
+      <span class="prose" style="font-size:0.82rem;">Palavras encontradas:</span>
+      <span id="resultsChips" style="display:contents;"></span>
+    </div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Palavra
+          <input type="text" id="valueInput" placeholder="ex: casa" maxlength="16">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button id="btnAutocomplete">✨ Autocompletar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+      </div>
+      <div class="controls-row">
+        <button id="btnRandomWord">🎲 Inserir palavra aleatória</button>
+        <button id="btnNewRandom">↺ Nova trie de exemplo</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Como a trie é construída</h2>
+    <p class="prose">Cada nó representa uma letra (a raiz representa o prefixo vazio). Palavras que compartilham um começo compartilham também o mesmo caminho — é aí que mora a economia de uma trie. No exemplo abaixo, <code>sol</code>, <code>sola</code> e <code>sopa</code> dividem o prefixo <code>so</code>:</p>
+    <div class="example-card">
+      <div class="example-diagram" id="exampleDiagram"></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Busca exata vs. busca por prefixo</h2>
+    <p class="prose">Essa é a distinção que não existe em árvores binárias: um caminho pode existir na trie sem representar uma palavra completa. Três resultados são possíveis para qualquer sequência de letras:</p>
+    <div class="case-grid" id="searchCaseGrid"></div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Removendo: desmarcar e podar</h2>
+    <p class="prose">Remover uma palavra nunca é só "apagar um nó" — outras palavras podem depender do mesmo caminho:</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Desmarcar o fim de palavra</span><span class="prose">Encontramos o nó que corresponde à última letra e desligamos sua marca de "fim de palavra" — a palavra deixa de existir na trie.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Subir podando nós inúteis</span><span class="prose">Voltamos pelo caminho, da última letra até a raiz: cada nó sem filhos e que não é fim de outra palavra é removido — ele só existia para sustentar a palavra que acabou de sair.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Parar ao encontrar uso compartilhado</span><span class="prose">Assim que um nó do caminho ainda tem outro filho, ou ainda é fim de outra palavra, a poda para ali — esse trecho do caminho continua servindo a outras palavras.</span></div></div>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Qualquer operação</span>
+      <h3>O(L), onde L é o tamanho da palavra</h3>
+      <p class="prose">Inserir, buscar ou remover uma palavra custa um passo por letra — o tempo não depende de quantas palavras já estão guardadas na trie, ao contrário de uma árvore binária balanceada, onde o custo é O(log n) no número de chaves.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Autocompletar</span>
+      <h3>Toda a subárvore de um prefixo</h3>
+      <p class="prose">Como palavras com o mesmo prefixo compartilham o mesmo caminho, listar todas elas é só percorrer a subárvore abaixo do nó do prefixo — a base de qualquer campo de busca com sugestões.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma trie (árvore de prefixos), estrutura descrita por Axel Thue (1912) e formalizada por René de la Briandais (1959) e Edward Fredkin (1960), que cunhou o nome "trie" a partir de "retrieval". Complexidade: O(L) para busca, inserção e remoção, onde L é o comprimento da palavra.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Trie engine (records one step per operation) =================
+  function createTrieEngine() {
+    var nextId = 1;
+    var root = newNode(null);
+    var steps = [];
+
+    function newNode(char) { return { id: nextId++, char: char, isEnd: false, children: {} }; }
+    function cloneTree(node) {
+      if (!node) return null;
+      var childrenClone = {};
+      Object.keys(node.children).forEach(function (c) { childrenClone[c] = cloneTree(node.children[c]); });
+      return { id: node.id, char: node.char, isEnd: node.isEnd, children: childrenClone };
+    }
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ root: cloneTree(root), message: message, op: opts.op || "info", highlight: opts.highlight || { ids: [], kind: "" } });
+    }
+    function normalize(word) { return String(word == null ? "" : word).toLowerCase().replace(/[^a-z]/g, ""); }
+    function labelOf(node) { return node.char === null ? "a raiz" : "'" + node.char + "'"; }
+
+    function insert(rawWord) {
+      var word = normalize(rawWord);
+      if (!word) { snapshot("Palavra vazia — nada para inserir.", { op: "insert", highlight: { ids: [], kind: "" } }); return false; }
+      var cur = root;
+      snapshot("Inserindo \"" + word + "\": começamos na raiz (representa o prefixo vazio).", { op: "insert", highlight: { ids: [root.id], kind: "compare" } });
+      for (var i = 0; i < word.length; i++) {
+        var ch = word[i];
+        if (!cur.children[ch]) {
+          cur.children[ch] = newNode(ch);
+          snapshot("'" + ch + "' não existe como filho de " + labelOf(cur) + " — criamos um novo nó.",
+            { op: "insert", highlight: { ids: [cur.children[ch].id], kind: "new" } });
+        } else {
+          snapshot("'" + ch + "' já existe como filho de " + labelOf(cur) + " — descemos por ali.",
+            { op: "insert", highlight: { ids: [cur.children[ch].id], kind: "compare" } });
+        }
+        cur = cur.children[ch];
+      }
+      if (cur.isEnd) {
+        snapshot("\"" + word + "\" já estava marcada como palavra completa — nada muda.", { op: "insert", highlight: { ids: [cur.id], kind: "compare" } });
+        return false;
+      }
+      cur.isEnd = true;
+      snapshot("Marcamos o nó final como fim de palavra: \"" + word + "\" agora está na trie.", { op: "insert", highlight: { ids: [cur.id], kind: "end" } });
+      return true;
+    }
+
+    function search(rawWord) {
+      var word = normalize(rawWord);
+      var cur = root;
+      snapshot("Buscando \"" + word + "\": começamos na raiz.", { op: "search", highlight: { ids: [root.id], kind: "compare" } });
+      for (var i = 0; i < word.length; i++) {
+        var ch = word[i];
+        if (!cur.children[ch]) {
+          snapshot("'" + ch + "' não existe como filho de " + labelOf(cur) + " — \"" + word + "\" não está na trie, nem como prefixo.",
+            { op: "search", highlight: { ids: [cur.id], kind: "bad" } });
+          return false;
+        }
+        cur = cur.children[ch];
+        snapshot("'" + ch + "' encontrado — descemos.", { op: "search", highlight: { ids: [cur.id], kind: "compare" } });
+      }
+      if (cur.isEnd) {
+        snapshot("Caminho completo e nó final marcado: \"" + word + "\" é uma palavra da trie.", { op: "search", highlight: { ids: [cur.id], kind: "end" } });
+        return true;
+      }
+      snapshot("O caminho existe — \"" + word + "\" é um prefixo válido — mas o nó final não está marcado, então não é uma palavra completa.",
+        { op: "search", highlight: { ids: [cur.id], kind: "bad" } });
+      return false;
+    }
+
+    function autocomplete(rawPrefix) {
+      var prefix = normalize(rawPrefix);
+      var cur = root;
+      snapshot(prefix ? ("Autocompletando \"" + prefix + "\": descendo caractere a caractere.") : "Autocompletando a partir da raiz: listamos todas as palavras da trie.",
+        { op: "search", highlight: { ids: [root.id], kind: "compare" } });
+      for (var i = 0; i < prefix.length; i++) {
+        var ch = prefix[i];
+        if (!cur.children[ch]) {
+          snapshot("'" + ch + "' não existe — nenhuma palavra na trie começa com \"" + prefix + "\".", { op: "search", highlight: { ids: [cur.id], kind: "bad" } });
+          return [];
+        }
+        cur = cur.children[ch];
+        snapshot("'" + ch + "' encontrado — descemos.", { op: "search", highlight: { ids: [cur.id], kind: "compare" } });
+      }
+      var results = [];
+      var subtreeIds = [];
+      (function dfs(node, acc) {
+        subtreeIds.push(node.id);
+        if (node.isEnd) results.push(acc);
+        Object.keys(node.children).sort().forEach(function (c) { dfs(node.children[c], acc + c); });
+      })(cur, prefix);
+      results.sort();
+      snapshot("Prefixo \"" + prefix + "\" localizado — toda a subárvore abaixo dele guarda as palavras que começam assim (" + results.length + " encontrada" + (results.length === 1 ? "" : "s") + ").",
+        { op: "search", highlight: { ids: subtreeIds, kind: "successor" } });
+      return results;
+    }
+
+    function removeValue(rawWord) {
+      var word = normalize(rawWord);
+      if (!word) { snapshot("Palavra vazia — nada para remover.", { op: "remove", highlight: { ids: [], kind: "" } }); return false; }
+      var pathNodes = [root];
+      var cur = root;
+      snapshot("Removendo \"" + word + "\": localizando o caminho.", { op: "remove", highlight: { ids: [root.id], kind: "compare" } });
+      for (var i = 0; i < word.length; i++) {
+        var ch = word[i];
+        if (!cur.children[ch]) {
+          snapshot("\"" + word + "\" não está na trie — nada a remover.", { op: "remove", highlight: { ids: [cur.id], kind: "bad" } });
+          return false;
+        }
+        cur = cur.children[ch];
+        pathNodes.push(cur);
+        snapshot("'" + ch + "' encontrado — descemos.", { op: "remove", highlight: { ids: [cur.id], kind: "compare" } });
+      }
+      if (!cur.isEnd) {
+        snapshot("\"" + word + "\" é apenas prefixo de outra(s) palavra(s), não uma palavra completa — nada a remover.", { op: "remove", highlight: { ids: [cur.id], kind: "bad" } });
+        return false;
+      }
+      cur.isEnd = false;
+      snapshot("Desmarcamos o fim de palavra em \"" + word + "\".", { op: "remove", highlight: { ids: [cur.id], kind: "bad" } });
+      for (var j = pathNodes.length - 1; j > 0; j--) {
+        var node = pathNodes[j];
+        var parent = pathNodes[j - 1];
+        var hasChildren = Object.keys(node.children).length > 0;
+        if (!hasChildren && !node.isEnd) {
+          delete parent.children[node.char];
+          snapshot("Nó '" + node.char + "' não tem filhos e não é fim de outra palavra — removido por poda.", { op: "remove", highlight: { ids: [parent.id], kind: "new" } });
+        } else {
+          break;
+        }
+      }
+      snapshot("Remoção de \"" + word + "\" concluída.", { op: "remove", highlight: { ids: [], kind: "" } });
+      return true;
+    }
+
+    function wordsInTrie() {
+      var out = [];
+      (function dfs(node, acc) { if (node.isEnd) out.push(acc); Object.keys(node.children).sort().forEach(function (c) { dfs(node.children[c], acc + c); }); })(root, "");
+      return out.sort();
+    }
+
+    return {
+      insert: insert, search: search, autocomplete: autocomplete, remove: removeValue, words: wordsInTrie,
+      getRoot: function () { return root; },
+      getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= n-ary layout: leaves get sequential slots, internal nodes average their children =================
+  function computeLayout(root){
+    var positions = {};
+    var nextLeafX = 0;
+    function layout(node, depth){
+      var keys = Object.keys(node.children).sort();
+      var childXs = keys.map(function(k){ return layout(node.children[k], depth+1); });
+      var x;
+      if(keys.length === 0){ x = nextLeafX; nextLeafX += 1; }
+      else { x = childXs.reduce(function(a,b){return a+b;},0) / childXs.length; }
+      positions[node.id] = { x:x, depth:depth, char:node.char, isEnd:node.isEnd, childIds: keys.map(function(k){ return node.children[k].id; }) };
+      return x;
+    }
+    layout(root, 0);
+    return { positions: positions, leafCount: Math.max(nextLeafX, 1) };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnAutocomplete: document.getElementById("btnAutocomplete"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnRandomWord: document.getElementById("btnRandomWord"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText"),
+    resultsRow: document.getElementById("resultsRow"),
+    resultsChips: document.getElementById("resultsChips")
+  };
+
+  var CELL_W = 46, ROW_H = 60, NODE_R = 16, TOP_PAD = 20, SIDE_PAD = 26;
+  var NS = "http://www.w3.org/2000/svg";
+
+  var engine = createTrieEngine();
+  var state = { stepIndex: 0, playing:false, timer:null };
+  var nodeEls = {}, edgeEls = {};
+
+  function jumpToLiveEnd(){
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length-1));
+    state.stepIndex = engine.getSteps().length-1;
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert:"Inserindo", remove:"Removendo", search:"Buscando", info:"Início" };
+
+  function render(){
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if(!step){
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira palavras para começar, ou gere uma trie de exemplo.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length-1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function(id){ highlightMap[id] = step.highlight.kind; });
+
+    var layout = computeLayout(step.root);
+    var maxDepth = 0;
+    Object.keys(layout.positions).forEach(function(id){ if(layout.positions[id].depth > maxDepth) maxDepth = layout.positions[id].depth; });
+
+    var width = SIDE_PAD*2 + Math.max(0, layout.leafCount-1)*CELL_W;
+    var heightPx = TOP_PAD + (maxDepth+1)*ROW_H;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix){ return SIDE_PAD + ix*CELL_W; }
+    function yFor(depth){ return TOP_PAD + depth*ROW_H + NODE_R; }
+
+    var presentIds = {};
+    var presentEdgeChildIds = {};
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var kind = highlightMap[id] || "";
+
+      var rec = nodeEls[id];
+      if(!rec){
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "node");
+        var halo = document.createElementNS(NS, "circle");
+        halo.setAttribute("class", "node-halo");
+        halo.setAttribute("r", NODE_R+4);
+        var circle = document.createElementNS(NS, "circle");
+        circle.setAttribute("class", "node-circle");
+        circle.setAttribute("r", NODE_R);
+        var text = document.createElementNS(NS, "text");
+        text.setAttribute("class", "node-value");
+        g.appendChild(halo); g.appendChild(circle); g.appendChild(text);
+        rec = { g:g, halo:halo, circle:circle, text:text };
+        nodeEls[id] = rec;
+      }
+      if(kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+      rec.halo.setAttribute("cx", cx); rec.halo.setAttribute("cy", cy);
+      rec.circle.setAttribute("cx", cx); rec.circle.setAttribute("cy", cy);
+      rec.circle.style.fill = p.isEnd ? "var(--accent)" : "var(--node-fill)";
+      rec.text.setAttribute("x", cx); rec.text.setAttribute("y", cy + 0.5);
+      rec.text.textContent = p.char === null ? "•" : p.char.toUpperCase();
+    });
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      p.childIds.forEach(function(childId){
+        presentEdgeChildIds[childId] = true;
+        var child = layout.positions[childId];
+        var line = edgeEls[childId];
+        if(!line){ line = document.createElementNS(NS, "line"); line.setAttribute("class","edge-line"); edgeEls[childId] = line; }
+        line.setAttribute("x1", xFor(p.x)); line.setAttribute("y1", yFor(p.depth));
+        line.setAttribute("x2", xFor(child.x)); line.setAttribute("y2", yFor(child.depth));
+      });
+    });
+
+    Object.keys(nodeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentIds[id]){ nodeEls[id].g.remove(); delete nodeEls[id]; }
+    });
+    Object.keys(edgeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentEdgeChildIds[id]){ edgeEls[id].remove(); delete edgeEls[id]; }
+    });
+
+    els.treeSvg.innerHTML = "";
+    Object.keys(edgeEls).forEach(function(id){ els.treeSvg.appendChild(edgeEls[id]); });
+    Object.keys(nodeEls).forEach(function(id){ els.treeSvg.appendChild(nodeEls[id].g); });
+  }
+
+  // ================= playback controls =================
+  function stopPlaying(){
+    state.playing = false;
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i){
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length-1, i));
+    render();
+  }
+  function stepBy(delta){ goTo(state.stepIndex + delta); }
+  function togglePlay(){
+    var steps = engine.getSteps();
+    if(state.playing){ stopPlaying(); return; }
+    if(steps.length === 0) return;
+    if(state.stepIndex >= steps.length-1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function(){
+      var s = engine.getSteps();
+      if(state.stepIndex >= s.length-1){ stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function(){ goTo(0); });
+  els.btnPrev.addEventListener("click", function(){ stepBy(-1); });
+  els.btnNext.addEventListener("click", function(){ stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function(){ goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function(){ if(state.playing){ togglePlay(); togglePlay(); } });
+
+  function showError(msg){ els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError(){ els.errorText.hidden = true; }
+  function hideResults(){ els.resultsRow.hidden = true; els.resultsChips.innerHTML = ""; }
+  function showResults(list){
+    els.resultsChips.innerHTML = "";
+    if(list.length === 0){
+      var e = document.createElement("span"); e.className = "results-empty"; e.textContent = "nenhuma palavra encontrada";
+      els.resultsChips.appendChild(e);
+    } else {
+      list.forEach(function(w){
+        var chip = document.createElement("span"); chip.className = "chip"; chip.textContent = w;
+        els.resultsChips.appendChild(chip);
+      });
+    }
+    els.resultsRow.hidden = false;
+  }
+
+  function parseValueInput(){
+    var raw = els.valueInput.value.trim();
+    var normalized = raw.toLowerCase().replace(/[^a-z]/g, "");
+    if(normalized === ""){ showError("Digite uma palavra (apenas letras a-z)."); return null; }
+    hideError();
+    return normalized;
+  }
+
+  els.btnInsert.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    hideResults();
+    engine.insert(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    hideResults();
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnAutocomplete.addEventListener("click", function(){
+    hideError();
+    var raw = els.valueInput.value.trim().toLowerCase().replace(/[^a-z]/g, "");
+    var list = engine.autocomplete(raw);
+    jumpToLiveEnd();
+    showResults(list);
+  });
+  els.btnRemove.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    hideResults();
+    engine.remove(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+
+  var SAMPLE_WORDS = ["casa","casaco","castelo","cachorro","cachimbo","carro","carroca","carta","gato","gata","galo","galho","sol","sola","sopa","sonho","pato","pata","palavra","papel","trem","tres","trilho"];
+  var usedSample = {};
+  els.btnRandomWord.addEventListener("click", function(){
+    hideError(); hideResults();
+    var pool = SAMPLE_WORDS.filter(function(w){ return !usedSample[w]; });
+    if(pool.length === 0){ showError("Todas as palavras de exemplo já foram inseridas."); return; }
+    var w = pool[Math.floor(Math.random()*pool.length)];
+    usedSample[w] = true;
+    engine.insert(w); jumpToLiveEnd();
+  });
+  els.btnNewRandom.addEventListener("click", function(){
+    hideError(); hideResults();
+    engine = createTrieEngine();
+    nodeEls = {}; edgeEls = {}; usedSample = {};
+    var shuffled = SAMPLE_WORDS.slice().sort(function(){ return Math.random()-0.5; });
+    var n = 6 + Math.floor(Math.random()*6);
+    shuffled.slice(0, n).forEach(function(w){ usedSample[w]=true; engine.insert(w); });
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if(tag === "INPUT" || tag === "TEXTAREA") return;
+    if(e.key === "ArrowRight"){ stepBy(1); e.preventDefault(); }
+    else if(e.key === "ArrowLeft"){ stepBy(-1); e.preventDefault(); }
+    else if(e.key === " "){ togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= static reference diagrams =================
+  function renderStaticTrie(container, words, width, rowH){
+    var root = { char:null, isEnd:false, children:{} };
+    words.forEach(function(w){
+      var cur = root;
+      for(var i=0;i<w.length;i++){
+        var ch = w[i];
+        if(!cur.children[ch]) cur.children[ch] = { char:ch, isEnd:false, children:{} };
+        cur = cur.children[ch];
+      }
+      cur.isEnd = true;
+    });
+    var nextLeafX = 0;
+    var idc = 0;
+    var positions = {};
+    function layout(node, depth){
+      node.__id = idc++;
+      var keys = Object.keys(node.children).sort();
+      var childXs = keys.map(function(k){ return layout(node.children[k], depth+1); });
+      var x;
+      if(keys.length===0){ x = nextLeafX; nextLeafX += 1; }
+      else { x = childXs.reduce(function(a,b){return a+b;},0)/childXs.length; }
+      positions[node.__id] = { x:x, depth:depth, node:node };
+      return x;
+    }
+    layout(root, 0);
+    var r = 15, colW = 40, topPad = 16;
+    var innerW = Math.max(0, nextLeafX-1) * colW;
+    var w = Math.max(width, innerW + 2*(r+10));
+    var maxDepth = 0; Object.keys(positions).forEach(function(k){ if(positions[k].depth>maxDepth) maxDepth = positions[k].depth; });
+    var h = topPad + (maxDepth+1)*rowH;
+    var offsetX = (w - innerW)/2;
+    function xFor(ix){ return offsetX + ix*colW; }
+    function yFor(depth){ return topPad + depth*rowH; }
+
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+    svg.setAttribute("width", w); svg.setAttribute("height", h);
+    var edgesG = document.createElementNS(NS, "g"), nodesG = document.createElementNS(NS, "g");
+    Object.keys(positions).forEach(function(k){
+      var p = positions[k];
+      Object.keys(p.node.children).sort().forEach(function(ck){
+        var child = p.node.children[ck];
+        var cp = positions[child.__id];
+        var line = document.createElementNS(NS, "line");
+        line.setAttribute("class","edge-line");
+        line.setAttribute("x1", xFor(p.x)); line.setAttribute("y1", yFor(p.depth));
+        line.setAttribute("x2", xFor(cp.x)); line.setAttribute("y2", yFor(cp.depth));
+        edgesG.appendChild(line);
+      });
+    });
+    Object.keys(positions).forEach(function(k){
+      var p = positions[k];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var circle = document.createElementNS(NS, "circle");
+      circle.setAttribute("cx", cx); circle.setAttribute("cy", cy); circle.setAttribute("r", r);
+      circle.setAttribute("fill", p.node.isEnd ? "var(--accent)" : "var(--node-fill)");
+      circle.setAttribute("stroke","var(--paper)"); circle.setAttribute("stroke-width","2.5");
+      nodesG.appendChild(circle);
+      var text = document.createElementNS(NS, "text");
+      text.setAttribute("class","node-value");
+      text.setAttribute("x", cx); text.setAttribute("y", cy+0.5);
+      text.setAttribute("font-size","11px");
+      text.textContent = p.node.char===null ? "•" : p.node.char.toUpperCase();
+      nodesG.appendChild(text);
+    });
+    svg.appendChild(edgesG); svg.appendChild(nodesG);
+    container.appendChild(svg);
+  }
+
+  (function renderExample(){
+    renderStaticTrie(document.getElementById("exampleDiagram"), ["sol","sola","sopa"], 320, 56);
+  })();
+
+  var SEARCH_CASES = [
+    { title:"É uma palavra", words:["carro","cartao"], query:"carro", desc:"O caminho existe por inteiro e o nó final está marcado: \"carro\" é uma palavra da trie." },
+    { title:"É só um prefixo", words:["carro","cartao"], query:"car", desc:"O caminho existe (outras palavras passam por ele), mas o nó final não está marcado: \"car\" nunca foi inserida sozinha." },
+    { title:"Não existe", words:["carro","cartao"], query:"casa", desc:"O caminho quebra na primeira letra que diverge: nenhuma palavra da trie começa assim além do que já foi percorrido." }
+  ];
+  (function renderSearchCases(){
+    var grid = document.getElementById("searchCaseGrid");
+    SEARCH_CASES.forEach(function(c, idx){
+      var card = document.createElement("div");
+      card.className = "case-card";
+      var num = document.createElement("span"); num.className="num"; num.textContent = "Caso " + (idx+1);
+      var h3 = document.createElement("h3"); h3.textContent = c.title;
+      var p = document.createElement("p"); p.className="prose"; p.textContent = c.desc;
+      card.appendChild(num); card.appendChild(h3); card.appendChild(p);
+      grid.appendChild(card);
+    });
+  })();
+
+  // ================= boot =================
+  (function boot(){
+    var shuffled = SAMPLE_WORDS.slice().sort(function(){ return Math.random()-0.5; });
+    var n = 8 + Math.floor(Math.random()*4);
+    shuffled.slice(0, n).forEach(function(w){ usedSample[w] = true; engine.insert(w); });
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

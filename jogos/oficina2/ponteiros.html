@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Cartógrafo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#1c2033 0%,#2a2540 55%,#3a2b26 55%,#2c211c 100%);min-height:420px}
+.ceu{position:absolute;inset:0 0 45% 0;background:radial-gradient(circle at 85% 25%,#f2e3b0 0 18px,transparent 19px),radial-gradient(circle at 20% 30%,#ffffff22 0 1px,transparent 2px),radial-gradient(circle at 60% 15%,#ffffff22 0 1px,transparent 2px)}
+.rua{position:relative;display:flex;justify-content:space-around;align-items:flex-end;padding:120px 20px 24px;gap:10px;min-height:400px}
+.casa{position:relative;width:150px;display:grid;justify-items:center;border:0;background:transparent;padding:0;border-radius:12px;transition:transform .2s}
+.casa:hover{transform:translateY(-3px)}
+.casa svg{width:140px;height:120px;display:block;filter:drop-shadow(0 6px 0 #0006)}
+.casa .nome{font-family:var(--mono);font-weight:600;font-size:22px;color:var(--ouro);margin-top:2px}
+.casa .moedas{position:absolute;top:58px;left:50%;transform:translateX(-50%);font-weight:800;font-size:28px;color:#2b1a0e;font-variant-numeric:tabular-nums;transition:transform .25s}
+.casa.muda .moedas{animation:pula .45s}
+@keyframes pula{40%{transform:translateX(-50%) scale(1.5)}}
+.casa.k-dica svg{filter:drop-shadow(0 0 12px rgba(242,193,78,.9))}
+.casa.errou{animation:ktreme .4s}
+.placa{position:absolute;top:18px;display:grid;justify-items:center;transition:left .6s cubic-bezier(.4,1.4,.6,1);pointer-events:none;z-index:3}
+.placa .tab{font-family:var(--mono);font-weight:600;font-size:20px;padding:3px 14px;border-radius:8px;border:2px solid #1d1408;color:#1d1408;box-shadow:0 3px 0 #0007;background:#F2C14E}
+.placa .haste{width:4px;height:44px;background:#d9c9a8}
+.placa .seta{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #d9c9a8}
+.placa.q .tab{background:#7FB8FF}.placa.r .tab{background:#C9A3FF}
+.pergaminho{margin-top:12px;display:grid;grid-template-columns:minmax(260px,1fr) 1.2fr;gap:12px}
+.codigo{background:#e9dcbf;color:#3a2a1a;border-radius:12px;padding:12px 16px;font:500 17px/1.7 var(--mono);box-shadow:inset 0 0 30px #b9a27a}
+.codigo div{padding:0 6px;border-radius:6px}
+.codigo .at{background:#3a2a1a;color:#F2C14E}
+.codigo .feita{opacity:.45}
+.painel{display:grid;gap:8px;align-content:start}
+.bolhas{display:flex;gap:10px;flex-wrap:wrap}
+.bolhas button{width:62px;height:62px;border-radius:50%;border:3px solid #8a6a1f;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d9a32e);color:#2b1a0e;font-weight:800;font-size:22px;box-shadow:0 4px 0 #0007;transition:transform .15s}
+.bolhas button:hover{transform:translateY(-3px)}
+@media (max-width:760px){.casa{width:100px}.casa svg{width:96px;height:84px}.casa .moedas{top:40px;font-size:21px}.pergaminho{grid-template-columns:1fr}.rua{padding-top:110px}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena" id="cena"><div class="ceu"></div><div class="rua" id="rua"></div></section>
+  <div class="pergaminho"><div class="codigo" id="codigo"></div><div class="painel"><div class="ordem" id="ordem">…</div><div class="bolhas" id="bolhas"></div></div></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;   /* estado da partida */
+const CORES = {a:'#c98b5e', b:'#8fae6b', c:'#7f8fc2'};
+
+function casaSVG(n){ return `<svg viewBox="0 0 140 120"><path d="M14 52 L70 10 L126 52 Z" fill="#6b3a2a" stroke="#1d1408" stroke-width="3"/><rect x="24" y="50" width="92" height="66" rx="4" fill="${CORES[n]}" stroke="#1d1408" stroke-width="3"/><rect x="46" y="54" width="48" height="38" rx="19" fill="#f6e3a8" stroke="#1d1408" stroke-width="2.5"/><rect x="60" y="94" width="20" height="22" fill="#3a2418"/></svg>`; }
+
+function novoPrograma(){
+  const nv = G.nivel >= 2 ? ['a','b','c'] : ['a','b'], np = G.nivel >= 2 ? ['p','q','r'] : ['p','q'];
+  const vars = Object.fromEntries(nv.map(v=>[v, K.rnd(1,9)]));
+  const ptr = Object.fromEntries(np.map((p,i)=>[p, nv[i % nv.length]]));
+  G.vars = vars; G.ptr = ptr; G.nv = nv; G.np = np;
+  const ini = [`int ${nv.map(v=>`${v} = ${vars[v]}`).join(', ')};`, `int ${np.map((p,i)=>`*${p} = &${ptr[p]}`).join(', ')};`];
+  const modelos = [
+    () => { const p = K.pick(np), k = K.rnd(2,9); return {l:`*${p} = ${k};`, tipo:'escreve', alvo:s=>s.ptr[p], val:s=>k}; },
+    () => { const [p,q] = K.shuffle(np).slice(0,2), k = K.rnd(1,5); return {l:`*${q} = *${p} + ${k};`, tipo:'escreve', alvo:s=>s.ptr[q], val:s=>s.vars[s.ptr[p]]+k}; },
+    () => { const [p,q] = K.shuffle(np).slice(0,2); return {l:`*${p} += *${q};`, tipo:'escreve', alvo:s=>s.ptr[p], val:s=>s.vars[s.ptr[p]]+s.vars[s.ptr[q]]}; },
+    () => { const v = K.pick(nv), p = K.pick(np), k = K.rnd(1,4); return {l:`${v} = *${p} + ${k};`, tipo:'escreve', alvo:s=>v, val:s=>s.vars[s.ptr[p]]+k}; },
+    () => { const p = K.pick(np), v = K.pick(nv); return {l:`${p} = &${v};`, tipo:'aponta', p, dest:s=>v}; },
+    () => { const [p,q] = K.shuffle(np).slice(0,2); return {l:`${p} = ${q};`, tipo:'aponta', p, dest:s=>s.ptr[q]}; }
+  ];
+  const linhas = [];
+  for (let i = 0; i < 4 + Math.min(2, G.nivel - 1); i++) {
+    let m; do { m = K.pick(modelos)(); } while (linhas.length && m.l === linhas[linhas.length-1].l);
+    linhas.push(m);
+  }
+  G.ini = ini; G.linhas = linhas; G.li = 0;
+  desenhar(); proxima();
+}
+function desenhar(){
+  const rua = $('#rua');
+  rua.innerHTML = G.nv.map(v => `<button class="casa" data-v="${v}" aria-label="Casa ${v} com ${G.vars[v]} moedas">${casaSVG(v)}<span class="moedas">${G.vars[v]}</span><span class="nome">${v}</span></button>`).join('')
+    + G.np.map(p => `<div class="placa ${p}" data-p="${p}"><span class="tab">${p}</span><span class="haste"></span><span class="seta"></span></div>`).join('');
+  rua.querySelectorAll('.casa').forEach(c => c.onclick = () => clicarCasa(c.dataset.v));
+  requestAnimationFrame(posicionarPlacas);
+  $('#codigo').innerHTML = G.ini.map(l=>`<div class="feita">${K.esc(l)}</div>`).join('') + G.linhas.map((l,i)=>`<div class="${i<G.li?'feita':(i===G.li?'at':'')}">${K.esc(l.l)}</div>`).join('');
+}
+function posicionarPlacas(){
+  const rua = $('#rua'), rr = rua.getBoundingClientRect();
+  const porCasa = {};
+  G.np.forEach(p => { const v = G.ptr[p]; porCasa[v] = (porCasa[v]||0) + 1; const k = porCasa[v] - 1;
+    const c = rua.querySelector(`.casa[data-v="${v}"]`), r = c.getBoundingClientRect(), el = rua.querySelector(`.placa[data-p="${p}"]`);
+    el.style.left = (r.left - rr.left + r.width/2 - 22 + (k - 0.5) * 34 * (porCasa[v] > 1 || k ? 1 : 0)) + 'px'; el.style.top = (18 + k * 6) + 'px'; });
+}
+window.addEventListener('resize', () => G && posicionarPlacas());
+
+function proxima(){
+  if (G.li >= G.linhas.length) {
+    K.timer.parar();
+    K.bonus(200, $('#codigo'), 'Pergaminho concluído +200');
+    G.programas++;
+    if (G.programas % 2 === 0) { G.nivel++; K.subirNivel(G.nivel, G.nivel === 2 ? 'Chegam a casa c e o mapa r' : 'Menos tempo, mais linhas'); }
+    return setTimeout(novoPrograma, 900);
+  }
+  const L = G.linhas[G.li]; G.etapa = 1; G.antes = {vars:{...G.vars}, ptr:{...G.ptr}};
+  desenhar();
+  $('#bolhas').innerHTML = '';
+  const tempo = Math.max(6, 15 - G.nivel * 2);
+  if (L.tipo === 'aponta') {
+    $('#ordem').innerHTML = `<span>Linha <code>${K.esc(L.l)}</code>: para qual casa o mapa <b>${L.p}</b> vai apontar? Clique na casa.</span>`;
+    K.turno(tempo, () => falhou(null, true), () => [`Sem <code>*</code>, a linha muda só o mapa, não as moedas.`, `<code>${L.p}</code> passa a apontar para <b>${L.dest(G)}</b>.`]);
+  } else {
+    $('#ordem').innerHTML = `<span>Linha <code>${K.esc(L.l)}</code>: <b>qual casa</b> tem as moedas alteradas? Clique nela.</span>`;
+    K.turno(tempo, () => falhou(null, true), () => [`Mapas agora: ${G.np.map(p=>`${p} → ${G.ptr[p]}`).join(', ')}.`, `A linha escreve na casa <b>${L.alvo(G)}</b>.`]);
+  }
+}
+function clicarCasa(v){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  const L = G.linhas[G.li];
+  if (!L || G.etapa !== 1) return;
+  if (L.tipo === 'aponta') {
+    if (v === L.dest(G)) { G.ptr[L.p] = v; K.acerto(document.querySelector(`.casa[data-v="${v}"]`)); K.SFX.whoosh(); K.s.ocupado = true; posicionarPlacas(); setTimeout(() => { K.s.ocupado = false; G.li++; proxima(); }, 650); }
+    else falhou(v, false);
+  } else {
+    if (v === L.alvo(G)) { K.SFX.clique(); G.etapa = 2; perguntarValor(v); }
+    else falhou(v, false);
+  }
+}
+function perguntarValor(v){
+  const L = G.linhas[G.li], certo = L.val(G), velho = G.vars[v];
+  const ops = K.shuffle([...new Set([certo, velho, certo + K.rnd(1,3), Math.max(0, certo - K.rnd(1,3)), certo * 2])]).slice(0,4);
+  if (!ops.includes(certo)) ops[0] = certo;
+  $('#ordem').innerHTML = `<span>Casa <b>${v}</b> certa! Quantas moedas ela terá depois de <code>${K.esc(L.l)}</code>?</span>`;
+  $('#bolhas').innerHTML = K.shuffle(ops).map((x,i) => `<button data-x="${x}"><small style="display:none">${i+1}</small>${x}</button>`).join('');
+  $('#bolhas').querySelectorAll('button').forEach(b => b.onclick = () => escolherValor(+b.dataset.x, v));
+  document.querySelector(`.casa[data-v="${v}"]`).classList.add('k-dica');
+  K.turno(Math.max(6, 13 - G.nivel * 2), () => falhou(null, true), () => [`Leia os valores <b>antes</b> da linha: ${G.nv.map(x=>`${x} = ${G.vars[x]}`).join(', ')}.`, `O resultado é ${certo}.`]);
+}
+function escolherValor(x, v){
+  if (!K.s.rodando || K.s.ocupado || G.etapa !== 2 || !G.linhas[G.li]) return;
+  const L = G.linhas[G.li], certo = L.val(G);
+  if (x === certo) {
+    G.vars[v] = certo; K.acerto($('#bolhas'));
+    const c = document.querySelector(`.casa[data-v="${v}"]`); c.querySelector('.moedas').textContent = certo; K.anima(c, 'muda');
+    K.s.ocupado = true; setTimeout(() => { K.s.ocupado = false; G.li++; proxima(); }, 550);
+  } else falhou(x, false, true);
+}
+function falhou(clicado, tempo, noValor){
+  const L = G.linhas[G.li], s = G;
+  const estado = `<div class="mini">${G.nv.map(v=>`<span>${G.antes.vars[v]}<small>${v}</small></span>`).join('')}${G.np.map(p=>`<span class="azul">→${G.antes.ptr[p]}<small>${p}</small></span>`).join('')}</div>`;
+  let html;
+  if (L.tipo === 'aponta') html = `<p>Antes da linha:</p>${estado}<p><code>${K.esc(L.l)}</code> não tem <code>*</code> do lado esquerdo: só troca o mapa. Agora <code>${L.p}</code> aponta para <b>${L.dest(s)}</b>. As moedas não mudam.</p>`;
+  else html = `<p>Antes da linha:</p>${estado}<p><code>${K.esc(L.l)}</code> escreve na casa <b>${L.alvo(s)}</b>${L.l.startsWith('*') ? ` (porque <code>${L.l.slice(1, L.l.indexOf(' '))}</code> aponta para ela)` : ''}, que passa a ter <b>${L.val(s)}</b> moedas.</p>`;
+  if (clicado && !noValor) { const c = document.querySelector(`.casa[data-v="${clicado}"]`); K.anima(c, 'errou'); }
+  K.erro(html, () => {
+    /* aplica a linha certa e segue */
+    if (L.tipo === 'aponta') G.ptr[L.p] = L.dest(G); else G.vars[L.alvo(G)] = L.val(G);
+    G.li++; proxima();
+  }, {kicker: tempo ? 'O tempo acabou' : 'Mapa errado'});
+}
+
+K.init({
+  id:'ponteiros', titulo:'O Cartógrafo', kicker:'Masmorra · Ponteiros', vidas:3, rotNivel:'Nível', comecar:'Abrir o pergaminho',
+  ajuda:`<p>Na vila, cada casa (<code>a</code>, <code>b</code>, <code>c</code>) guarda moedas. As placas <code>p</code>, <code>q</code> e <code>r</code> são <b>mapas</b>: apontam para uma casa. O pergaminho é um programa em C: execute-o linha por linha.</p>
+  <ol><li><code>p = &amp;b;</code> ou <code>p = q;</code> mudam só o mapa: clique na casa para onde ele vai apontar.</li>
+  <li><code>*p = 5;</code> mexe nas moedas da casa apontada: clique na casa que muda e depois escolha quantas moedas ela fica.</li>
+  <li>A cada dois pergaminhos o nível sobe: chega a casa <code>c</code>, o mapa <code>r</code>, e o tempo diminui.</li></ol>`,
+  iniciar(){ G = {nivel:1, programas:0}; novoPrograma(); },
+  auto(){
+    const L = G.linhas[G.li]; if (!L) return;
+    if (G.etapa === 1) clicarCasa(L.tipo === 'aponta' ? L.dest(G) : L.alvo(G));
+    else escolherValor(L.val(G), L.alvo(G));
+    return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

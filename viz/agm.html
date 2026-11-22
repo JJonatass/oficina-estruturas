@@ -1,0 +1,842 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore Geradora Mínima</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236;
+      --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236;
+    --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="relax"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="relax"] .dot{background:var(--gold);}
+  .op-pill[data-op="visit"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="visit"] .dot{background:var(--accent);}
+  .op-pill[data-op="accept"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="accept"] .dot{background:var(--success);}
+  .op-pill[data-op="reject"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="reject"] .dot{background:var(--rust);}
+  .op-pill[data-op="done"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="done"] .dot{background:var(--success);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stat-row{display:flex; flex-wrap:wrap; gap:18px; font-size:0.82rem; color:var(--ink-soft);}
+  .stat-row .stat b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+
+  .algo-tabs{display:flex; gap:6px; flex-wrap:wrap;}
+  .algo-tab{
+    font-family:'IBM Plex Mono', monospace; font-size:0.74rem; font-weight:600; letter-spacing:0.03em;
+    padding:5px 12px; border-radius:999px; border:1px solid var(--line-strong); color:var(--ink-faint); background:transparent;
+  }
+  .algo-tab[data-active="true"]{ color:#fff; background:var(--ink-soft); border-color:var(--ink-soft); }
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .mst-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .mst-svg, .mst-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .mst-node-circle{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: fill .25s ease, stroke .25s ease; }
+  .mst-node-label{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .mst-sub-label{ font-size:10px; text-anchor:middle; fill:var(--ink-faint); font-weight:600; }
+  .mst-node[data-state="intree"] .mst-node-circle{ fill:var(--accent-soft); stroke:var(--accent); }
+  .mst-node[data-state="intree"] .mst-sub-label{ fill:var(--accent-ink); }
+  .mst-node[data-state="frontier"] .mst-node-circle{ fill:var(--violet-soft); stroke:var(--violet); stroke-dasharray:3.5 3; }
+  .mst-node[data-state="frontier"] .mst-sub-label{ fill:var(--violet); }
+  .mst-node[data-state="current"] .mst-node-circle{ fill:var(--gold-soft); stroke:var(--gold); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .mst-node[data-state="current"] .mst-sub-label{ fill:var(--gold); }
+
+  .mst-edge-bg{ fill:none; stroke:var(--line-strong); stroke-width:1.5; }
+  .mst-edge-tree{ fill:none; stroke:var(--accent); stroke-width:2.6; }
+  .mst-edge-accept{ fill:none; stroke:var(--gold); stroke-width:3.2; }
+  .mst-edge-reject{ fill:none; stroke:var(--rust); stroke-width:2.2; stroke-dasharray:5 4; }
+  .mst-weight-label{ font-size:10px; fill:var(--ink-soft); text-anchor:middle; paint-order:stroke; stroke:var(--card); stroke-width:3px; stroke-linejoin:round; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.intree{border-color:var(--accent); background:var(--accent-soft);}
+  .legend .swatch.frontier{border-color:var(--violet); background:var(--violet-soft); border-style:dashed;}
+  .legend .swatch.current{border-color:var(--gold); background:var(--gold-soft); border-width:3px;}
+  .legend .line{width:16px;height:2px;border-radius:2px;background:var(--line-strong);}
+  .legend .line.tree{background:var(--accent); height:3px;}
+  .legend .line.accept{background:var(--gold); height:3px;}
+  .legend .line.reject{background:var(--rust); height:2px; background-image:linear-gradient(90deg, var(--rust) 60%, transparent 40%); background-size:7px 2px;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .side-panel{display:flex; flex-direction:column; gap:8px;}
+  .panel-label{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .frontier-strip{display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-height:38px;}
+  .frontier-chip{
+    display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:30px; height:30px; padding-inline:8px;
+    border-radius:7px; border:1.5px solid var(--line-strong); background:var(--card); font-family:'IBM Plex Mono',monospace;
+    font-size:0.8rem; font-weight:600; color:var(--ink-soft);
+  }
+  .frontier-chip .d{color:var(--ink-faint); font-weight:500;}
+  .frontier-chip.current{border-color:var(--gold); color:var(--gold); background:var(--gold-soft);}
+  .frontier-chip.current .d{color:var(--gold);}
+  .frontier-empty{font-size:0.8rem; color:var(--ink-faint); font-style:italic;}
+
+  .edge-queue{display:flex; flex-wrap:wrap; gap:6px; max-height:160px; overflow-y:auto; padding:4px 2px;}
+  .edge-chip{
+    display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:7px;
+    border:1.5px solid var(--line-strong); background:var(--card); font-family:'IBM Plex Mono',monospace;
+    font-size:0.78rem; font-weight:600; color:var(--ink-faint);
+  }
+  .edge-chip .w{color:var(--ink-soft); font-weight:500;}
+  .edge-chip[data-status="accepted"]{border-color:var(--accent); color:var(--accent-ink); background:var(--accent-soft);}
+  .edge-chip[data-status="accepted"] .w{color:var(--accent-ink);}
+  .edge-chip[data-status="rejected"]{border-color:var(--rust); color:var(--rust); background:var(--rust-soft); text-decoration:line-through; text-decoration-thickness:1.5px;}
+  .edge-chip[data-status="current"]{outline:2px solid var(--gold); outline-offset:1px;}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:64px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Grafos ponderados · Kruskal &amp; Prim</span>
+    <h1>Árvore Geradora Mínima: Kruskal e Prim</h1>
+    <p class="prose">Dado um grafo conexo com pesos nas arestas, uma <strong>árvore geradora mínima</strong> (MST) é o subconjunto de arestas que conecta todos os nós gastando o menor peso total possível — sem nenhum ciclo. Duas estratégias gulosas resolvem isso de formas opostas: <strong>Kruskal</strong> ordena todas as arestas e vai aceitando as mais baratas que não fecham ciclo (usando <strong>Union-Find</strong> para detectar isso), enquanto <strong>Prim</strong> cresce uma única árvore a partir de um nó, sempre anexando a aresta mais barata que alcança algo novo. São caminhos completamente diferentes — mas, no mesmo grafo conexo, sempre chegam ao <strong>mesmo peso total</strong>.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador de Kruskal e Prim">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat">Nós: <b id="statN">–</b></span>
+      <span class="stat">Arestas: <b id="statM">–</b></span>
+      <span class="stat">Componentes: <b id="statComp">–</b></span>
+      <span class="stat">Peso da MST: <b id="statWeight">–</b></span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="mst-svg" id="mstSvg"></svg>
+    </div>
+
+    <div class="legend" id="legendPrim">
+      <span class="item"><span class="swatch current"></span>sendo adicionado agora</span>
+      <span class="item"><span class="swatch frontier"></span>na fronteira (chave conhecida)</span>
+      <span class="item"><span class="swatch intree"></span>já na árvore</span>
+      <span class="item"><span class="swatch"></span>ainda não alcançado</span>
+      <span class="item"><span class="line tree"></span>aresta da árvore</span>
+      <span class="item"><span class="line accept"></span>aresta sendo ligada agora</span>
+    </div>
+    <div class="legend" id="legendKruskal" hidden>
+      <span class="item"><span class="swatch intree"></span>nó já unido a outro (cor = conjunto)</span>
+      <span class="item"><span class="line tree"></span>aresta aceita (na MST)</span>
+      <span class="item"><span class="line accept"></span>aresta sendo aceita agora</span>
+      <span class="item"><span class="line reject"></span>aresta rejeitada agora (fecharia ciclo)</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="side-panel" id="panelPrim">
+      <span class="panel-label">Fronteira (por chave — menor aresta até a árvore)</span>
+      <div class="frontier-strip" id="frontierStrip"></div>
+    </div>
+    <div class="side-panel" id="panelKruskal" hidden>
+      <span class="panel-label">Fila de arestas ordenada por peso</span>
+      <div class="edge-queue" id="edgeQueue"></div>
+    </div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <button class="primary" id="btnKruskal">Executar Kruskal</button>
+        <label class="small">Nó inicial <input type="number" id="startInput" min="0" value="0"></label>
+        <button class="primary" id="btnPrim">Executar Prim</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Nós
+          <input type="range" class="mini" id="nSlider" min="4" max="12" value="7" step="1">
+          <span class="mono" id="nLabel">7</span>
+        </label>
+        <button class="violet" id="btnNewGraph">🎲 Novo grafo aleatório</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Duas estratégias gulosas, mesmo resultado</h2>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <span class="tag">Global · Kruskal</span>
+        <p class="prose"><strong>Ordena todas as arestas</strong> do grafo inteiro por peso crescente e varre essa lista uma vez. Para cada aresta, pergunta a um <strong>Union-Find</strong>: "as duas pontas já estão no mesmo conjunto?" Se não, a aresta é aceita e os conjuntos se unem; se sim, ela é rejeitada — aceitá-la fecharia um ciclo. Não importa onde a árvore está crescendo: a decisão é sempre local à aresta.</p>
+      </div>
+      <div class="compare-card">
+        <span class="tag">Local · Prim</span>
+        <p class="prose">Cresce <strong>uma única árvore</strong> a partir de um nó inicial. A cada rodada, entre todas as arestas que saem da árvore atual para fora dela, escolhe a <strong>mais barata</strong> e anexa o nó do outro lado — exatamente a mesma seleção gulosa por array que o Dijkstra usa, só que minimizando peso de aresta em vez de distância acumulada.</p>
+      </div>
+    </div>
+    <p class="prose">Kruskal pode aceitar arestas em qualquer ordem espacial (a árvore cresce em vários pedaços que se juntam depois); Prim sempre cresce a partir de uma fronteira contígua. Mesmo assim, em um grafo conexo, o <strong>peso total final é idêntico</strong> — é uma propriedade matemática da árvore geradora mínima, não uma coincidência de implementação.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada algoritmo</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Algoritmo</th><th>Tempo</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Kruskal</td><td class="mono">O(E log E)</td><td>Dominado pela ordenação das arestas; o Union-Find com união por tamanho e compressão de caminho é quase O(1) amortizado por operação.</td></tr>
+          <tr><td class="op">Prim (seleção linear, aqui)</td><td class="mono">O(V² + E)</td><td>Mesma conta do Dijkstra com seleção por array — boa para grafos pequenos ou densos.</td></tr>
+          <tr><td class="op">Prim (fila de prioridade)</td><td class="mono">O((V + E) log V)</td><td>Com um heap binário no lugar da varredura linear — melhor para grafos grandes e esparsos.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Onde aparece de verdade</span>
+      <h3>Redes de custo mínimo</h3>
+      <p class="prose">Projetar rede elétrica, cabeamento ou tubulação ligando um conjunto de pontos pelo menor custo total; roteamento em circuitos; agrupamento hierárquico (clustering) cortando as arestas mais caras da MST.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Quando escolher qual</span>
+      <h3>Esparso vs. denso</h3>
+      <p class="prose">Kruskal tende a vencer em grafos esparsos (poucas arestas para ordenar). Prim com heap tende a vencer em grafos densos, porque nunca precisa olhar para arestas fora da fronteira atual da árvore.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de Kruskal (ordenação de arestas + Union-Find) e Prim (crescimento guloso por seleção linear, O(V² + E)) para árvore geradora mínima em grafo não direcionado com pesos não negativos.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= MST engine (Kruskal + Prim over the same weighted graph) =================
+  function buildWeightedAdjacency(n, edgeList) {
+    var adj = new Array(n);
+    for (var i = 0; i < n; i++) adj[i] = [];
+    var best = {};
+    (edgeList || []).forEach(function (e) {
+      var u = e[0], v = e[1], w = e[2];
+      if (u === v) return;
+      if (!(u >= 0 && u < n) || !(v >= 0 && v < n)) throw new Error("edge endpoint out of range: " + u + "-" + v);
+      if (!(w >= 0)) throw new Error("edge weight must be >= 0: " + u + "-" + v + " (got " + w + ")");
+      var key = Math.min(u, v) + "," + Math.max(u, v);
+      if (!(key in best) || w < best[key]) best[key] = w;
+    });
+    Object.keys(best).forEach(function (key) {
+      var parts = key.split(",");
+      var u = Number(parts[0]), v = Number(parts[1]), w = best[key];
+      adj[u].push([v, w]);
+      adj[v].push([u, w]);
+    });
+    for (var j = 0; j < n; j++) adj[j].sort(function (a, b) { return a[0] - b[0]; });
+    return adj;
+  }
+
+  function createMSTEngine(n, edgeList) {
+    if (!(n >= 1)) throw new Error("n must be >= 1");
+    var adj = buildWeightedAdjacency(n, edgeList);
+    var steps = [];
+
+    function getEdgeList() {
+      var out = [];
+      for (var u = 0; u < n; u++) for (var i = 0; i < adj[u].length; i++) { var v = adj[u][i][0], w = adj[u][i][1]; if (v > u) out.push([u, v, w]); }
+      return out;
+    }
+    var edges = getEdgeList();
+
+    function countComponents() {
+      var seen = new Array(n).fill(false);
+      var count = 0;
+      for (var i = 0; i < n; i++) {
+        if (seen[i]) continue;
+        count++;
+        var stack = [i]; seen[i] = true;
+        while (stack.length > 0) {
+          var u = stack.pop();
+          for (var j = 0; j < adj[u].length; j++) { var v = adj[u][j][0]; if (!seen[v]) { seen[v] = true; stack.push(v); } }
+        }
+      }
+      return count;
+    }
+
+    function runKruskal() {
+      var sorted = edges.slice().sort(function (a, b) { return a[2] - b[2] || a[0] - b[0] || a[1] - b[1]; });
+      var parent = new Array(n); for (var p = 0; p < n; p++) parent[p] = p;
+      var size = new Array(n).fill(1);
+
+      function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+      function union(a, b) {
+        var ra = find(a), rb = find(b);
+        if (ra === rb) return false;
+        if (size[ra] < size[rb]) { var t = ra; ra = rb; rb = t; }
+        parent[rb] = ra; size[ra] += size[rb];
+        return true;
+      }
+
+      var mstEdges = [];
+      var totalWeight = 0;
+      var processedThrough = -1;
+
+      function snap(message, opts) {
+        opts = opts || {};
+        if (opts.consideringIndex != null) processedThrough = opts.consideringIndex;
+        steps.push({
+          kind: "kruskal", message: message, n: n,
+          sortedEdges: sorted.slice(),
+          consideringIndex: opts.consideringIndex != null ? opts.consideringIndex : null,
+          processedThrough: processedThrough,
+          mstEdges: mstEdges.map(function (e) { return e.slice(); }),
+          totalWeight: totalWeight,
+          parent: parent.slice(), size: size.slice(),
+          op: opts.op || "info"
+        });
+      }
+
+      snap(sorted.length === 0 ? "Sem arestas para considerar." : ("Arestas ordenadas por peso crescente: " + sorted.length + " no total."), { op: "info" });
+
+      for (var i = 0; i < sorted.length; i++) {
+        if (mstEdges.length === n - 1) break;
+        var e = sorted[i];
+        var u = e[0], v = e[1], w = e[2];
+        var ru = find(u), rv = find(v);
+        if (ru !== rv) {
+          union(u, v);
+          mstEdges.push([u, v, w]);
+          totalWeight += w;
+          snap("Aresta " + u + "–" + v + " (peso " + w + "): raízes diferentes (" + ru + " e " + rv + ") — aceita. Total agora: " + totalWeight + ".",
+            { op: "accept", consideringIndex: i });
+        } else {
+          snap("Aresta " + u + "–" + v + " (peso " + w + "): " + u + " e " + v + " já estão no mesmo conjunto (raiz " + ru + ") — rejeitada, fecharia ciclo.",
+            { op: "reject", consideringIndex: i });
+        }
+      }
+
+      var comps = countComponents();
+      snap("Kruskal concluído: " + mstEdges.length + " aresta(s) na árvore, peso total " + totalWeight + (comps > 1 ? " (grafo desconexo — " + comps + " componentes, floresta geradora mínima)." : "."),
+        { op: "done" });
+      return { edges: mstEdges.slice(), weight: totalWeight };
+    }
+
+    function runPrim(start) {
+      if (!(start >= 0 && start < n)) throw new Error("start must be in [0, " + (n - 1) + "]");
+      var inTree = new Array(n).fill(false);
+      var key = new Array(n).fill(Infinity);
+      var parent = new Array(n).fill(null);
+      key[start] = 0;
+
+      var mstEdges = [];
+      var totalWeight = 0;
+
+      function snap(message, opts) {
+        opts = opts || {};
+        var treeEdges = [];
+        for (var i = 0; i < n; i++) if (inTree[i] && parent[i] != null) treeEdges.push([parent[i], i]);
+        var frontier = [];
+        for (var j = 0; j < n; j++) if (!inTree[j] && key[j] !== Infinity) frontier.push(j);
+        frontier.sort(function (a, b) { return key[a] - key[b]; });
+        steps.push({
+          kind: "prim", message: message, n: n,
+          key: key.slice(), inTree: inTree.slice(), parent: parent.slice(),
+          current: opts.current != null ? opts.current : null,
+          activeEdge: opts.activeEdge || null,
+          treeEdges: treeEdges, frontier: frontier,
+          totalWeight: totalWeight,
+          op: opts.op || "info"
+        });
+      }
+
+      snap(n === 1 ? "Único nó: árvore trivial, peso 0." : ("Começando em " + start + ": chave(" + start + ")=0, demais = ∞."), { op: "info" });
+
+      for (var iter = 0; iter < n; iter++) {
+        var u = -1, best = Infinity;
+        for (var i = 0; i < n; i++) { if (!inTree[i] && key[i] < best) { best = key[i]; u = i; } }
+        if (u === -1) break;
+
+        inTree[u] = true;
+        if (parent[u] != null) { mstEdges.push([parent[u], u, key[u]]); totalWeight += key[u]; }
+        snap("Adicionado " + u + " à árvore" + (parent[u] != null ? (" via aresta " + parent[u] + "–" + u + " (peso " + key[u] + ")") : " (raiz)") + ".",
+          { op: "visit", current: u });
+
+        var neighbors = adj[u];
+        for (var k = 0; k < neighbors.length; k++) {
+          var v = neighbors[k][0], w = neighbors[k][1];
+          if (inTree[v]) continue;
+          if (w < key[v]) {
+            var old = key[v];
+            key[v] = w; parent[v] = u;
+            snap("Atualizando chave(" + v + "): " + (old === Infinity ? "∞" : old) + " → " + w + " via aresta " + u + "–" + v + ".",
+              { op: "relax", current: u, activeEdge: [u, v] });
+          }
+        }
+      }
+
+      var comps = countComponents();
+      snap("Prim concluído a partir de " + start + ": " + mstEdges.length + " aresta(s), peso total " + totalWeight + (comps > 1 ? " (grafo desconexo — árvore cobre só o componente de " + start + ")." : "."),
+        { op: "done" });
+      return { edges: mstEdges.slice(), weight: totalWeight };
+    }
+
+    return {
+      runKruskal: runKruskal, runPrim: runPrim,
+      countComponents: countComponents,
+      degree: function (u) { return adj[u].length; },
+      getAdjacency: function () { return adj.map(function (row) { return row.map(function (p) { return p.slice(); }); }); },
+      getEdgeList: getEdgeList, getN: function () { return n; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= Renderer =================
+  var NS = "http://www.w3.org/2000/svg";
+  var els = {
+    opPill: document.getElementById("opPill"), opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"), mstSvg: document.getElementById("mstSvg"),
+    message: document.getElementById("message"), scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"), btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"), btnNext: document.getElementById("btnNext"), speed: document.getElementById("speed"),
+    startInput: document.getElementById("startInput"), btnPrim: document.getElementById("btnPrim"), btnKruskal: document.getElementById("btnKruskal"),
+    nSlider: document.getElementById("nSlider"), nLabel: document.getElementById("nLabel"), btnNewGraph: document.getElementById("btnNewGraph"),
+    errorText: document.getElementById("errorText"), statN: document.getElementById("statN"), statM: document.getElementById("statM"),
+    statComp: document.getElementById("statComp"), statWeight: document.getElementById("statWeight"),
+    frontierStrip: document.getElementById("frontierStrip"), edgeQueue: document.getElementById("edgeQueue"),
+    panelPrim: document.getElementById("panelPrim"), panelKruskal: document.getElementById("panelKruskal"),
+    legendPrim: document.getElementById("legendPrim"), legendKruskal: document.getElementById("legendKruskal")
+  };
+
+  var NODE_R = 20;
+  var engine, state = { stepIndex: 0, playing: false, timer: null };
+  var nodeEls = {}, dynamicLayer = null;
+  var SET_COLORS = ["var(--gold)", "var(--violet)", "var(--rust)", "var(--accent)", "#3C7FB1", "#B1673C", "#7A8F3C", "#8F3C7A"];
+
+  function layout(n) {
+    var margin = NODE_R + 30;
+    var radius = Math.max(96, (n * 54) / (2 * Math.PI));
+    var size = radius * 2 + margin * 2;
+    return { radius: radius, cx: size / 2, cy: size / 2, size: size };
+  }
+
+  function nodePos(i, n, L) {
+    var angle = -Math.PI / 2 + i * (2 * Math.PI / n);
+    return { x: L.cx + L.radius * Math.cos(angle), y: L.cy + L.radius * Math.sin(angle) };
+  }
+
+  function shortenedEndpoints(p1, p2, r1, r2) {
+    var dx = p2.x - p1.x, dy = p2.y - p1.y;
+    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    var ux = dx / dist, uy = dy / dist;
+    return { sx: p1.x + ux * r1, sy: p1.y + uy * r1, ex: p2.x - ux * r2, ey: p2.y - uy * r2 };
+  }
+
+  function edgePath(p1, p2, r1, r2) {
+    var pts = shortenedEndpoints(p1, p2, r1, r2);
+    return "M " + pts.sx + " " + pts.sy + " L " + pts.ex + " " + pts.ey;
+  }
+
+  function refreshGraphStats() {
+    els.statN.textContent = engine.getN();
+    els.statM.textContent = engine.getEdgeList().length;
+    els.statComp.textContent = engine.countComponents();
+  }
+
+  var edgeEls = {};
+  function edgeKey(u, v) { return Math.min(u, v) + "-" + Math.max(u, v); }
+
+  function buildStatics() {
+    var n = engine.getN();
+    var L = layout(n);
+    var positions = []; for (var i = 0; i < n; i++) positions.push(nodePos(i, n, L));
+    els.mstSvg.innerHTML = "";
+    els.mstSvg.setAttribute("viewBox", "0 0 " + L.size + " " + L.size);
+    els.mstSvg.setAttribute("width", L.size);
+    els.mstSvg.setAttribute("height", L.size);
+    els.mstSvg._layout = L;
+    els.mstSvg._positions = positions;
+
+    var bgLayer = document.createElementNS(NS, "g");
+    var weightLayer = document.createElementNS(NS, "g");
+    edgeEls = {};
+    engine.getEdgeList().forEach(function (edge) {
+      var p1 = positions[edge[0]], p2 = positions[edge[1]];
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("class", "mst-edge-bg");
+      path.setAttribute("d", edgePath(p1, p2, NODE_R, NODE_R));
+      bgLayer.appendChild(path);
+      edgeEls[edgeKey(edge[0], edge[1])] = { p1: p1, p2: p2 };
+
+      var mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+      var label = document.createElementNS(NS, "text");
+      label.setAttribute("class", "mst-weight-label");
+      label.setAttribute("x", mx); label.setAttribute("y", my - 3);
+      label.textContent = String(edge[2]);
+      weightLayer.appendChild(label);
+    });
+    els.mstSvg.appendChild(bgLayer);
+    els.mstSvg.appendChild(weightLayer);
+
+    dynamicLayer = document.createElementNS(NS, "g");
+    els.mstSvg.appendChild(dynamicLayer);
+
+    var nodeLayer = document.createElementNS(NS, "g");
+    nodeEls = {};
+    for (var j = 0; j < n; j++) {
+      var p = positions[j];
+      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "mst-node");
+      var circle = document.createElementNS(NS, "circle"); circle.setAttribute("class", "mst-node-circle");
+      circle.setAttribute("cx", p.x); circle.setAttribute("cy", p.y); circle.setAttribute("r", NODE_R);
+      var label = document.createElementNS(NS, "text"); label.setAttribute("class", "mst-node-label");
+      label.setAttribute("x", p.x); label.setAttribute("y", p.y + 0.5); label.textContent = String(j);
+      var subLabel = document.createElementNS(NS, "text"); subLabel.setAttribute("class", "mst-sub-label");
+      subLabel.setAttribute("x", p.x); subLabel.setAttribute("y", p.y + NODE_R + 13);
+      g.appendChild(circle); g.appendChild(label); g.appendChild(subLabel);
+      nodeLayer.appendChild(g);
+      nodeEls[j] = { g: g, circle: circle, subLabel: subLabel };
+    }
+    els.mstSvg.appendChild(nodeLayer);
+  }
+
+  function findRoot(parentArr, x) { while (parentArr[x] !== x) x = parentArr[x]; return x; }
+
+  function renderKruskal(step) {
+    els.panelPrim.hidden = true; els.panelKruskal.hidden = false;
+    els.legendPrim.hidden = true; els.legendKruskal.hidden = false;
+    els.frontierStrip.innerHTML = "";
+
+    var positions = els.mstSvg._positions;
+    for (var i = 0; i < step.n; i++) {
+      var rec = nodeEls[i];
+      var root = findRoot(step.parent, i);
+      if (step.size[root] > 1) {
+        rec.g.setAttribute("data-state", "intree");
+        rec.circle.style.stroke = SET_COLORS[root % SET_COLORS.length];
+        rec.circle.style.fill = "";
+      } else {
+        rec.g.removeAttribute("data-state");
+        rec.circle.style.stroke = ""; rec.circle.style.fill = "";
+      }
+      rec.subLabel.textContent = "";
+    }
+
+    dynamicLayer.innerHTML = "";
+    step.mstEdges.forEach(function (edge) {
+      var ref = edgeEls[edgeKey(edge[0], edge[1])];
+      if (!ref) return;
+      var isCurrent = step.op === "accept" && step.consideringIndex != null && edgeKey(step.sortedEdges[step.consideringIndex][0], step.sortedEdges[step.consideringIndex][1]) === edgeKey(edge[0], edge[1]);
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("class", isCurrent ? "mst-edge-accept" : "mst-edge-tree");
+      path.setAttribute("d", edgePath(ref.p1, ref.p2, NODE_R, NODE_R));
+      dynamicLayer.appendChild(path);
+    });
+    if (step.op === "reject" && step.consideringIndex != null) {
+      var rejEdge = step.sortedEdges[step.consideringIndex];
+      var ref2 = edgeEls[edgeKey(rejEdge[0], rejEdge[1])];
+      if (ref2) {
+        var path2 = document.createElementNS(NS, "path");
+        path2.setAttribute("class", "mst-edge-reject");
+        path2.setAttribute("d", edgePath(ref2.p1, ref2.p2, NODE_R, NODE_R));
+        dynamicLayer.appendChild(path2);
+      }
+    }
+
+    els.edgeQueue.innerHTML = "";
+    step.sortedEdges.forEach(function (edge, idx) {
+      var chip = document.createElement("span");
+      chip.className = "edge-chip";
+      var inMst = step.mstEdges.some(function (e) { return e[0] === edge[0] && e[1] === edge[1]; });
+      var status = idx > step.processedThrough ? "pending" : (inMst ? "accepted" : "rejected");
+      chip.dataset.status = status;
+      if (idx === step.consideringIndex) chip.dataset.status = status; // keep accepted/rejected coloring, outline added below
+      chip.innerHTML = edge[0] + "–" + edge[1] + " <span class=\"w\">(" + edge[2] + ")</span>";
+      if (idx === step.consideringIndex) chip.style.outline = "2px solid var(--gold)";
+      els.edgeQueue.appendChild(chip);
+    });
+  }
+
+  function renderPrim(step) {
+    els.panelPrim.hidden = false; els.panelKruskal.hidden = true;
+    els.legendPrim.hidden = false; els.legendKruskal.hidden = true;
+    els.edgeQueue.innerHTML = "";
+
+    var positions = els.mstSvg._positions;
+    var frontierSet = {}; (step.frontier || []).forEach(function (v) { frontierSet[v] = true; });
+
+    for (var i = 0; i < step.n; i++) {
+      var rec = nodeEls[i];
+      rec.circle.style.stroke = ""; rec.circle.style.fill = "";
+      var st = null;
+      if (step.current === i) st = "current";
+      else if (frontierSet[i]) st = "frontier";
+      else if (step.inTree[i]) st = "intree";
+      if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+      rec.subLabel.textContent = step.key[i] === Infinity ? "∞" : String(step.key[i]);
+    }
+
+    dynamicLayer.innerHTML = "";
+    var activeKey = step.activeEdge ? edgeKey(step.activeEdge[0], step.activeEdge[1]) : null;
+    (step.treeEdges || []).forEach(function (edge) {
+      var ref = edgeEls[edgeKey(edge[0], edge[1])];
+      if (!ref) return;
+      var isActive = activeKey === edgeKey(edge[0], edge[1]);
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("class", isActive ? "mst-edge-accept" : "mst-edge-tree");
+      path.setAttribute("d", edgePath(ref.p1, ref.p2, NODE_R, NODE_R));
+      dynamicLayer.appendChild(path);
+    });
+    if (step.op === "relax" && step.activeEdge) {
+      var refA = edgeEls[edgeKey(step.activeEdge[0], step.activeEdge[1])];
+      var alreadyDrawn = (step.treeEdges || []).some(function (e) { return edgeKey(e[0], e[1]) === activeKey; });
+      if (refA && !alreadyDrawn) {
+        var pathA = document.createElementNS(NS, "path");
+        pathA.setAttribute("class", "mst-edge-accept");
+        pathA.setAttribute("d", edgePath(refA.p1, refA.p2, NODE_R, NODE_R));
+        dynamicLayer.appendChild(pathA);
+      }
+    }
+
+    els.frontierStrip.innerHTML = "";
+    if (!step.frontier || step.frontier.length === 0) {
+      var empty = document.createElement("span");
+      empty.className = "frontier-empty";
+      empty.textContent = "fronteira vazia";
+      els.frontierStrip.appendChild(empty);
+    } else {
+      step.frontier.forEach(function (v) {
+        var chip = document.createElement("span");
+        chip.className = "frontier-chip" + (v === step.current ? " current" : "");
+        chip.innerHTML = v + " <span class=\"d\">(chave=" + step.key[v] + ")</span>";
+        els.frontierStrip.appendChild(chip);
+      });
+    }
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = { info: "Início", accept: "Aresta aceita", reject: "Aresta rejeitada", visit: "Nó adicionado", relax: "Atualizando chave", done: "Concluído" };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+    els.statWeight.textContent = step.totalWeight;
+
+    if (step.kind === "kruskal") renderKruskal(step); else renderPrim(step);
+  }
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+
+  function goTo(idx) {
+    var max = engine.getSteps().length - 1;
+    state.stepIndex = Math.max(0, Math.min(max, idx));
+    render();
+    if (state.stepIndex >= max) stopPlaying();
+  }
+
+  function showError(msg) {
+    if (!msg) { els.errorText.hidden = true; els.errorText.textContent = ""; return; }
+    els.errorText.hidden = false; els.errorText.textContent = msg;
+  }
+
+  function readStart() {
+    var x = parseInt(els.startInput.value, 10);
+    var n = engine.getN();
+    if (!(x >= 0 && x < n)) { showError("o nó inicial deve estar entre 0 e " + (n - 1) + "."); return null; }
+    showError(null);
+    return x;
+  }
+
+  function randomEdges(n) {
+    var p = Math.min(0.9, 2.6 / n);
+    var edges = [];
+    for (var u = 0; u < n; u++) for (var v = u + 1; v < n; v++) if (Math.random() < p) edges.push([u, v, 1 + Math.floor(Math.random() * 9)]);
+    return edges;
+  }
+
+  els.btnKruskal.addEventListener("click", function () { engine.runKruskal(); jumpToLiveEnd(); });
+  els.btnPrim.addEventListener("click", function () { var s = readStart(); if (s == null) return; engine.runPrim(s); jumpToLiveEnd(); });
+
+  els.nSlider.addEventListener("input", function () { els.nLabel.textContent = els.nSlider.value; });
+  els.btnNewGraph.addEventListener("click", function () {
+    var n = Number(els.nSlider.value);
+    engine = createMSTEngine(n, randomEdges(n));
+    buildStatics();
+    refreshGraphStats();
+    var start = Math.min(Number(els.startInput.value) || 0, n - 1);
+    if (start < 0) start = 0;
+    els.startInput.value = start;
+    engine.runKruskal();
+    jumpToLiveEnd();
+  });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex + 1); });
+  els.btnPlay.addEventListener("click", function () {
+    if (state.playing) { stopPlaying(); return; }
+    var max = engine.getSteps().length - 1;
+    if (state.stepIndex >= max) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      var m = engine.getSteps().length - 1;
+      if (state.stepIndex >= m) { stopPlaying(); return; }
+      state.stepIndex++;
+      render();
+      if (state.stepIndex >= m) stopPlaying();
+    }, Number(els.speed.value));
+  });
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) stopPlaying(); });
+
+  // ---- boot: a small fixed connected weighted demo graph, Kruskal run first so the page is meaningful at rest ----
+  engine = createMSTEngine(8, [[0, 1, 4], [0, 2, 2], [1, 2, 1], [1, 3, 5], [2, 3, 8], [2, 4, 10], [3, 4, 2], [3, 5, 6], [4, 5, 3], [4, 6, 8], [5, 6, 1], [5, 7, 7], [6, 7, 4]]);
+  buildStatics();
+  refreshGraphStats();
+  engine.runKruskal();
+  els.scrubber.max = String(engine.getSteps().length - 1);
+  state.stepIndex = engine.getSteps().length - 1;
+  render();
+})();
+</script>
+
+</body></html>

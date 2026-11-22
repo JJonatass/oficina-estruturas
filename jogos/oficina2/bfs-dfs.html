@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Batedor e o Explorador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:#0d0c12;padding:12px;min-height:360px}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.topo b{font-family:var(--titulo);font-size:24px;color:var(--ouro)}
+.estr{font-family:var(--mono);font-size:15px;color:var(--mudo);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.estr span{background:var(--chip);border:1px solid var(--borda);border-radius:7px;padding:2px 8px;color:var(--texto)}
+.estr span:first-of-type{border-color:var(--ouro);color:var(--ouro)}
+svg.mapa{display:block;width:100%;height:auto}
+.corr line{stroke:#3a3650;stroke-width:14;stroke-linecap:round}
+.corr.vis line{stroke:#5a5470}
+.corr.arv line{stroke:#8a6a2a}
+.sala{cursor:pointer}
+.sala rect{fill:#24212f;stroke:#5d5975;stroke-width:3;transition:all .3s}
+.sala text{fill:var(--texto);font:800 19px var(--sans);text-anchor:middle;pointer-events:none}
+.sala .ord{font:700 13px var(--mono);fill:var(--ouro)}
+.sala.desc rect{fill:#2b2840;stroke:#7FB8FF;stroke-dasharray:6 4}
+.sala.vis rect{fill:#3a3020;stroke:#F2C14E}
+.sala.nevoa rect{fill:#141219;stroke:#25222e}
+.sala.nevoa text{fill:#34303f}
+.sala.nevoa{cursor:default}
+.sala:not(.nevoa):not(.vis):hover rect{stroke:var(--ouro);stroke-width:5}
+.sala.k-dica rect{stroke:var(--ouro);stroke-width:6}
+.sala.errou rect{stroke:var(--verm);stroke-width:6}
+.nevoaG{fill:url(#neb);pointer-events:none}
+.heroi{transition:transform .5s cubic-bezier(.45,0,.3,1);pointer-events:none}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="topo"><b id="modo">Batedor (BFS)</b><div class="estr" id="estr"></div></div><svg class="mapa" id="mapa" viewBox="0 0 640 400"></svg></section>
+  <div class="ordem"><span id="ordem">…</span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+function novoMapa(n){
+  const slots = [[80,80],[220,60],[360,90],[520,70],[70,210],[210,200],[350,230],[500,205],[120,330],[280,335],[440,330],[580,310]];
+  for (let t = 0; t < 300; t++) {
+    const idx = K.shuffle(slots.map((_,i)=>i)).slice(0,n).sort((a,b)=>a-b);
+    const vs = idx.map((si,i)=>({id:'ABCDEFGHIJK'[i], x:slots[si][0]+K.rnd(-10,10), y:slots[si][1]+K.rnd(-8,8)}));
+    const d = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y), cand = [];
+    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++) if (d(vs[i],vs[j]) < 200) cand.push([i,j,d(vs[i],vs[j])]);
+    const pai = vs.map((_,i)=>i), f = x => pai[x]===x?x:(pai[x]=f(pai[x])), es = [];
+    for (const [i,j] of K.shuffle(cand)) if (f(i)!==f(j)) { pai[f(i)]=f(j); es.push([i,j]); }
+    if (es.length < n-1) continue;
+    for (const [i,j] of K.shuffle(cand.filter(([i,j])=>!es.some(e=>e[0]===i&&e[1]===j))).sort((a,b)=>a[2]-b[2]).slice(0, Math.ceil(n/2))) es.push([i,j]);
+    const cruza=(p1,p2,p3,p4)=>{const o=(a,b,c)=>(c.y-a.y)*(b.x-a.x)-(b.y-a.y)*(c.x-a.x); if([p1,p2].includes(p3)||[p1,p2].includes(p4)) return false; return (o(p1,p2,p3)>0)!==(o(p1,p2,p4)>0)&&(o(p3,p4,p1)>0)!==(o(p3,p4,p2)>0);};
+    const fin = []; for (const e of es) if (!fin.some(g=>cruza(vs[e[0]],vs[e[1]],vs[g[0]],vs[g[1]]))) fin.push(e);
+    const p2 = vs.map((_,i)=>i), f2 = x => p2[x]===x?x:(p2[x]=f2(p2[x])); fin.forEach(([i,j])=>p2[f2(i)]=f2(j));
+    if (new Set(vs.map((_,i)=>f2(i))).size > 1) continue;
+    return {vs, es: fin.map(([i,j])=>({a:vs[i].id, b:vs[j].id}))};
+  }
+}
+const viz = u => G.g.es.filter(e=>e.a===u||e.b===u).map(e=>e.a===u?e.b:e.a).sort();
+
+function masmorra(){
+  G.bfs = G.rodada % 2 === 0;
+  G.g = novoMapa(Math.min(10, 6 + Math.floor(G.nivel / 2)));
+  const ini = K.pick(G.g.vs).id;
+  /* ordem esperada */
+  G.ordemCerta = []; G.snaps = [];
+  if (G.bfs) { const vis = new Set([ini]), fila = [ini]; while (fila.length) { const u = fila.shift(); G.ordemCerta.push(u); for (const v of viz(u)) if (!vis.has(v)) { vis.add(v); fila.push(v); } G.snaps.push(fila.slice()); } }
+  else { const vis = new Set(), pilha = []; (function dfs(u){ vis.add(u); pilha.push(u); G.ordemCerta.push(u); G.snaps.push(pilha.slice()); for (const v of viz(u)) if (!vis.has(v)) dfs(v); pilha.pop(); })(ini); }
+  G.vis = [ini]; G.k = 1; G.heroi = ini;
+  $('#modo').textContent = G.bfs ? 'O Batedor (BFS)' : 'O Explorador (DFS)';
+  K.banner(G.bfs ? 'O Batedor<small>busca em largura: camada por camada</small>' : 'O Explorador<small>busca em profundidade: fundo e volta</small>');
+  setTimeout(proxima, 800);
+}
+function estado(){
+  const visit = new Set(G.vis);
+  const desc = new Set(); G.vis.forEach(v => viz(v).forEach(w => { if (!visit.has(w)) desc.add(w); }));
+  return {visit, desc};
+}
+function desenhar(hl = {}){
+  const {visit, desc} = estado(), P = Object.fromEntries(G.g.vs.map(v=>[v.id,v]));
+  let s = `<defs><radialGradient id="neb"><stop offset="0" stop-color="#2a2636" stop-opacity=".95"/><stop offset="1" stop-color="#0d0c12" stop-opacity="0"/></radialGradient></defs>`;
+  for (const e of G.g.es) {
+    const ve = visit.has(e.a) || visit.has(e.b); if (!ve) continue;
+    const arv = visit.has(e.a) && visit.has(e.b);
+    s += `<g class="corr ${arv ? 'vis' : ''}"><line x1="${P[e.a].x}" y1="${P[e.a].y}" x2="${P[e.b].x}" y2="${P[e.b].y}"/></g>`;
+  }
+  for (const v of G.g.vs) {
+    const est = visit.has(v.id) ? 'vis' : (desc.has(v.id) ? 'desc' : 'nevoa');
+    const ord = visit.has(v.id) ? G.vis.indexOf(v.id) + 1 : '';
+    s += `<g class="sala ${est} ${hl[v.id]||''}" data-v="${v.id}" tabindex="${est==='nevoa'?-1:0}" role="button" aria-label="Sala ${est==='nevoa'?'escondida':v.id}"><rect x="${v.x-30}" y="${v.y-24}" width="60" height="48" rx="10"/><text x="${v.x}" y="${v.y+7}">${est==='nevoa'?'?':v.id}</text>${ord?`<text class="ord" x="${v.x+24}" y="${v.y-28}">${ord}º</text>`:''}</g>`;
+    if (est === 'nevoa') s += `<circle class="nevoaG" cx="${v.x}" cy="${v.y}" r="52"/>`;
+  }
+  const h = P[G.heroi];
+  s += `<g class="heroi" id="heroi" style="transform:translate(${h.x}px,${h.y - 42}px)"><text x="0" y="0" font-size="26" text-anchor="middle">${G.bfs ? '🏹' : '🔦'}</text></g>`;
+  $('#mapa').innerHTML = s;
+  $('#mapa').querySelectorAll('.sala:not(.nevoa)').forEach(g => { g.onclick = () => clicar(g.dataset.v, g); g.onkeydown = e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); clicar(g.dataset.v, g); } }; });
+  const snap = G.snaps[G.k - 1] || [];
+  $('#estr').innerHTML = G.bfs ? `fila: ${snap.map(x=>`<span>${x}</span>`).join('') || '–'}` : `pilha de chamadas: ${snap.map(x=>`<span>${x}</span>`).reverse().join('') || '–'}`;
+}
+function proxima(){
+  if (G.k >= G.ordemCerta.length) return fimMasmorra();
+  desenhar();
+  $('#ordem').innerHTML = G.bfs ? 'Qual sala o batedor visita agora? (vizinhos sempre em ordem alfabética)' : 'Para qual sala o explorador vai agora? (vizinhos em ordem alfabética; sem saída, ele volta)';
+  K.turno(Math.max(4, 10 - G.nivel), () => falhou(null, true), () => G.bfs ? ['A próxima é a primeira da fila.', `Sala ${G.ordemCerta[G.k]}.`] : ['Olhe o topo da pilha: ele ainda tem vizinho não visitado? Se não, volte um nível.', `Sala ${G.ordemCerta[G.k]}.`]);
+}
+function clicar(v, el){
+  if (!K.s.rodando || K.s.ocupado || !G.g) return;
+  if (G.vis.includes(v)) return;
+  if (v !== G.ordemCerta[G.k]) return falhou(el);
+  K.acerto(el, 90); K.SFX.passo();
+  G.vis.push(v); G.heroi = v; G.k++;
+  K.s.ocupado = true; desenhar();
+  setTimeout(() => { K.s.ocupado = false; proxima(); }, 320);
+}
+function fimMasmorra(){
+  K.timer.parar(); K.bonus(250, $('#mapa'), 'Masmorra explorada +250');
+  $('#ordem').innerHTML = `Ordem de visita: <b>${G.ordemCerta.join(' → ')}</b>.`;
+  G.rodada++;
+  setTimeout(() => { if (G.rodada % 2 === 0) { G.nivel++; K.subirNivel(G.nivel, 'Masmorras maiores'); setTimeout(masmorra, 1000); } else masmorra(); }, 1100);
+}
+function falhou(el, tempo){
+  if (el) K.anima(el, 'errou');
+  const certo = G.ordemCerta[G.k], snap = G.snaps[G.k - 1] || [];
+  const html = G.bfs
+    ? `<p>Na <b>BFS</b>, a próxima sala é sempre a primeira da <b>fila</b>. A fila estava: <b>${snap.join(', ')}</b>. Então o batedor vai para <b>${certo}</b>.</p><p class="nota">Por isso a BFS visita por camadas: tudo a 1 corredor de distância, depois tudo a 2, e assim por diante.</p>`
+    : `<p>Na <b>DFS</b>, o explorador olha o topo da pilha de chamadas (${[...snap].reverse().join(' ← ')}) e entra no primeiro vizinho ainda não visitado, em ordem alfabética. Sem vizinho novo, volta um nível. O próximo é <b>${certo}</b>.</p>`;
+  K.erro(html, () => { G.vis.push(certo); G.heroi = certo; G.k++; proxima(); }, {kicker: tempo ? 'O tempo acabou' : 'Armadilha!'});
+}
+
+K.init({
+  id:'bfs-dfs', titulo:'O Batedor e o Explorador', kicker:'Masmorra · BFS e DFS', vidas:3, comecar:'Entrar na masmorra',
+  ajuda:`<p>A masmorra está coberta de névoa. As salas visitadas ficam acesas (com a ordem de visita); as salas vizinhas já descobertas ficam tracejadas; o resto é névoa.</p>
+  <ol><li><b>O Batedor (BFS)</b> usa uma <b>fila</b>: visita sempre a sala descoberta há mais tempo, camada por camada.</li>
+  <li><b>O Explorador (DFS)</b> usa a <b>pilha de chamadas</b>: entra no primeiro vizinho não visitado da sala atual e só volta quando não há saída.</li>
+  <li>Os dois olham os vizinhos em <b>ordem alfabética</b>. Clique na próxima sala visitada.</li></ol>
+  <p class="nota">As masmorras alternam entre o batedor e o explorador.</p>`,
+  iniciar(){ G = {nivel:1, rodada:0}; masmorra(); },
+  auto(){ if (!G.ordemCerta || G.k >= G.ordemCerta.length) return; const v = G.ordemCerta[G.k]; clicar(v, document.querySelector(`.sala[data-v="${v}"]`)); return true; }
+});
+})();
+</script>
+</body>
+</html>

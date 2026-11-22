@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Corrente de Elos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#1b1a26,#1b1a26 55%,#0b0a10 100%);min-height:330px;padding:18px}
+.abismo{position:absolute;left:0;right:0;bottom:0;height:120px;background:repeating-linear-gradient(100deg,#0b0a10 0 30px,#100e16 30px 60px);opacity:.9}
+.margem{position:absolute;bottom:0;width:70px;height:170px;background:linear-gradient(#4a3c32,#2b221c);border-radius:0 12px 0 0}
+.margem.d{right:0;border-radius:12px 0 0 0}
+.corr{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:0;margin-top:80px;flex-wrap:wrap;row-gap:30px}
+.head{font-family:var(--mono);font-weight:600;color:var(--ouro);border:2px solid var(--ouro);border-radius:8px;padding:2px 8px;margin-right:6px}
+.elo{position:relative;width:76px;height:76px;border-radius:50%;border:7px solid #9a93ad;display:grid;place-items:center;background:#1f1d2a;font-weight:800;font-size:21px;box-shadow:0 5px 0 #0008;transition:transform .3s,opacity .3s}
+.elo.at{border-color:var(--ouro);box-shadow:0 0 18px rgba(242,193,78,.6),0 5px 0 #0008}
+.elo.ant{border-color:var(--azul)}
+.elo.alvo{animation:kbrilha 1s infinite}
+.elo.cai{transform:translateY(160px) rotate(40deg);opacity:0}
+.elo.k-dica{border-color:var(--ouro)}
+.liga{width:44px;height:10px;border-radius:5px;background:#9a93ad;position:relative}
+.liga::after{content:"";position:absolute;right:-4px;top:-6px;border-left:12px solid #9a93ad;border-top:11px solid transparent;border-bottom:11px solid transparent}
+.liga.vira{transform:scaleX(-1)}
+.liga.solta{background:#4f4a66}.liga.solta::after{border-left-color:#4f4a66}
+.nul{font-family:var(--mono);color:var(--mudo);border:2px dashed var(--borda);border-radius:8px;padding:4px 8px;margin-left:6px}
+.goblin{position:absolute;top:-58px;left:50%;transform:translateX(-50%);font-size:34px;filter:drop-shadow(0 3px 0 #000)}
+.tag{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:12px;font-weight:700}
+.tag.a{color:var(--ouro)}.tag.b{color:var(--azul)}.tag.c{color:var(--roxo)}
+.controles{display:flex;gap:8px;flex-wrap:wrap}
+.controles button{background:var(--chip);border:1px solid var(--ouro);color:var(--ouro);border-radius:10px;padding:8px 16px;font-weight:800}
+.cartas{display:flex;gap:8px;flex-wrap:wrap}
+.cartas button{background:#e9dcbf;color:#3a2a1a;border:0;border-radius:10px;padding:10px 14px;font:600 16px var(--mono);box-shadow:0 4px 0 #0007;transition:transform .15s}
+.cartas button:hover{transform:translateY(-3px)}
+.cartas button.usada{opacity:.3;pointer-events:none}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="abismo"></div><div class="margem"></div><div class="margem d"></div><div class="corr" id="corr"></div></section>
+  <div class="ordem"><span id="ordem">…</span><span class="controles" id="ctl"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+
+function desenhar(){
+  const ordemVis = G.vis || G.lista.map((_,i)=>i);
+  let h = '<span class="head">head</span>';
+  ordemVis.forEach((i, k) => {
+    const cls = ['elo', G.at === i ? 'at' : '', G.ant === i ? 'ant' : '', G.cair === i ? 'cai' : ''].join(' ');
+    h += `<div class="${cls}" data-i="${i}">${G.lista[i]}${G.at === i ? '<span class="goblin">🧌</span><span class="tag a">at</span>' : ''}${G.ant === i ? '<span class="tag b">ant</span>' : ''}${G.prx === i ? '<span class="tag c">prox</span>' : ''}</div>`;
+    if (k < ordemVis.length - 1) h += `<span class="liga ${G.virados && G.virados.has(i) ? 'vira' : ''}"></span>`;
+  });
+  h += '<span class="liga"></span><span class="nul">NULL</span>';
+  $('#corr').innerHTML = h;
+}
+
+/* ---------- missão: remover ou inserir andando com o goblin ---------- */
+function novaMissao(){
+  G.vis = null; G.virados = null; G.prx = null; G.cair = null;
+  const n = Math.min(8, 4 + G.nivel);
+  G.lista = K.distintos(n, 10, 99);
+  G.at = 0; G.ant = null;
+  const t = G.nivel >= 2 && Math.random() < 0.35 ? 'reverter' : K.pick(['remover','remover','inserir']);
+  if (t === 'reverter') return missaoReverter();
+  const alvo = K.rnd(t === 'inserir' ? 0 : 0, n - 1);
+  G.m = {t, alvo, val: K.rnd(10,99)};
+  $('#ordem').innerHTML = t === 'remover' ? `Remova o elo <b>${G.lista[alvo]}</b>. Ande com o goblin (<kbd>→</kbd>) até ele e então corte.` : `Encaixe um elo novo <b>${G.m.val}</b> logo <b>depois</b> do ${G.lista[alvo]}. Ande até o ${G.lista[alvo]} e encaixe.`;
+  $('#ctl').innerHTML = `<button id="bAnda">Avançar <kbd>→</kbd></button><button id="bAcao">${t === 'remover' ? 'Cortar aqui' : 'Encaixar aqui'} <kbd>Espaço</kbd></button>`;
+  $('#bAnda').onclick = andar; $('#bAcao').onclick = agir;
+  desenhar();
+  K.turno(Math.max(5, (alvo + 2) * Math.max(1.2, 2.6 - G.nivel * .25) + 2), () => falhou('tempo'), () => [
+    t === 'remover' ? 'O goblin começa na cabeça e só anda para frente.' : 'Para encaixar depois de X, o goblin precisa estar em X.',
+    t === 'remover' ? `Pare no ${G.lista[alvo]} (${alvo} passo${alvo===1?'':'s'} a partir da cabeça) e corte.` : `Pare no ${G.lista[alvo]} e encaixe: novo->prox = at->prox; at->prox = novo.`]);
+}
+function andar(){
+  if (!K.s.rodando || K.s.ocupado || !G.m || G.m.t === 'reverter') return;
+  if (G.at >= G.lista.length - 1) return falhou('passou');
+  if (G.m.t === 'remover' && G.at === G.m.alvo) return falhou('passou');
+  if (G.m.t === 'inserir' && G.at === G.m.alvo) return falhou('passou');
+  G.ant = G.at; G.at++; K.SFX.passo(); desenhar();
+}
+function agir(){
+  if (!K.s.rodando || K.s.ocupado || !G.m || G.m.t === 'reverter') return;
+  if (G.at !== G.m.alvo) return falhou('lugar');
+  K.timer.parar(); K.s.ocupado = true;
+  if (G.m.t === 'remover') {
+    G.cair = G.at; desenhar(); K.SFX.whoosh();
+    $('#ordem').innerHTML = G.ant === null ? 'Era a cabeça: <code>head = at-&gt;prox</code>.' : `<code>ant-&gt;prox = at-&gt;prox</code>: o ${G.lista[G.ant]} agora aponta para ${G.at + 1 < G.lista.length ? G.lista[G.at+1] : 'NULL'}.`;
+    setTimeout(() => { G.lista.splice(G.at, 1); G.at = null; G.ant = null; G.cair = null; desenhar(); fimMissao(G.m.alvo + 1); }, 650);
+  } else {
+    $('#ordem').innerHTML = `<code>novo-&gt;prox = at-&gt;prox; at-&gt;prox = novo;</code> O ${G.m.val} entrou depois do ${G.lista[G.at]}.`;
+    G.lista.splice(G.at + 1, 0, G.m.val); G.at = null; G.ant = null; desenhar(); K.SFX.whoosh();
+    const el = document.querySelector(`.elo[data-i="${G.m.alvo + 1}"]`); K.anima(el, 'brilha');
+    setTimeout(() => fimMissao(G.m.alvo + 1), 650);
+  }
+}
+
+/* ---------- missão: reverter montando o código na ordem certa ---------- */
+const CARTAS = [
+  {id:'guarda', txt:'prox = at->prox'},
+  {id:'vira', txt:'at->prox = ant'},
+  {id:'ant', txt:'ant = at'},
+  {id:'at', txt:'at = prox'}
+];
+function missaoReverter(){
+  const n = Math.min(6, 3 + Math.floor(G.nivel / 2));
+  G.lista = K.distintos(n, 10, 99); G.vis = G.lista.map((_,i)=>i); G.virados = new Set();
+  G.at = 0; G.ant = null; G.prx = null;
+  G.m = {t:'reverter', volta:0, k:0, voltas:Math.min(n, 3)};
+  $('#ordem').innerHTML = `Reverta a corrente! Em cada volta do laço, clique nas 4 linhas na ordem certa.`;
+  montarCartas(); desenhar();
+  K.turno(Math.max(10, 22 - G.nivel * 2), () => falhou('tempo'), () => ['Antes de virar a seta, guarde o resto da corrente, senão ele se perde.', 'Ordem: prox = at->prox; at->prox = ant; ant = at; at = prox.']);
+}
+function montarCartas(){
+  $('#ctl').innerHTML = `<span class="cartas">${K.shuffle(CARTAS).map(c=>`<button data-c="${c.id}">${c.txt}</button>`).join('')}</span>`;
+  $('#ctl').querySelectorAll('button').forEach(b => b.onclick = () => carta(b.dataset.c, b));
+}
+function carta(id, el){
+  if (!K.s.rodando || K.s.ocupado || !G.m || G.m.t !== 'reverter') return;
+  const m = G.m, certo = CARTAS[m.k].id;
+  if (id !== certo) return falhou('carta', id);
+  if (el) el.classList.add('usada'); K.SFX.clique(); m.k++;
+  if (id === 'guarda') G.prx = G.at + 1 < G.lista.length ? G.at + 1 : null;
+  if (id === 'vira' && G.at - 1 >= 0) G.virados.add(G.at - 1);
+  if (id === 'ant') G.ant = G.at;
+  if (id === 'at') G.at = G.prx;
+  desenhar();
+  if (m.k === 4) {
+    m.k = 0; m.volta++;
+    K.acerto($('#corr'), 60);
+    if (m.volta >= m.voltas || G.at === null) { K.timer.parar(); $('#ordem').innerHTML = 'Corrente revertida nas primeiras voltas: o laço só repete isso até <code>at</code> virar NULL.'; K.s.ocupado = true; return setTimeout(() => fimMissao(3), 900); }
+    $('#ordem').innerHTML = `Volta ${m.volta + 1}: de novo, as 4 linhas na ordem.`;
+    montarCartas();
+  }
+}
+
+function fimMissao(peso){
+  K.s.ocupado = false; G.m = null;
+  K.acerto($('#corr'), 60 + 20 * peso);
+  G.feitas++;
+  setTimeout(() => {
+    if (G.feitas % 4 === 0) { G.nivel++; K.subirNivel(G.nivel, G.nivel === 2 ? 'Chegam as reversões' : 'Correntes maiores, menos tempo'); setTimeout(novaMissao, 1000); }
+    else novaMissao();
+  }, 700);
+}
+function falhou(motivo, carta){
+  const m = G.m; if (!m) return;
+  let html;
+  if (m.t === 'reverter') html = `<p>A ordem das linhas importa:</p><ol><li><code>prox = at-&gt;prox</code> guarda o resto da corrente;</li><li><code>at-&gt;prox = ant</code> vira a seta;</li><li><code>ant = at</code> e <code>at = prox</code> avançam.</li></ol><p>Virando a seta antes de guardar o <code>prox</code>, o resto da corrente se perde no abismo.</p>`;
+  else if (motivo === 'passou') html = `<p>Numa lista simples, o goblin só anda para frente: passou do ${G.lista[m.alvo]}, não dá para voltar. Era preciso parar quando <code>at</code> chegasse ao ${G.lista[m.alvo]} (${m.alvo} passo${m.alvo===1?'':'s'} desde a cabeça).</p>`;
+  else if (motivo === 'lugar') html = `<p>O goblin estava no ${G.lista[G.at]}, mas o alvo é o ${G.lista[m.alvo]}. ${m.t === 'remover' ? 'Para remover, <code>at</code> tem que estar no elo removido e <code>ant</code> no anterior.' : 'Para encaixar depois de X, <code>at</code> tem que estar em X.'}</p>`;
+  else html = `<p>O tempo acabou. ${m.t === 'reverter' ? 'Ordem do laço: guardar prox, virar, avançar ant, avançar at.' : `O alvo era o ${G.lista[m.alvo]}, a ${m.alvo + 1}ª posição a partir da cabeça.`}</p>`;
+  K.timer.parar();
+  if (m.t !== 'reverter' && motivo !== 'tempo') { const el = document.querySelector(`.elo[data-i="${G.at}"]`); K.anima(el, 'treme'); }
+  K.erro(html, () => { G.m = null; G.feitas++; novaMissao(); }, {kicker: motivo === 'tempo' ? 'O tempo acabou' : 'O elo escapou'});
+}
+
+K.init({
+  id:'simples', titulo:'A Corrente de Elos', kicker:'Masmorra · Lista encadeada simples', vidas:3, comecar:'Atravessar o abismo',
+  ajuda:`<p>Uma corrente atravessa o abismo. Cada elo só conhece o próximo (<code>prox</code>). O goblin <code>at</code> começa na cabeça e só consegue andar para a frente.</p>
+  <ol><li><b>Remover:</b> avance (<kbd>→</kbd>) até o elo pedido e corte (<kbd>Espaço</kbd>). Passou do ponto? Não dá para voltar.</li>
+  <li><b>Encaixar depois de X:</b> pare em X e encaixe.</li>
+  <li><b>Reverter</b> (nível 2): em cada volta do laço, clique nas quatro linhas de código na ordem certa.</li></ol>`,
+  tecla(e){ if (e.key === 'ArrowRight') { e.preventDefault(); andar(); } else if (e.key === ' ') { e.preventDefault(); agir(); } },
+  iniciar(){ G = {nivel:1, feitas:0, lista:[]}; novaMissao(); },
+  auto(){
+    const m = G.m; if (!m) return;
+    if (m.t === 'reverter') { const id = CARTAS[m.k].id; const b = document.querySelector(`.cartas button[data-c="${id}"]:not(.usada)`); carta(id, b); return true; }
+    if (G.at === m.alvo) agir(); else andar();
+    return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

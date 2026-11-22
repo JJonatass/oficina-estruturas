@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Jardim de Leonardo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#18202a 0%,#1d2a26 70%,#2a2118 70%,#201912 100%);min-height:380px;padding:14px;overflow-x:auto}
+.ordens{font-family:var(--mono);font-size:15px;color:var(--mudo)}
+.ordens b{color:var(--ouro);font-size:18px}
+svg.jardim{display:block;width:100%;min-width:640px;height:auto;margin-top:6px}
+svg.jardim line{stroke:#6b8f5a;stroke-width:4}
+.nod circle{fill:#2e3a2a;stroke:#7FD8A4;stroke-width:3}
+.nod text{fill:var(--texto);font:800 15px var(--mono);text-anchor:middle;pointer-events:none}
+.nod.raiz circle{fill:#3a4a30;stroke:#F2C14E;stroke-width:4}
+.nod.pick{cursor:pointer}.nod.pick:hover circle{stroke:var(--ouro);stroke-width:5}
+.nod.foco circle{stroke:var(--verm);stroke-width:5}
+.nod.k-dica circle{stroke:var(--ouro);stroke-width:6}
+.rot{fill:var(--mudo);font:600 12px var(--mono);text-anchor:middle}
+.semente{position:absolute;right:20px;top:12px;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font:800 22px var(--mono);color:#1d1408;background:radial-gradient(circle at 35% 30%,#d9f7c4,#7FD8A4 60%,#3d7a52);box-shadow:0 0 22px rgba(127,216,164,.6);animation:cai 1s ease}
+@keyframes cai{from{transform:translateY(-60px);opacity:0}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="ordens">ordens das árvores: <b id="ord">[]</b> · <span id="nmud"></span></div><div id="sem"></div><svg class="jardim" id="jar" viewBox="0 0 900 330"></svg></section>
+  <div class="ordem"><span id="ordem">…</span><span class="escolhas" id="esc"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const L = [1,1]; while (L.length < 12) L.push(L[L.length-1] + L[L.length-2] + 1);
+let G = null;
+/* árvore de Leonardo: {k, v, l, r} (l = ordem k-1, r = ordem k-2) */
+const folha = (v, k) => ({k, v, l:null, r:null});
+function regra(ord){
+  if (ord.length >= 2 && ord[ord.length-2].k === ord[ord.length-1].k + 1) return 'fundir';
+  if (ord.length && ord[ord.length-1].k === 1) return 'zero';
+  return 'um';
+}
+const filhos = t => t.k >= 2 ? [t.l, t.r] : [];
+function desenhar(foco){
+  const W = 900, H = 330, total = G.f.reduce((s,t)=>s+L[t.k],0) || 1;
+  const esc = Math.min(70, (W - 40) / Math.max(total, 6));
+  let x = 20, s = '';
+  const prof = k => k < 2 ? 0 : 1 + Math.max(prof(k-1), prof(k-2));
+  const dy = 56;
+  G.f.forEach((t, ti) => {
+    const w = L[t.k] * esc;
+    (function des(n, x0, w0, d, pai){
+      const cx = n.k >= 2 ? x0 + w0 - esc/2 : x0 + w0/2, cy = 40 + d * dy;  /* a raiz fica à direita: é a última posição do vetor */
+      if (pai) s += `<line x1="${pai.x}" y1="${pai.y}" x2="${cx}" y2="${cy}"/>`;
+      if (n.k >= 2) { const wl = L[n.k-1] * esc, wr = L[n.k-2] * esc; des(n.l, x0, wl, d+1, {x:cx, y:cy}); des(n.r, x0 + wl, wr, d+1, {x:cx, y:cy}); }
+      const pk = G.picks && G.picks.includes(n), cls = ['nod', d === 0 ? 'raiz' : '', pk ? 'pick' : '', foco === n ? 'foco' : ''].join(' ');
+      n._id = n._id || 'n' + (G.nid++);
+      s += `<g class="${cls}" data-id="${n._id}"><circle cx="${cx}" cy="${cy}" r="17"/><text x="${cx}" y="${cy+5}">${n.v}</text></g>`;
+    })(t, x, w, 0, null);
+    s += `<text class="rot" x="${x + w/2}" y="${H - 8}">ordem ${t.k} · ${L[t.k]}</text>`;
+    x += w + 8;
+  });
+  $('#jar').innerHTML = s;
+  $('#jar').querySelectorAll('.nod.pick').forEach(g => g.onclick = () => clicarNo(g.dataset.id, g));
+  $('#ord').textContent = '[' + G.f.map(t=>t.k).join(', ') + ']';
+  $('#nmud').textContent = `${total === 1 && !G.f.length ? 0 : G.f.reduce((s,t)=>s+L[t.k],0)} mudas`;
+}
+function novaMuda(){
+  if (G.f.reduce((s,t)=>s+L[t.k],0) >= Math.min(24, 9 + G.nivel * 3)) { G.f = []; K.banner('Colheita!<small>o jardim recomeça vazio</small>'); K.vida(); }
+  const usados = new Set(); (function c(n){ if (!n) return; usados.add(n.v); c(n.l); c(n.r); })({l:null,r:null,v:-1}); G.f.forEach(function c(n){ if (!n) return; usados.add(n.v); c(n.l); c(n.r); });
+  do { G.v = K.rnd(10,99); } while (usados.has(G.v)); G.picks = null; G.fase = 'acao';
+  $('#sem').innerHTML = `<div class="semente">${G.v}</div>`;
+  $('#ordem').innerHTML = `Chegou a muda <b>${G.v}</b>. Como ela entra no jardim?`;
+  $('#esc').innerHTML = `<button data-a="fundir"><kbd>1</kbd> Fundir as duas últimas árvores sob ela</button><button data-a="um"><kbd>2</kbd> Nova árvore de ordem 1</button><button data-a="zero"><kbd>3</kbd> Nova árvore de ordem 0</button>`;
+  $('#esc').querySelectorAll('button').forEach(b => b.onclick = () => acao(b.dataset.a, b));
+  desenhar();
+  const u = G.f.slice(-2).map(t=>t.k);
+  K.turno(Math.max(4, 10 - G.nivel), () => falhou(null, true), () => [`As duas últimas árvores têm ordens ${u.join(' e ') || '(nenhuma)'}. São consecutivas, do tipo k+1 e k?`, {fundir:'Sim: funda.', zero:'Não, e a última tem ordem 1: nova árvore de ordem 0.', um:'Não: nova árvore de ordem 1.'}[regra(G.f)]]);
+}
+function acao(a, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'acao') return;
+  const certo = regra(G.f);
+  if (a !== certo) return falhou(el);
+  K.acerto(el, 100); K.SFX.whoosh();
+  if (a === 'fundir') { const r = G.f.pop(), l = G.f.pop(); const t = {k: l.k + 1, v: G.v, l, r}; G.f.push(t); return peneirar(t); }
+  G.f.push(folha(G.v, a === 'um' ? 1 : 0)); $('#sem').innerHTML = ''; proxima();
+}
+/* peneirar: enquanto a raiz for menor que o maior filho, o jogador troca com ele */
+function peneirar(n){
+  const fs = filhos(n);
+  if (!fs.length || n.v >= Math.max(fs[0].v, fs[1].v)) { G.fase = 'acao'; $('#sem').innerHTML = ''; return proxima(); }
+  G.fase = 'peneirar'; G.no = n; G.picks = fs;
+  $('#esc').innerHTML = '';
+  $('#ordem').innerHTML = `A muda <b>${n.v}</b> está acima de mudas maiores. Clique no filho com que ela troca de lugar.`;
+  desenhar(n);
+  K.turno(Math.max(4, 9 - G.nivel), () => falhou(null, true), () => ['Cada árvore é um max-heap: a raiz tem que ser a maior.', `Troque com o maior filho: ${Math.max(fs[0].v, fs[1].v)}.`]);
+}
+function clicarNo(id, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'peneirar') return;
+  const fs = filhos(G.no), maior = fs[0].v >= fs[1].v ? fs[0] : fs[1];
+  if (id !== maior._id) return falhou(el);
+  K.acerto(el, 70); K.SFX.passo();
+  [G.no.v, maior.v] = [maior.v, G.no.v];
+  G.picks = null; desenhar();
+  K.s.ocupado = true; setTimeout(() => { K.s.ocupado = false; peneirar(maior); }, 350);
+}
+function proxima(){
+  G.fase = 'espera'; K.timer.parar(); G.feitas++; desenhar();
+  if (G.feitas % 8 === 0) { G.nivel++; K.subirNivel(G.nivel, 'O jardim cresce mais rápido'); setTimeout(novaMuda, 1000); }
+  else setTimeout(novaMuda, 350);
+}
+function falhou(el, tempo){
+  if (el) K.anima(el, 'treme');
+  let html;
+  if (G.fase === 'acao') {
+    const u = G.f.slice(-2).map(t=>t.k), r = regra(G.f);
+    html = `<p>Ordens antes da muda: [${G.f.map(t=>t.k).join(', ')}].</p><p>${r === 'fundir' ? `As duas últimas têm ordens ${u[0]} e ${u[1]}, consecutivas: com a muda nova como raiz, formam uma árvore de ordem ${u[0]+1} (L = ${L[u[0]+1]} mudas).` : (r === 'zero' ? 'Não há fusão possível e a última árvore tem ordem 1: a muda entra como árvore de ordem 0.' : 'Não há fusão possível: a muda entra como árvore de ordem 1.')}</p><p class="nota">L(k) = L(k−1) + L(k−2) + 1: ${L.slice(0,8).join(', ')}…</p>`;
+  } else { const fs = filhos(G.no); html = `<p>Numa árvore de Leonardo, cada raiz tem que ser maior que os filhos (max-heap). A raiz ${G.no.v} troca com o <b>maior</b> filho (${Math.max(fs[0].v, fs[1].v)}); trocar com o menor deixaria o maior acima de um valor menor.</p>`; }
+  K.erro(html, () => {
+    if (G.fase === 'acao') { const r = regra(G.f); if (r === 'fundir') { const rr = G.f.pop(), l = G.f.pop(); const t = {k:l.k+1, v:G.v, l, r:rr}; G.f.push(t); arrumar(t); } else G.f.push(folha(G.v, r === 'um' ? 1 : 0)); }
+    else arrumar(G.no);
+    G.fase = 'acao'; G.picks = null; $('#sem').innerHTML = ''; proxima();
+  }, {kicker: tempo ? 'O tempo acabou' : 'A muda murchou'});
+}
+function arrumar(n){ const fs = filhos(n); if (!fs.length) return; const m = fs[0].v >= fs[1].v ? fs[0] : fs[1]; if (n.v < m.v) { [n.v, m.v] = [m.v, n.v]; arrumar(m); } }
+
+K.init({
+  id:'smoothsort', titulo:'O Jardim de Leonardo', kicker:'Masmorra · Smoothsort', vidas:3, comecar:'Plantar',
+  ajuda:`<p>O jardineiro planta as mudas em fila e organiza o jardim como uma <b>floresta de árvores de Leonardo</b>: a fase de construção do smoothsort. Uma árvore de ordem k tem L(k) mudas, com L(0) = L(1) = 1 e L(k) = L(k−1) + L(k−2) + 1.</p>
+  <ol><li>A cada muda nova, decida: se as duas últimas árvores têm ordens <b>consecutivas</b> (k+1 e k), elas se <b>fundem</b> sob a muda nova. Senão, se a última tem ordem 1, a muda vira uma árvore de ordem 0; caso contrário, de ordem 1.</li>
+  <li>Depois de uma fusão, cada árvore tem que ser um max-heap: se a raiz for menor que um filho, clique no <b>maior filho</b> para trocar, até ela se acomodar.</li></ol>
+  <p class="nota">A raiz de cada árvore fica à direita, porque no vetor ela é a última posição da árvore.</p>`,
+  tecla(e){ if (G && G.fase === 'acao') { const m = {'1':'fundir','2':'um','3':'zero'}[e.key]; if (m) acao(m, document.querySelector(`#esc [data-a="${m}"]`)); } },
+  iniciar(){ G = {nivel:1, feitas:0, f:[], nid:0}; novaMuda(); },
+  auto(){
+    if (G.fase === 'acao') { const a = regra(G.f); acao(a, document.querySelector(`#esc [data-a="${a}"]`)); return true; }
+    if (G.fase === 'peneirar') { const fs = filhos(G.no), m = fs[0].v >= fs[1].v ? fs[0] : fs[1]; clicarNo(m._id, document.querySelector(`.nod[data-id="${m._id}"]`)); return true; }
+  }
+});
+})();
+</script>
+</body>
+</html>

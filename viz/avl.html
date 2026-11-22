@@ -1,0 +1,753 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore AVL Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="balance"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="balance"] .dot{background:var(--accent);}
+  .op-pill[data-op="rotate"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="rotate"] .dot{background:var(--violet);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-circle{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.8; transition: cx .35s ease, cy .35s ease, fill .25s ease, stroke .25s ease; }
+  .node-value{ fill:var(--ink); font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .node-meta{ fill:var(--ink-faint); font-size:8.5px; text-anchor:middle; transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+
+  .node[data-state="new"] .node-circle{ fill:var(--gold-soft); stroke:var(--gold); }
+  .node[data-state="new"] .node-value{ fill:var(--gold); }
+  .node[data-state="compare"] .node-circle{ stroke:var(--accent); stroke-width:2.6; }
+  .node[data-state="balance-ok"] .node-circle{ fill:var(--success-soft); stroke:var(--success); }
+  .node[data-state="balance-ok"] .node-value{ fill:var(--success); }
+  .node[data-state="balance-warn"] .node-circle{ stroke:var(--gold); stroke-width:2.4; }
+  .node[data-state="balance-bad"] .node-circle{ fill:var(--rust-soft); stroke:var(--rust); stroke-width:2.6; }
+  .node[data-state="balance-bad"] .node-value{ fill:var(--rust); }
+  .node[data-state="rotate"] .node-circle{ fill:var(--violet-soft); stroke:var(--violet); stroke-width:2.6; }
+  .node[data-state="rotate"] .node-value{ fill:var(--violet); }
+  .node[data-state="successor"] .node-circle{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:2.4; }
+  .node[data-state="successor"] .node-value{ fill:var(--accent-ink); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:11px;height:11px;border-radius:50%;border:1.8px solid var(--line-strong); background:var(--card);}
+  .legend .swatch.new{background:var(--gold-soft); border-color:var(--gold);}
+  .legend .swatch.compare{border-color:var(--accent); border-width:2.4px;}
+  .legend .swatch.bad{background:var(--rust-soft); border-color:var(--rust);}
+  .legend .swatch.rotate{background:var(--violet-soft); border-color:var(--violet);}
+  .legend .swatch.ok{background:var(--success-soft); border-color:var(--success);}
+  .legend .swatch.succ{background:var(--accent-soft); border-color:var(--accent);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:100px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+  .rotation-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  @media (max-width:620px){ .rotation-grid{grid-template-columns:1fr;} }
+  .case-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .case-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+  .case-diagram{display:flex; align-items:center; gap:10px; overflow-x:auto; padding-block:4px;}
+  .case-diagram svg{flex:0 0 auto;}
+  .case-arrow{font-size:1.3rem; color:var(--ink-faint); flex:0 0 auto;}
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Árvore binária de busca autobalanceada · Adelson-Velsky &amp; Landis, 1962</span>
+    <h1>Árvore AVL Visual</h1>
+    <p class="prose">Uma árvore AVL é uma árvore binária de busca que se rebalanceia sozinha: para todo nó, as alturas das subárvores esquerda e direita nunca diferem por mais de 1. Sempre que uma inserção ou remoção quebra essa regra, uma <strong>rotação</strong> conserta a forma da árvore em tempo logarítmico. Use os controles abaixo para inserir e remover valores e acompanhar cada comparação, atualização de altura e rotação.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da árvore AVL">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch new"></span>novo / alterado</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch bad"></span>desbalanceado</span>
+      <span class="item"><span class="swatch rotate"></span>em rotação</span>
+      <span class="item"><span class="swatch succ"></span>sucessor em ordem</span>
+      <span class="item"><span class="swatch ok"></span>balanceado</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+        <button id="btnRandomInsert">🎲 Inserir aleatório</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Tamanho inicial
+          <input type="range" class="mini" id="sizeSlider" min="1" max="20" value="10" step="1">
+          <span class="mono" id="sizeLabel">10</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova árvore aleatória</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Fator de balanceamento</h2>
+    <p class="prose">Para cada nó, o <strong>fator de balanceamento</strong> é a altura da subárvore esquerda menos a altura da subárvore direita. Numa árvore AVL válida, esse valor só pode ser <span class="mono">−1</span>, <span class="mono">0</span> ou <span class="mono">+1</span> em qualquer nó. Um valor <span class="mono">+2</span> ou <span class="mono">−2</span> significa que a árvore precisa de uma rotação para voltar a ser válida — e o lado da rotação depende de para qual direção o desequilíbrio "pende".</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Os quatro casos de rotação</h2>
+    <p class="prose">O padrão do desequilíbrio determina qual rotação corrigi-lo: um desequilíbrio "reto" (mesmo lado duas vezes) pede uma rotação simples; um desequilíbrio "torto" (lados alternados) pede uma rotação dupla.</p>
+    <div class="rotation-grid" id="rotationGrid"></div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Inserção</span>
+      <h3>Descer, inserir, subir corrigindo</h3>
+      <p class="prose">A busca desce pela árvore comparando o valor até achar um espaço vazio, onde o novo nó é encaixado como folha. Depois, subimos pelo caminho de volta à raiz recalculando altura e fator de balanceamento a cada nível. No máximo <strong>uma</strong> rotação é necessária para restaurar o equilíbrio de toda a árvore.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Remoção</span>
+      <h3>Substituir, remover, subir corrigindo</h3>
+      <p class="prose">Removendo um nó com dois filhos, ele é substituído pelo seu sucessor em ordem (o menor valor da subárvore direita), que é então removido de sua posição original. Subindo até a raiz, o balanceamento é verificado em <strong>cada</strong> nível — diferente da inserção, a remoção pode exigir várias rotações, uma em cada altura.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma árvore AVL (Adelson-Velsky &amp; Landis, 1962), a primeira estrutura de árvore binária de busca autobalanceada. Complexidade: O(log n) garantido para busca, inserção e remoção, graças ao invariante de balanceamento.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= AVL engine (records one step per operation) =================
+  function createAvlEngine(){
+    var nextId = 1, root = null, steps = [];
+    function newNode(value){ return {id:nextId++, value:value, left:null, right:null, height:1}; }
+    function h(n){ return n ? n.height : 0; }
+    function bf(n){ return n ? h(n.left)-h(n.right) : 0; }
+    function updateHeight(n){ n.height = 1+Math.max(h(n.left), h(n.right)); }
+    function rotateRight(y){ var x=y.left, t2=x.right; x.right=y; y.left=t2; updateHeight(y); updateHeight(x); return x; }
+    function rotateLeft(x){ var y=x.right, t2=y.left; y.left=x; x.right=t2; updateHeight(x); updateHeight(y); return y; }
+    function cloneTree(node){ if(!node) return null; return {id:node.id, value:node.value, height:node.height, left:cloneTree(node.left), right:cloneTree(node.right)}; }
+    function snapshot(message, opts){
+      opts = opts || {};
+      steps.push({ root:cloneTree(root), message:message, op:opts.op||"info", highlight: opts.highlight || {ids:[], kind:""} });
+    }
+    function reattach(path, i, oldRef, newSubRoot){
+      if(i < 0) root = newSubRoot;
+      else { var parent = path[i]; if(parent.left===oldRef) parent.left=newSubRoot; else parent.right=newSubRoot; }
+    }
+    function rebalanceAt(path, i){
+      var node = path[i];
+      updateHeight(node);
+      var balance = bf(node);
+      if(Math.abs(balance) <= 1){
+        snapshot("Nó "+node.value+": altura "+node.height+", fator de balanceamento "+(balance>0?"+":"")+balance+" — continua balanceado.",
+          {op:"balance", highlight:{ids:[node.id], kind: balance===0?"balance-ok":"balance-warn"}});
+        return false;
+      }
+      snapshot("Nó "+node.value+" ficou com fator de balanceamento "+(balance>0?"+":"")+balance+" — isso viola a propriedade AVL. Uma rotação é necessária.",
+        {op:"balance", highlight:{ids:[node.id], kind:"balance-bad"}});
+
+      var newSubRoot;
+      if(balance > 1){
+        if(bf(node.left) < 0){
+          snapshot("Caso esquerda-direita: primeiro rotacionamos a subárvore esquerda (nó "+node.left.value+") para a esquerda.", {op:"rotate", highlight:{ids:[node.left.id, node.id], kind:"rotate"}});
+          node.left = rotateLeft(node.left);
+          snapshot("Rotação preparatória concluída. Agora "+node.left.value+" é a raiz da subárvore esquerda.", {op:"rotate", highlight:{ids:[node.left.id], kind:"rotate"}});
+        }
+        snapshot("Rotação simples à direita em torno do nó "+node.value+".", {op:"rotate", highlight:{ids:[node.id, node.left.id], kind:"rotate"}});
+        newSubRoot = rotateRight(node);
+      } else {
+        if(bf(node.right) > 0){
+          snapshot("Caso direita-esquerda: primeiro rotacionamos a subárvore direita (nó "+node.right.value+") para a direita.", {op:"rotate", highlight:{ids:[node.right.id, node.id], kind:"rotate"}});
+          node.right = rotateRight(node.right);
+          snapshot("Rotação preparatória concluída. Agora "+node.right.value+" é a raiz da subárvore direita.", {op:"rotate", highlight:{ids:[node.right.id], kind:"rotate"}});
+        }
+        snapshot("Rotação simples à esquerda em torno do nó "+node.value+".", {op:"rotate", highlight:{ids:[node.id, node.right.id], kind:"rotate"}});
+        newSubRoot = rotateLeft(node);
+      }
+      reattach(path, i-1, node, newSubRoot);
+      snapshot("Rotação concluída — a subárvore com raiz "+newSubRoot.value+" está balanceada novamente.", {op:"rotate", highlight:{ids:[newSubRoot.id], kind:"balance-ok"}});
+      return true;
+    }
+    function insert(value){
+      if(root === null){
+        snapshot("A árvore está vazia. "+value+" se torna a raiz.", {op:"insert", highlight:{ids:[], kind:""}});
+        root = newNode(value);
+        snapshot("Nó "+value+" inserido como raiz.", {op:"insert", highlight:{ids:[root.id], kind:"new"}});
+        return true;
+      }
+      var path = [], cur = root;
+      while(cur){
+        if(value === cur.value){
+          snapshot("O valor "+value+" já existe na árvore — nada a fazer.", {op:"insert", highlight:{ids:[cur.id], kind:"balance-bad"}});
+          return false;
+        }
+        snapshot(value+" "+(value<cur.value?"< ":"> ")+cur.value+", então descemos para "+(value<cur.value?"a esquerda":"a direita")+".",
+          {op:"insert", highlight:{ids:[cur.id], kind:"compare"}});
+        path.push(cur);
+        cur = value < cur.value ? cur.left : cur.right;
+      }
+      var node = newNode(value);
+      var parent = path[path.length-1];
+      if(value < parent.value) parent.left = node; else parent.right = node;
+      snapshot("Nó "+value+" inserido como filho "+(value<parent.value?"esquerdo":"direito")+" de "+parent.value+".", {op:"insert", highlight:{ids:[node.id], kind:"new"}});
+      for(var i=path.length-1;i>=0;i--){ if(rebalanceAt(path,i)) break; }
+      return true;
+    }
+    function removeValue(value){
+      var path = [], cur = root;
+      while(cur && cur.value !== value){
+        snapshot(value+" "+(value<cur.value?"< ":"> ")+cur.value+", então descemos para "+(value<cur.value?"a esquerda":"a direita")+".",
+          {op:"remove", highlight:{ids:[cur.id], kind:"compare"}});
+        path.push(cur);
+        cur = value < cur.value ? cur.left : cur.right;
+      }
+      if(!cur){
+        snapshot("O valor "+value+" não está na árvore — nada a remover.", {op:"remove", highlight:{ids:[], kind:""}});
+        return false;
+      }
+      var node = cur;
+      snapshot("Nó "+value+" encontrado — será removido.", {op:"remove", highlight:{ids:[node.id], kind:"balance-bad"}});
+      if(node.left && node.right){
+        var succPath = path.concat([node]);
+        var succCur = node.right;
+        snapshot("O nó "+value+" tem dois filhos: buscamos seu sucessor em ordem (o menor valor da subárvore direita).", {op:"remove", highlight:{ids:[node.id], kind:"compare"}});
+        while(succCur.left){
+          snapshot("Descendo para a esquerda em busca do menor valor: "+succCur.value+" → "+succCur.left.value+".", {op:"remove", highlight:{ids:[succCur.id], kind:"compare"}});
+          succPath.push(succCur);
+          succCur = succCur.left;
+        }
+        snapshot("Sucessor encontrado: "+succCur.value+".", {op:"remove", highlight:{ids:[succCur.id], kind:"successor"}});
+        var succValue = succCur.value;
+        node.value = succValue;
+        snapshot("O valor "+succValue+" substitui "+value+" nesta posição da árvore.", {op:"remove", highlight:{ids:[node.id], kind:"new"}});
+        var succParent = succPath[succPath.length-1];
+        var succChild = succCur.right;
+        if(succParent.left === succCur) succParent.left = succChild; else succParent.right = succChild;
+        snapshot("O nó "+succValue+" é removido de sua posição original"+(succChild?(", ligando seu filho direito ("+succChild.value+") no lugar."):"."),
+          {op:"remove", highlight:{ids: succChild?[succChild.id]:[], kind:""}});
+        for(var j=succPath.length-1;j>=0;j--) rebalanceAt(succPath, j);
+      } else {
+        var child = node.left || node.right;
+        reattach(path, path.length-1, node, child);
+        snapshot(child ? ("O nó "+value+" tinha um único filho ("+child.value+"), que toma seu lugar.") : ("O nó "+value+" era uma folha — é removido diretamente."),
+          {op:"remove", highlight:{ids: child?[child.id]:[], kind:""}});
+        for(var k=path.length-1;k>=0;k--) rebalanceAt(path, k);
+      }
+      return true;
+    }
+    return {
+      insert:insert, remove:removeValue,
+      find:function(value){ var c=root; while(c){ if(value===c.value) return c; c = value<c.value?c.left:c.right; } return null; },
+      getRoot:function(){ return root; },
+      getSteps:function(){ return steps; }
+    };
+  }
+
+  // ================= layout =================
+  function computeLayout(root){
+    var order = [];
+    (function walk(n){ if(!n) return; walk(n.left); order.push(n); walk(n.right); })(root);
+    var xIndex = {};
+    order.forEach(function(n,i){ xIndex[n.id]=i; });
+    var positions = {};
+    (function walk2(n, depth){
+      if(!n) return;
+      positions[n.id] = {
+        x: xIndex[n.id], depth: depth, value:n.value, height:n.height,
+        balance: (n.left?n.left.height:0) - (n.right?n.right.height:0),
+        leftId: n.left ? n.left.id : null, rightId: n.right ? n.right.id : null
+      };
+      walk2(n.left, depth+1); walk2(n.right, depth+1);
+    })(root, 0);
+    return { positions: positions, count: order.length };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnRandomInsert: document.getElementById("btnRandomInsert"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var CELL_W = 50, ROW_H = 64, NODE_R = 18, TOP_PAD = 20, SIDE_PAD = 30;
+  var NS = "http://www.w3.org/2000/svg";
+
+  var engine = createAvlEngine();
+  var state = { stepIndex: 0, playing:false, timer:null, usedValues:{} };
+  var nodeEls = {}, edgeEls = {};
+
+  function randomUnusedValue(){
+    var v;
+    do { v = 1 + Math.floor(Math.random()*98); } while(state.usedValues[v]);
+    return v;
+  }
+
+  function rebuildUsedValues(){
+    state.usedValues = {};
+    var root = engine.getRoot();
+    (function walk(n){ if(!n) return; state.usedValues[n.value]=true; walk(n.left); walk(n.right); })(root);
+  }
+
+  function jumpToLiveEnd(){
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length-1));
+    state.stepIndex = engine.getSteps().length-1;
+    rebuildUsedValues();
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert:"Inserindo", remove:"Removendo", balance:"Verificando balanceamento", rotate:"Rotacionando", info:"Início" };
+
+  function ensureEl(map, key, create){
+    if(!map[key]){ map[key] = create(); }
+    return map[key];
+  }
+
+  function render(){
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if(!step){
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira valores para começar, ou gere uma árvore aleatória.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length-1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function(id){ highlightMap[id] = step.highlight.kind; });
+
+    var layout = computeLayout(step.root);
+    var count = Math.max(layout.count, 1);
+    var maxDepth = 0;
+    Object.keys(layout.positions).forEach(function(id){ if(layout.positions[id].depth > maxDepth) maxDepth = layout.positions[id].depth; });
+
+    var width = SIDE_PAD*2 + Math.max(0, count-1)*CELL_W;
+    var heightPx = TOP_PAD + (maxDepth+1)*ROW_H;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix){ return SIDE_PAD + ix*CELL_W; }
+    function yFor(depth){ return TOP_PAD + depth*ROW_H + NODE_R; }
+
+    var presentIds = {};
+    var presentEdgeChildIds = {};
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var kind = highlightMap[id] || "";
+
+      var rec = nodeEls[id];
+      if(!rec){
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "node");
+        var circle = document.createElementNS(NS, "circle");
+        circle.setAttribute("class", "node-circle");
+        circle.setAttribute("r", NODE_R);
+        var text = document.createElementNS(NS, "text");
+        text.setAttribute("class", "node-value");
+        var meta = document.createElementNS(NS, "text");
+        meta.setAttribute("class", "node-meta");
+        g.appendChild(circle); g.appendChild(text); g.appendChild(meta);
+        rec = { g:g, circle:circle, text:text, meta:meta };
+        nodeEls[id] = rec;
+      }
+      if(kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+      rec.circle.setAttribute("cx", cx); rec.circle.setAttribute("cy", cy);
+      rec.text.setAttribute("x", cx); rec.text.setAttribute("y", cy + 0.5);
+      rec.text.textContent = p.value;
+      rec.meta.setAttribute("x", cx); rec.meta.setAttribute("y", cy - NODE_R - 6);
+      rec.meta.textContent = "h=" + p.height + " · fb=" + (p.balance>0?"+":"") + p.balance;
+    });
+
+    [layout.positions].forEach(function(pos){
+      Object.keys(pos).forEach(function(idStr){
+        var id = Number(idStr);
+        var p = pos[id];
+        [ [p.leftId], [p.rightId] ].forEach(function(pair){
+          var childId = pair[0];
+          if(childId == null) return;
+          presentEdgeChildIds[childId] = true;
+          var child = pos[childId];
+          var line = ensureEl(edgeEls, childId, function(){
+            var l = document.createElementNS(NS, "line");
+            l.setAttribute("class", "edge-line");
+            return l;
+          });
+          line.setAttribute("x1", xFor(p.x)); line.setAttribute("y1", yFor(p.depth));
+          line.setAttribute("x2", xFor(child.x)); line.setAttribute("y2", yFor(child.depth));
+        });
+      });
+    });
+
+    // remove stale DOM (nodes/edges no longer present in this step)
+    Object.keys(nodeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentIds[id]){ nodeEls[id].g.remove(); delete nodeEls[id]; }
+    });
+    Object.keys(edgeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentEdgeChildIds[id]){ edgeEls[id].remove(); delete edgeEls[id]; }
+    });
+
+    // (re)build SVG child order: edges first (behind), nodes on top
+    els.treeSvg.innerHTML = "";
+    Object.keys(edgeEls).forEach(function(id){ els.treeSvg.appendChild(edgeEls[id]); });
+    Object.keys(nodeEls).forEach(function(id){ els.treeSvg.appendChild(nodeEls[id].g); });
+  }
+
+  // ================= playback controls =================
+  function stopPlaying(){
+    state.playing = false;
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i){
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length-1, i));
+    render();
+  }
+  function stepBy(delta){ goTo(state.stepIndex + delta); }
+  function togglePlay(){
+    var steps = engine.getSteps();
+    if(state.playing){ stopPlaying(); return; }
+    if(steps.length === 0) return;
+    if(state.stepIndex >= steps.length-1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function(){
+      var s = engine.getSteps();
+      if(state.stepIndex >= s.length-1){ stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function(){ goTo(0); });
+  els.btnPrev.addEventListener("click", function(){ stepBy(-1); });
+  els.btnNext.addEventListener("click", function(){ stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function(){ goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function(){ if(state.playing){ togglePlay(); togglePlay(); } });
+
+  function showError(msg){ els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError(){ els.errorText.hidden = true; }
+
+  function parseValueInput(){
+    var raw = els.valueInput.value.trim();
+    if(raw === ""){ showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if(!Number.isFinite(v) || !Number.isInteger(v)){ showError('"'+raw+'" não é um número inteiro válido.'); return null; }
+    if(v < -999 || v > 999){ showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsert.addEventListener("click", function(){
+    var v = parseValueInput();
+    if(v === null) return;
+    engine.insert(v);
+    jumpToLiveEnd();
+    els.valueInput.value = "";
+    els.valueInput.focus();
+  });
+  els.btnRemove.addEventListener("click", function(){
+    var v = parseValueInput();
+    if(v === null) return;
+    engine.remove(v);
+    jumpToLiveEnd();
+    els.valueInput.value = "";
+    els.valueInput.focus();
+  });
+  els.btnRandomInsert.addEventListener("click", function(){
+    hideError();
+    if(Object.keys(state.usedValues).length >= 98){ showError("A árvore já cobre quase todos os valores de 1 a 98."); return; }
+    var v = randomUnusedValue();
+    engine.insert(v);
+    jumpToLiveEnd();
+  });
+  els.sizeSlider.addEventListener("input", function(){ els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function(){
+    hideError();
+    engine = createAvlEngine();
+    nodeEls = {}; edgeEls = {};
+    state.usedValues = {};
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for(var i=0;i<n;i++){
+      var v;
+      do { v = 1 + Math.floor(Math.random()*98); } while(used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if(tag === "INPUT" || tag === "TEXTAREA") return;
+    if(e.key === "ArrowRight"){ stepBy(1); e.preventDefault(); }
+    else if(e.key === "ArrowLeft"){ stepBy(-1); e.preventDefault(); }
+    else if(e.key === " "){ togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= static reference: the four rotation cases =================
+  function renderMiniTree(svg, spec, w, hgt){
+    svg.setAttribute("viewBox", "0 0 " + w + " " + hgt);
+    svg.setAttribute("width", w); svg.setAttribute("height", hgt);
+    var order = [];
+    (function walk(n){ if(!n) return; walk(n.left); order.push(n); walk(n.right); })(spec);
+    var xIndex = {}; order.forEach(function(n,i){ xIndex[n] = i; });
+    var n2 = order.length;
+    var r = 15, rowHm = 40, topPadm = 14;
+    var innerW = Math.max(0, n2-1) * 44;
+    var offsetX = (w - innerW) / 2;
+    function pos(node, depth, out){
+      out[node.__id] = { x: offsetX + xIndex[node]*44, y: topPadm + depth*rowHm };
+      if(node.left) pos(node.left, depth+1, out);
+      if(node.right) pos(node.right, depth+1, out);
+    }
+    var idc = 0;
+    (function tag(n){ if(!n) return; n.__id = idc++; tag(n.left); tag(n.right); })(spec);
+    var positions = {}; pos(spec, 0, positions);
+
+    var edgesG = document.createElementNS(NS, "g"), nodesG = document.createElementNS(NS, "g");
+    (function draw(n){
+      if(!n) return;
+      var p = positions[n.__id];
+      [n.left, n.right].forEach(function(c){
+        if(!c) return;
+        var cp = positions[c.__id];
+        var line = document.createElementNS(NS, "line");
+        line.setAttribute("class","edge-line");
+        line.setAttribute("x1", p.x); line.setAttribute("y1", p.y);
+        line.setAttribute("x2", cp.x); line.setAttribute("y2", cp.y);
+        edgesG.appendChild(line);
+      });
+      var circle = document.createElementNS(NS, "circle");
+      circle.setAttribute("class","node-circle");
+      circle.setAttribute("cx", p.x); circle.setAttribute("cy", p.y); circle.setAttribute("r", r);
+      if(n.mark){ circle.style.stroke = "var(--rust)"; circle.style.strokeWidth = "2.6"; }
+      nodesG.appendChild(circle);
+      var text = document.createElementNS(NS, "text");
+      text.setAttribute("class","node-value");
+      text.setAttribute("x", p.x); text.setAttribute("y", p.y+0.5);
+      text.textContent = n.v;
+      nodesG.appendChild(text);
+      draw(n.left); draw(n.right);
+    })(spec);
+    svg.appendChild(edgesG); svg.appendChild(nodesG);
+  }
+
+  var ROTATION_CASES = [
+    { name: "LL · esquerda-esquerda", desc: "Dois passos consecutivos para a esquerda deixam o lado esquerdo pesado demais. Uma única rotação à direita resolve.",
+      before: {v:30, mark:true, left:{v:20, left:{v:10}}}, after: {v:20, left:{v:10}, right:{v:30}} },
+    { name: "RR · direita-direita", desc: "Dois passos consecutivos para a direita deixam o lado direito pesado demais. Uma única rotação à esquerda resolve.",
+      before: {v:10, mark:true, right:{v:20, right:{v:30}}}, after: {v:20, left:{v:10}, right:{v:30}} },
+    { name: "LR · esquerda-direita", desc: "Um passo à esquerda seguido de um à direita forma um \"zigue-zague\". É preciso rotacionar a subárvore esquerda antes de rotacionar o topo.",
+      before: {v:30, mark:true, left:{v:10, right:{v:20}}}, after: {v:20, left:{v:10}, right:{v:30}} },
+    { name: "RL · direita-esquerda", desc: "Um passo à direita seguido de um à esquerda forma o \"zigue-zague\" espelhado. Rotaciona-se a subárvore direita antes de rotacionar o topo.",
+      before: {v:10, mark:true, right:{v:30, left:{v:20}}}, after: {v:20, left:{v:10}, right:{v:30}} }
+  ];
+
+  (function renderRotationGrid(){
+    var grid = document.getElementById("rotationGrid");
+    ROTATION_CASES.forEach(function(c, idx){
+      var card = document.createElement("div");
+      card.className = "case-card";
+      var num = document.createElement("span"); num.className = "num"; num.textContent = "Caso " + (idx+1);
+      var h3 = document.createElement("h3"); h3.textContent = c.name;
+      var p = document.createElement("p"); p.className = "prose"; p.textContent = c.desc;
+      var diagram = document.createElement("div"); diagram.className = "case-diagram";
+      var svgBefore = document.createElementNS(NS, "svg");
+      var arrow = document.createElement("span"); arrow.className = "case-arrow"; arrow.textContent = "→";
+      var svgAfter = document.createElementNS(NS, "svg");
+      diagram.appendChild(svgBefore); diagram.appendChild(arrow); diagram.appendChild(svgAfter);
+      card.appendChild(num); card.appendChild(h3); card.appendChild(p); card.appendChild(diagram);
+      grid.appendChild(card);
+      renderMiniTree(svgBefore, c.before, 130, 130);
+      renderMiniTree(svgAfter, c.after, 130, 94);
+    });
+  })();
+
+  // ================= boot =================
+  (function boot(){
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for(var i=0;i<n;i++){
+      var v;
+      do { v = 1 + Math.floor(Math.random()*98); } while(used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

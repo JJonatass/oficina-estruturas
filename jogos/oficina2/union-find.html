@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>As Alianças dos Clãs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 50% 100%,rgba(255,122,107,.10),transparent 60%),linear-gradient(#1c1a26,#16141c);padding:14px;min-height:340px}
+svg.mapa{display:block;width:100%;height:auto}
+svg.mapa line{stroke:#6b5470;stroke-width:4}
+.cla{cursor:pointer}
+.cla .band{stroke:#1d1408;stroke-width:2.5}
+.cla circle{fill:#2e2c3d;stroke:#8f8aa8;stroke-width:3}
+.cla text{fill:var(--texto);font:800 18px var(--mono);text-anchor:middle;pointer-events:none}
+.cla:hover circle,.cla:focus circle{stroke:var(--ouro);stroke-width:5}
+.cla.raiz circle{stroke:#F2C14E;stroke-width:4}
+.cla.alvo circle{fill:#3a3020}
+.cla.k-dica circle{stroke:var(--ouro);stroke-width:7}
+.cla.errou circle{stroke:var(--verm);stroke-width:6}
+.cla.comp circle{stroke:var(--verde);stroke-width:6}
+.tam{fill:var(--mudo);font:600 12px var(--mono);text-anchor:middle}
+.fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.fila span{background:var(--chip);border:1px solid var(--borda);border-radius:8px;padding:3px 10px;font-family:var(--mono);font-size:14px;opacity:.55}
+.fila span:first-child{opacity:1;border-color:var(--ouro);color:var(--ouro)}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><svg class="mapa" id="mapa" viewBox="0 0 900 300"></svg><div class="fila" id="fila"></div></section>
+  <div class="ordem"><span id="ordem">…</span><span class="escolhas" id="esc"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const CORES = ['#F2C14E','#7FB8FF','#7FD8A4','#C9A3FF','#FF7A6B','#F2A93B','#e58fc0','#9be3e0','#d9c9a8','#b5e37a'];
+let G = null;
+const raiz = x => { while (G.pai[x] !== x) x = G.pai[x]; return x; };
+const caminho = x => { const c = [x]; while (G.pai[x] !== x) { x = G.pai[x]; c.push(x); } return c; };
+
+function era(){
+  G.N = G.nivel >= 3 ? 10 : 8;
+  G.pai = [...Array(G.N).keys()]; G.tam = Array(G.N).fill(1);
+  /* algumas alianças iniciais sem compressão, para haver caminhos longos */
+  const p = K.shuffle([...Array(G.N).keys()]);
+  const u = (a, b) => { a = raiz(a); b = raiz(b); if (a === b) return; if (G.tam[a] < G.tam[b]) [a, b] = [b, a]; G.pai[b] = a; G.tam[a] += G.tam[b]; };
+  u(p[0],p[1]); u(p[2],p[3]); u(p[0],p[2]); if (G.N > 8) { u(p[8],p[9]); }
+  G.eventos = []; G.ei = 0;
+  for (let k = 0; k < 9; k++) G.eventos.push(K.pick(['u','u','f','f','c']));
+  proximo();
+}
+function desenhar(hl = {}){
+  const raizes = G.pai.map((_,i)=>i).filter(i => G.pai[i] === i);
+  const filhos = x => G.pai.map((_,i)=>i).filter(i => G.pai[i] === x && i !== x);
+  const largura = x => Math.max(1, filhos(x).reduce((s,f)=>s+largura(f),0));
+  const total = raizes.reduce((s,r)=>s+largura(r),0), unid = Math.min(110, 860 / total);
+  let s = '', x0 = 20 + (860 - total * unid) / 2;
+  const cor = Object.fromEntries(raizes.map((r,i)=>[r, CORES[r % CORES.length]]));
+  raizes.forEach(r => {
+    (function des(n, x, d, pai){
+      const w = largura(n) * unid, cx = x + w/2, cy = 50 + d * 78;
+      if (pai) s += `<line x1="${pai.x}" y1="${pai.y}" x2="${cx}" y2="${cy}"/>`;
+      let xx = x; filhos(n).forEach(f => { des(f, xx, d+1, {x:cx, y:cy}); xx += largura(f) * unid; });
+      const c = cor[raiz(n)];
+      s += `<g class="cla ${n === r ? 'raiz' : ''} ${hl[n]||''}" data-i="${n}" tabindex="0" role="button" aria-label="Clã ${n}"><path class="band" d="M${cx+14} ${cy-30} v22 l10 -5 l-10 -5" fill="${c}"/><line x1="${cx+14}" y1="${cy-30}" x2="${cx+14}" y2="${cy-14}" stroke="#d9c9a8" stroke-width="2"/><circle cx="${cx}" cy="${cy}" r="21"/><text x="${cx}" y="${cy+6}">${n}</text></g>`;
+      if (n === r) s += `<text class="tam" x="${cx}" y="${cy+40}">aliança de ${G.tam[r]}</text>`;
+    })(r, x0, 0, null);
+    x0 += largura(r) * unid;
+  });
+  $('#mapa').innerHTML = s;
+  $('#mapa').querySelectorAll('.cla').forEach(g => { g.onclick = () => clicar(+g.dataset.i, g); g.onkeydown = e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); clicar(+g.dataset.i, g); } }; });
+}
+function proximo(){
+  if (G.ei >= G.eventos.length || G.pai.filter((p,i)=>p===i).length === 1) {
+    K.timer.parar(); G.ev = null;
+    G.eras++;
+    if (G.eras % 2 === 0) { G.nivel++; K.subirNivel(G.nivel, G.nivel === 3 ? 'Chegam mais dois clãs' : 'Os mensageiros correm mais'); }
+    else K.banner('Nova era<small>os clãs se separam de novo</small>');
+    return setTimeout(era, 1100);
+  }
+  const t = G.eventos[G.ei], raizes = G.pai.map((_,i)=>i).filter(i => G.pai[i] === i);
+  $('#esc').innerHTML = '';
+  const tempo = Math.max(4, 11 - G.nivel);
+  if (t === 'u' || t === 'c') {
+    let x, y;
+    const mesmo = Math.random() < (t === 'u' ? 0.2 : 0.45);
+    if (mesmo) { const grupos = raizes.filter(r => G.tam[r] > 1); if (grupos.length) { const r = K.pick(grupos), m = G.pai.map((_,i)=>i).filter(i => raiz(i) === r); [x, y] = K.shuffle(m).slice(0,2); } }
+    if (x === undefined) { const [ra, rb] = K.shuffle(raizes).slice(0,2); if (rb === undefined) { G.ei = 99; return proximo(); } const m = r => G.pai.map((_,i)=>i).filter(i => raiz(i) === r); x = K.pick(m(ra)); y = K.pick(m(rb)); }
+    G.ev = {t, x, y};
+    desenhar({[x]:'alvo', [y]:'alvo'});
+    if (t === 'u') {
+      $('#ordem').innerHTML = `Os clãs <b>${x}</b> e <b>${y}</b> querem se aliar: clique na <b>raiz</b> que passa a ficar <b>por baixo</b> (ou avise se já são aliados).`;
+      $('#esc').innerHTML = `<button data-a="ja">Já são aliados!</button>`;
+      $('#esc').querySelector('button').onclick = e => resposta('ja', e.currentTarget);
+      K.turno(tempo, () => falhou(null, true), () => { const a = raiz(x), b = raiz(y); return [`Raízes: ${x} → ${a}, ${y} → ${b}.`, a === b ? 'Mesma raiz: já são aliados.' : `Tamanhos ${G.tam[a]} e ${G.tam[b]}: fica por baixo a raiz ${G.tam[a] < G.tam[b] ? a : b}.`]; });
+    } else {
+      $('#ordem').innerHTML = `Pergunta do rei: os clãs <b>${x}</b> e <b>${y}</b> são aliados?`;
+      $('#esc').innerHTML = `<button data-a="sim"><kbd>1</kbd> Sim</button><button data-a="nao"><kbd>2</kbd> Não</button>`;
+      $('#esc').querySelectorAll('button').forEach(b => b.onclick = () => resposta(b.dataset.a, b));
+      K.turno(tempo, () => falhou(null, true), () => [`Compare as raízes de ${x} e ${y}.`, raiz(x) === raiz(y) ? 'Mesma raiz: sim.' : 'Raízes diferentes: não.']);
+    }
+  } else {
+    const prof = i => caminho(i).length;
+    const x = G.pai.map((_,i)=>i).sort((a,b)=>prof(b)-prof(a) || Math.random()-.5)[K.rnd(0,2)];
+    G.ev = {t:'f', x};
+    desenhar({[x]:'alvo'});
+    $('#ordem').innerHTML = `<code>find(${x})</code>: clique no líder supremo (a raiz) da aliança do clã <b>${x}</b>.`;
+    K.turno(tempo, () => falhou(null, true), () => [`Suba seguindo os líderes a partir de ${x}.`, `Caminho: ${caminho(x).join(' → ')}.`]);
+  }
+}
+function clicar(i, el){
+  if (!K.s.rodando || K.s.ocupado || !G.ev) return;
+  const ev = G.ev;
+  if (ev.t === 'f') {
+    const r = raiz(ev.x);
+    if (i !== r) return falhou(el);
+    const cam = caminho(ev.x);
+    K.acerto(el, 90);
+    if (cam.length > 2) {
+      cam.slice(0, -1).forEach(n => G.pai[n] = r);
+      K.s.ocupado = true; desenhar(Object.fromEntries(cam.slice(0,-1).map(n=>[n,'comp'])));
+      K.bonus(60, el, 'compressão +60');
+      return setTimeout(() => { K.s.ocupado = false; G.ei++; proximo(); }, 650);
+    }
+    G.ei++; return proximo();
+  }
+  if (ev.t === 'u') {
+    const a = raiz(ev.x), b = raiz(ev.y);
+    if (a === b) return falhou(el);
+    const baixo = G.tam[a] < G.tam[b] ? a : b, cima = baixo === a ? b : a;
+    if (i !== baixo) return falhou(el);
+    G.pai[baixo] = cima; G.tam[cima] += G.tam[baixo];
+    K.acerto(el, 110); K.SFX.whoosh(); G.ei++; proximo();
+  }
+}
+function resposta(a, el){
+  if (!K.s.rodando || K.s.ocupado || !G.ev) return;
+  const ev = G.ev, mesma = raiz(ev.x) === raiz(ev.y);
+  if (ev.t === 'u') { if (a !== 'ja' || !mesma) return falhou(el); K.acerto(el, 120); K.flutua('ciclo evitado!', el, 'var(--verde)'); G.ei++; return proximo(); }
+  if (ev.t === 'c') { if ((a === 'sim') !== mesma) return falhou(el); K.acerto(el, 90); G.ei++; return proximo(); }
+}
+function falhou(el, tempo){
+  const ev = G.ev; if (el) K.anima(el, el.classList && el.classList.contains('cla') ? 'errou' : 'treme');
+  let html;
+  if (ev.t === 'f') html = `<p>Subindo a partir de ${ev.x}: <b>${caminho(ev.x).join(' → ')}</b>. A raiz é o clã que obedece a si mesmo: <b>${raiz(ev.x)}</b>. Depois do find, a compressão de caminho faz todos do caminho apontarem direto para ela.</p>`;
+  else {
+    const a = raiz(ev.x), b = raiz(ev.y);
+    if (a === b) html = `<p>${ev.x} e ${ev.y} já têm a mesma raiz (<b>${a}</b>): ${ev.t === 'u' ? 'unir de novo fecharia um ciclo. É assim que o Kruskal descarta arestas.' : 'são aliados.'}</p>`;
+    else html = ev.t === 'u' ? `<p>As raízes são ${a} (aliança de ${G.tam[a]}) e ${b} (aliança de ${G.tam[b]}). Na <b>união por tamanho</b>, a menor fica por baixo${G.tam[a] === G.tam[b] ? '; no empate, a do segundo clã (' + b + ')' : ''}: <b>${G.tam[a] < G.tam[b] ? a : b}</b>. Assim a altura cresce o mínimo possível.</p>` : `<p>As raízes são diferentes (${a} e ${b}): <b>não</b> são aliados.</p>`;
+  }
+  K.erro(html, () => {
+    if (ev.t === 'u') { let a = raiz(ev.x), b = raiz(ev.y); if (a !== b) { if (G.tam[a] < G.tam[b]) [a, b] = [b, a]; G.pai[b] = a; G.tam[a] += G.tam[b]; } }
+    if (ev.t === 'f') { const r = raiz(ev.x); caminho(ev.x).forEach(n => G.pai[n] = r); }
+    G.ei++; proximo();
+  }, {kicker: tempo ? 'O tempo acabou' : 'Diplomacia desastrosa'});
+}
+
+K.init({
+  id:'union-find', titulo:'As Alianças dos Clãs', kicker:'Masmorra · Union-Find', vidas:3, comecar:'Reunir os clãs',
+  ajuda:`<p>Os clãs formam alianças. Cada clã obedece a um líder, e o líder do topo (com estandarte dourado) é a <b>raiz</b> da aliança. É um <b>Union-Find</b> com união por tamanho e compressão de caminho.</p>
+  <ol><li><b>Aliança entre x e y:</b> clique na raiz que vai ficar <b>por baixo</b> (a da aliança menor; no empate, a do segundo clã). Se já forem aliados, clique em <i>Já são aliados!</i></li>
+  <li><b>find(x):</b> clique na raiz da aliança de x. Os clãs do caminho passam a obedecer direto a ela.</li>
+  <li><b>São aliados?</b> responda comparando as raízes.</li></ol>`,
+  tecla(e){ if (G && G.ev && G.ev.t === 'c') { const a = {'1':'sim','2':'nao'}[e.key]; if (a) resposta(a, document.querySelector(`#esc [data-a="${a}"]`)); } },
+  iniciar(){ G = {nivel:1, eras:0}; era(); },
+  auto(){
+    const ev = G.ev; if (!ev) return;
+    if (ev.t === 'f') { const r = raiz(ev.x); clicar(r, document.querySelector(`.cla[data-i="${r}"]`)); return true; }
+    const a = raiz(ev.x), b = raiz(ev.y);
+    if (ev.t === 'c') { resposta(a === b ? 'sim' : 'nao', document.querySelector(`#esc [data-a="${a===b?'sim':'nao'}"]`)); return true; }
+    if (a === b) { resposta('ja', document.querySelector('#esc [data-a="ja"]')); return true; }
+    const baixo = G.tam[a] < G.tam[b] ? a : b; clicar(baixo, document.querySelector(`.cla[data-i="${baixo}"]`)); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

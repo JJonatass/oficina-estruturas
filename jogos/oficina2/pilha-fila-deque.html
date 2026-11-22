@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Salão das Três Portas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#1d1a27,#16141d);min-height:330px;padding:18px}
+.modo{display:flex;justify-content:space-between;align-items:center}
+.modo b{font-family:var(--titulo);font-size:26px;color:var(--ouro)}
+.modo span{font-family:var(--mono);font-size:13px;color:var(--mudo)}
+.salao{position:relative;margin:26px auto 0;display:flex;align-items:center;gap:10px;justify-content:center}
+.porta{width:84px;height:150px;border:0;border-radius:42px 42px 6px 6px;background:linear-gradient(#5a3d2b,#3a2418);box-shadow:inset 0 0 0 4px #2a1a10,0 6px 0 #0007;display:grid;place-items:center;font-weight:800;color:var(--ouro);font-size:14px;padding:6px;text-align:center;line-height:1.2}
+.porta:hover{box-shadow:inset 0 0 0 4px var(--ouro),0 6px 0 #0007}
+.porta.off{opacity:.25;pointer-events:none}
+.porta.k-dica{box-shadow:inset 0 0 0 4px var(--ouro),0 0 20px rgba(242,193,78,.6)}
+.porta.errou{animation:ktreme .4s}
+.dentro{min-width:420px;min-height:130px;border-radius:14px;background:#0f0e14;border:2px solid var(--borda);display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:12px}
+.av{border:0;background:transparent;display:grid;justify-items:center;gap:2px;padding:0;transition:transform .3s}
+.av .r{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:30px;background:#2e2c3d;border:3px solid #6b5470}
+.av .n{font-weight:800;font-size:14px}
+.av:hover .r{border-color:var(--ouro)}
+.av.nevoa .r{filter:blur(6px) grayscale(1);background:#2e2c3d}
+.av.nevoa .n{color:transparent;text-shadow:0 0 8px #aaa}
+.av.entra{animation:entra .4s}
+@keyframes entra{from{transform:translateY(-30px);opacity:0}}
+.av.errou{animation:ktreme .4s}
+.av.k-dica .r{border-color:var(--ouro);box-shadow:0 0 16px rgba(242,193,78,.7)}
+.esteira{display:flex;gap:8px;margin-top:14px;align-items:center;overflow:hidden;min-height:58px}
+.cmd{flex:none;background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:6px 12px;font-weight:700;opacity:.55}
+.cmd.atual{opacity:1;border-color:var(--ouro);color:var(--ouro);font-size:18px;transform:scale(1.05)}
+.cmd.feito{opacity:.25;text-decoration:line-through}
+@media (max-width:760px){.dentro{min-width:220px}.porta{width:64px;height:120px;font-size:12px}.av .r{width:42px;height:42px;font-size:22px}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="modo"><b id="modoNome">Pilha</b><span id="modoDesc"></span></div>
+    <div class="salao"><button class="porta" id="pFrente" data-p="frente">frente</button><div class="dentro" id="dentro"></div><button class="porta" id="pFim" data-p="fim">fim</button></div>
+    <div class="esteira" id="esteira"></div>
+  </section>
+  <div class="ordem"><span id="ordem">…</span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const GENTE = [['🧙','Merlin'],['🧝','Lia'],['🧛','Vlad'],['🧟','Zé'],['🦉','Coruja'],['🐸','Sapo'],['🧌','Troll'],['🦊','Raposa'],['🐺','Lobo'],['🧚','Fada'],['🐲','Drago'],['🦇','Morcego'],['🐻','Urso'],['🦄','Unicórnio']];
+const MODOS = ['Pilha','Fila','Deque'];
+let G = null;
+
+function onda(){
+  const i = (G.onda - 1) % 3, modo = MODOS[i], nevoa = G.onda > 3;
+  G.modo = modo; G.nevoa = nevoa; G.est = []; G.cmds = []; G.ci = 0;
+  $('#modoNome').textContent = modo + (nevoa ? ' na névoa' : '');
+  $('#modoDesc').textContent = modo === 'Pilha' ? 'LIFO · uma porta: o topo' : (modo === 'Fila' ? 'FIFO · entra pelo fim, sai pela frente' : 'as duas portas servem para tudo');
+  $('#pFrente').textContent = modo === 'Pilha' ? 'parede' : 'frente'; $('#pFim').textContent = modo === 'Pilha' ? 'topo' : 'fim';
+  $('#pFrente').classList.toggle('off', modo === 'Pilha');
+  /* sorteia a sequência de comandos garantindo que nunca falte gente para sair */
+  let dentro = 0; const pessoas = K.shuffle(GENTE);
+  for (let k = 0; k < 10 + Math.min(4, G.onda); k++) {
+    const sai = dentro > 0 && (dentro >= 4 || Math.random() < 0.45);
+    if (sai) { dentro--; G.cmds.push({t:'sai', ponta: modo === 'Deque' ? K.pick(['frente','fim']) : (modo === 'Pilha' ? 'fim' : 'frente')}); }
+    else { dentro++; G.cmds.push({t:'entra', p: pessoas[k % pessoas.length], ponta: modo === 'Deque' ? K.pick(['frente','fim']) : 'fim'}); }
+  }
+  desenhar(); proximo();
+}
+function desenhar(){
+  $('#dentro').innerHTML = G.est.map((p,i) => `<button class="av ${G.nevoa && !p.recente ? 'nevoa' : ''} ${p.recente ? 'entra' : ''}" data-i="${i}"><span class="r">${p.p[0]}</span><span class="n">${p.p[1]}</span></button>`).join('') || '<span class="nota">salão vazio</span>';
+  $('#dentro').querySelectorAll('.av').forEach(b => b.onclick = () => clicarPessoa(+b.dataset.i, b));
+  $('#esteira').innerHTML = G.cmds.map((c,i) => `<span class="cmd ${i===G.ci?'atual':(i<G.ci?'feito':'')}">${c.t === 'entra' ? `${c.p[0]} entra${G.modo==='Deque' ? (c.ponta==='frente'?' pela frente':' pelo fim') : ''}` : `sai${G.modo==='Deque' ? (c.ponta==='frente'?' da frente':' do fim') : ''}`}</span>`).join('');
+  const at = $('#esteira .atual'); if (at) $('#esteira').scrollLeft = at.offsetLeft - 120;
+}
+function proximo(){
+  G.est.forEach(p => p.recente = false);
+  if (G.ci >= G.cmds.length) {
+    K.timer.parar();
+    G.onda++; K.subirNivel(G.onda, `${MODOS[(G.onda-1)%3]}${G.onda > 3 ? ' na névoa: quem está dentro fica escondido' : ''}`);
+    if (G.onda % 3 === 1) K.vida();
+    return setTimeout(onda, 1100);
+  }
+  const c = G.cmds[G.ci], tempo = Math.max(3.5, 9 - G.onda * .6);
+  desenhar();
+  if (c.t === 'entra') {
+    $('#ordem').innerHTML = `${c.p[0]} <b>${c.p[1]}</b> quer entrar${G.modo === 'Deque' ? (c.ponta === 'frente' ? ' <b>pela frente</b>' : ' <b>pelo fim</b>') : ''}. Clique na porta certa.`;
+    K.turno(tempo, () => falhou(null, true), () => [G.modo === 'Pilha' ? 'Na pilha tudo acontece no topo.' : (G.modo === 'Fila' ? 'Na fila, quem chega entra pelo fim.' : 'No deque, use a ponta pedida.'), `Porta: ${c.ponta === 'fim' ? (G.modo==='Pilha'?'topo':'fim') : 'frente'}.`]);
+  } else {
+    $('#ordem').innerHTML = `Alguém <b>sai</b>${G.modo === 'Deque' ? (c.ponta === 'frente' ? ' <b>pela frente</b>' : ' <b>pelo fim</b>') : ''}. Clique em quem vai sair.`;
+    K.turno(tempo, () => falhou(null, true), () => [G.modo === 'Pilha' ? 'Sai quem entrou por último.' : (G.modo === 'Fila' ? 'Sai quem entrou primeiro.' : 'Olhe a ponta pedida.'), `Sai ${quemSai().p[1]}.`]);
+  }
+}
+const quemSai = () => { const c = G.cmds[G.ci]; return c.ponta === 'frente' ? G.est[0] : G.est[G.est.length-1]; };
+function porta(lado, el){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  const c = G.cmds[G.ci]; if (!c) return;
+  if (c.t !== 'entra') { K.flutua('Agora alguém sai: clique na pessoa', el, 'var(--mudo)'); return; }
+  if (lado !== c.ponta) return falhou(el);
+  const p = {p:c.p, recente:true};
+  if (lado === 'frente') G.est.unshift(p); else G.est.push(p);
+  K.SFX.passo(); K.acerto(el, 40); G.ci++; proximo();
+}
+function clicarPessoa(i, el){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  const c = G.cmds[G.ci]; if (!c) return;
+  if (c.t !== 'sai') { K.flutua('Agora alguém entra: clique na porta', el, 'var(--mudo)'); return; }
+  const certo = c.ponta === 'frente' ? 0 : G.est.length - 1;
+  if (i !== certo) return falhou(el);
+  K.acerto(el, G.nevoa ? 140 : 90); K.SFX.whoosh();
+  el.style.transform = c.ponta === 'frente' ? 'translateX(-200px)' : 'translateX(200px)'; el.style.opacity = '0';
+  K.s.ocupado = true;
+  setTimeout(() => { K.s.ocupado = false; if (c.ponta === 'frente') G.est.shift(); else G.est.pop(); G.ci++; proximo(); }, 320);
+}
+function falhou(el, tempo){
+  const c = G.cmds[G.ci];
+  if (el) K.anima(el, 'errou');
+  const fila = G.est.map(p => p.p[0] + ' ' + p.p[1]).join(' · ') || 'vazio';
+  let html;
+  if (c.t === 'entra') html = `<p>${G.modo === 'Pilha' ? 'Na <b>pilha</b>, entrar e sair acontecem na mesma ponta: o topo.' : (G.modo === 'Fila' ? 'Na <b>fila</b>, quem chega entra pelo <b>fim</b>; quem sai, sai pela frente.' : `No <b>deque</b>, o pedido dizia: entrar ${c.ponta === 'frente' ? 'pela frente' : 'pelo fim'}.`)}</p>`;
+  else html = `<p>Da frente para o fim, o salão estava assim: <b>${fila}</b>.</p><p>${G.modo === 'Pilha' ? 'Na pilha (LIFO), sai quem entrou por último: o do topo.' : (G.modo === 'Fila' ? 'Na fila (FIFO), sai quem entrou primeiro: o da frente.' : `No deque, o pedido era sair ${c.ponta === 'frente' ? 'pela frente' : 'pelo fim'}.`)} Saía <b>${quemSai().p[1]}</b>.</p>`;
+  K.erro(html, () => {
+    if (c.t === 'entra') { const p = {p:c.p}; if (c.ponta === 'frente') G.est.unshift(p); else G.est.push(p); }
+    else { if (c.ponta === 'frente') G.est.shift(); else G.est.pop(); }
+    G.ci++; proximo();
+  }, {kicker: tempo ? 'O tempo acabou' : 'Porta errada'});
+}
+
+$('#pFrente').onclick = e => porta('frente', e.currentTarget);
+$('#pFim').onclick = e => porta('fim', e.currentTarget);
+K.init({
+  id:'pilha-fila-deque', titulo:'O Salão das Três Portas', kicker:'Masmorra · Pilha, fila e deque', vidas:3, rotNivel:'Onda', comecar:'Abrir o salão',
+  ajuda:`<p>Aventureiros entram e saem do salão seguindo uma regra que muda a cada onda: <b>Pilha</b>, <b>Fila</b> ou <b>Deque</b>. A esteira embaixo mostra os pedidos em ordem.</p>
+  <ol><li><b>Entra:</b> clique na porta por onde a pessoa entra (na pilha, o topo; na fila, o fim; no deque, a ponta pedida).</li>
+  <li><b>Sai:</b> clique na pessoa que vai sair.</li>
+  <li>A partir da onda 4, o salão fica <b>na névoa</b>: quem já está dentro fica escondido e você precisa lembrar da ordem.</li></ol>
+  <p class="nota">A cada três ondas você recupera uma vida.</p>`,
+  iniciar(){ G = {onda:1}; onda(); },
+  auto(){
+    const c = G.cmds[G.ci]; if (!c) return;
+    if (c.t === 'entra') porta(c.ponta, c.ponta === 'frente' ? $('#pFrente') : $('#pFim'));
+    else { const i = c.ponta === 'frente' ? 0 : G.est.length - 1; clicarPessoa(i, document.querySelector(`.av[data-i="${i}"]`)); }
+    return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

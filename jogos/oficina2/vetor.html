@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Corredor das Estátuas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:linear-gradient(#1a1824,#211d2c 60%,#2a2430 60%,#1d1a22);min-height:360px;padding:26px 18px 18px}
+.tochas{position:absolute;left:0;right:0;top:14px;display:flex;justify-content:space-around;pointer-events:none}
+.tochas i{width:10px;height:22px;border-radius:50% 50% 30% 30%;background:radial-gradient(#fff6c9,#f2a93b 60%,transparent 70%);box-shadow:0 0 30px 12px rgba(242,169,59,.25);animation:fogo 1.2s infinite alternate}
+@keyframes fogo{to{transform:scaleY(1.2) translateY(-2px);opacity:.85}}
+.corredor{position:relative;display:grid;gap:8px;margin-top:40px}
+.ped{position:relative;height:200px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.base{width:100%;height:22px;border-radius:6px;background:linear-gradient(#5d5975,#3b384d);box-shadow:0 4px 0 #0007}
+.idx{font-family:var(--mono);font-size:13px;color:var(--mudo);margin-top:4px}
+.rot{position:absolute;top:-24px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ouro);white-space:nowrap}
+.estatua{position:absolute;bottom:26px;width:78%;height:150px;border:0;padding:0;background:transparent;transition:left .35s cubic-bezier(.4,1.4,.6,1),transform .2s;display:grid;justify-items:center}
+.estatua svg{width:100%;height:120px;filter:drop-shadow(0 6px 0 #0006)}
+.estatua b{position:absolute;bottom:-2px;font-size:18px;font-weight:800;color:#2b1a0e;background:#e9dcbf;border-radius:6px;padding:0 6px;box-shadow:0 2px 0 #0007;font-variant-numeric:tabular-nums}
+.estatua svg{height:auto;max-height:120px}
+.estatua:hover{transform:translateY(-4px)}
+.estatua.k-dica svg{filter:drop-shadow(0 0 12px rgba(242,193,78,.95))}
+.estatua.errou{animation:ktreme .4s}
+.estatua.achou svg{filter:drop-shadow(0 0 14px rgba(127,216,164,.95))}
+.estatua.nova svg{animation:surge .4s}
+@keyframes surge{from{transform:translateY(-40px);opacity:0}}
+.vaga{position:absolute;bottom:26px;width:78%;height:120px;border:2px dashed #ffffff22;border-radius:12px;background:transparent}
+.vaga.alvo{border-color:var(--ouro);cursor:pointer;background:rgba(242,193,78,.06)}
+.cap{position:absolute;right:16px;top:10px;font-family:var(--mono);font-size:13px;color:var(--mudo)}
+.acoes{display:flex;gap:8px;flex-wrap:wrap}
+.acoes button{background:var(--chip);border:1px solid var(--ouro);color:var(--ouro);border-radius:10px;padding:8px 16px;font-weight:800}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="tochas"><i></i><i></i><i></i><i></i></div><span class="cap" id="cap"></span><div class="corredor" id="corr"></div></section>
+  <div class="ordem"><span id="ordem">…</span><span class="acoes" id="acoes"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+function estatuaSVG(v){ const h = 30 + (v % 7) * 3; return `<svg viewBox="0 0 80 120"><ellipse cx="40" cy="${24 - h/10}" rx="14" ry="14" fill="#cfc8d8" stroke="#1d1a22" stroke-width="2.5"/><path d="M22 40 Q40 30 58 40 L62 112 L18 112 Z" fill="#b9b2c8" stroke="#1d1a22" stroke-width="2.5"/><path d="M18 112 L62 112" stroke="#1d1a22" stroke-width="3"/></svg>`; }
+
+function desenhar(){
+  const c = $('#corr'); c.style.gridTemplateColumns = `repeat(${G.cap}, 1fr)`;
+  c.innerHTML = G.v.map((x,i) => `<div class="ped" data-i="${i}">${G.rot[i] ? `<span class="rot">${G.rot[i]}</span>` : ''}<div class="vaga ${G.vagaAlvo===i?'alvo':''}" data-vaga="${i}"></div>${x===null?'':`<button class="estatua" data-i="${i}" aria-label="Estátua ${x} na posição ${i}">${estatuaSVG(x)}<b>${x}</b></button>`}<div class="base"></div><span class="idx">${i}</span></div>`).join('');
+  c.querySelectorAll('.estatua').forEach(b => b.onclick = () => clicar(+b.dataset.i));
+  c.querySelectorAll('.vaga').forEach(b => b.onclick = () => clicarVaga(+b.dataset.vaga));
+  $('#cap').textContent = `tamanho ${G.v.filter(x=>x!==null).length} / capacidade ${G.cap}`;
+}
+const n = () => G.v.filter(x=>x!==null).length;
+function novaOrdem(){
+  G.rot = {}; G.vagaAlvo = -1; $('#acoes').innerHTML = '';
+  const tam = n(), tipos = [];
+  if (tam < G.cap) tipos.push('ins','ins');
+  if (tam > 2) tipos.push('rem','rem');
+  if (tam > 3 && G.nivel >= 2) tipos.push('busca');
+  if (tam === G.cap && G.nivel >= 3) tipos.push('cheio','cheio','cheio');
+  const t = K.pick(tipos);
+  const porMov = Math.max(1.4, 3.2 - G.nivel * 0.35);
+  if (t === 'ins') {
+    const pos = K.rnd(0, tam - (tam ? 1 : 0)), val = K.rnd(10,99);
+    G.ordem = {t, pos, val, seq: Array.from({length: tam - pos}, (_,k) => tam - 1 - k), k:0};
+    G.rot[pos] = 'aqui';
+    $('#ordem').innerHTML = `Inserir <b>${val}</b> na posição <b>${pos}</b>: clique nas estátuas na ordem em que elas andam, depois no pedestal livre.`;
+    K.turno(Math.max(4, (G.ordem.seq.length + 1) * porMov), () => falhou(null), dicaIns);
+  } else if (t === 'rem') {
+    const pos = K.rnd(0, tam - 2);
+    G.ordem = {t, pos, val:G.v[pos], seq: Array.from({length: tam - 1 - pos}, (_,k) => pos + 1 + k), k:-1};
+    G.rot[pos] = 'remover';
+    $('#ordem').innerHTML = `Remover a estátua da posição <b>${pos}</b> (${G.v[pos]}): clique nela e depois nas que andam para fechar o buraco.`;
+    K.turno(Math.max(4, (G.ordem.seq.length + 1) * porMov), () => falhou(null), dicaRem);
+  } else if (t === 'busca') {
+    const alvo = K.pick(G.v.filter(x=>x!==null)), at = G.v.indexOf(alvo);
+    G.ordem = {t, val:alvo, seq: Array.from({length: at + 1}, (_,k) => k), k:0};
+    $('#ordem').innerHTML = `Busca linear pelo <b>${alvo}</b>: clique nas estátuas na ordem em que a busca as examina, até achar.`;
+    K.turno(Math.max(4, (at + 1) * porMov * 0.8), () => falhou(null), () => ['Sem ordem, a busca começa na posição 0 e examina uma por uma.', `O ${alvo} está na posição ${at}.`]);
+  } else {
+    G.ordem = {t:'cheio', val:K.rnd(10,99)};
+    $('#ordem').innerHTML = `Chegou a estátua <b>${G.ordem.val}</b>, mas o corredor está <b>cheio</b>. O que um vetor dinâmico faz?`;
+    $('#acoes').innerHTML = `<button data-a="dobrar">Dobrar a capacidade e copiar</button><button data-a="mais1">Abrir só mais 1 pedestal</button><button data-a="recusar">Recusar a estátua</button>`;
+    $('#acoes').querySelectorAll('button').forEach(b => b.onclick = () => acaoCheio(b.dataset.a));
+    K.turno(9, () => falhou(null), () => ['Abrir 1 pedestal por vez faria cada inserção copiar tudo de novo.', 'Dobrar mantém a inserção no fim em O(1) amortizado.']);
+  }
+  if (G.ordem) G.ordem.antes = G.v.filter(x=>x!==null);
+  desenhar();
+}
+const dicaIns = () => ['Para abrir espaço sem perder ninguém, a última estátua anda primeiro.', `Ordem: ${G.ordem.seq.map(i=>G.v[i] ?? '').filter(x=>x!=='').join(' → ') || 'nenhuma'}; depois o pedestal ${G.ordem.pos}.`];
+const dicaRem = () => ['Primeiro a estátua removida; depois cada vizinha da direita anda uma casa.', `Ordem: ${G.ordem.val} e depois ${G.ordem.seq.map(i=>G.v[i]).join(' → ') || 'nenhuma'}.`];
+
+function clicar(i){
+  if (!K.s.rodando || K.s.ocupado || !G.ordem) return;
+  const o = G.ordem;
+  if (o.t === 'ins') {
+    if (o.k < o.seq.length && i === o.seq[o.k]) { mover(i, i+1); o.k++; if (o.k === o.seq.length) { G.vagaAlvo = o.pos; desenhar(); } }
+    else falhou(i);
+  } else if (o.t === 'rem') {
+    if (o.k === -1) { if (i === o.pos) { K.SFX.whoosh(); G.v[i] = null; o.k = 0; desenhar(); if (!o.seq.length) concluir(); } else falhou(i); }
+    else if (i === o.seq[o.k]) { mover(i, i-1); o.k++; if (o.k === o.seq.length) concluir(); }
+    else falhou(i);
+  } else if (o.t === 'busca') {
+    if (i === o.seq[o.k]) {
+      K.SFX.clique(); const el = document.querySelector(`.estatua[data-i="${i}"]`); o.k++;
+      if (o.k === o.seq.length) { K.anima(el, 'achou'); concluir(); } else K.anima(el, 'brilha');
+    } else falhou(i);
+  }
+}
+function clicarVaga(i){
+  if (!K.s.rodando || K.s.ocupado || !G.ordem || G.ordem.t !== 'ins' || G.vagaAlvo !== i) return;
+  G.v[i] = G.ordem.val; G.vagaAlvo = -1; desenhar(); K.anima(document.querySelector(`.estatua[data-i="${i}"]`), 'nova'); concluir();
+}
+function mover(de, para){
+  K.SFX.passo();
+  const el = document.querySelector(`.estatua[data-i="${de}"]`), alvo = document.querySelector(`.ped[data-i="${para}"]`);
+  G.v[para] = G.v[de]; G.v[de] = null;
+  if (el && alvo) { const dx = alvo.getBoundingClientRect().left - el.parentElement.getBoundingClientRect().left; el.style.transform = `translateX(${dx}px)`; }
+  K.s.ocupado = true; setTimeout(() => { K.s.ocupado = false; desenhar(); }, 230);
+}
+function acaoCheio(a){
+  if (!K.s.rodando || K.s.ocupado) return;
+  if (a === 'dobrar') { K.acerto($('#acoes'), 120); G.cap = Math.min(16, G.cap * 2); G.v = G.v.concat(Array(G.cap - G.v.length).fill(null)); G.v[n()] = G.ordem.val; K.banner(`Corredor dobrado<small>capacidade ${G.cap}</small>`); K.SFX.onda(); G.ordem = null; K.timer.parar(); desenhar(); setTimeout(proxima, 900); }
+  else falhou(null);
+}
+function concluir(){
+  const o = G.ordem; G.ordem = null; K.timer.parar();
+  K.acerto(document.querySelector('.cena'), 80 + 25 * ((o.seq && o.seq.length) || 0));
+  setTimeout(proxima, 450);
+}
+function proxima(){
+  G.feitas++;
+  if (G.feitas % 5 === 0) { G.nivel++; K.subirNivel(G.nivel, G.nivel === 2 ? 'Agora com buscas' : (G.nivel === 3 ? 'O corredor pode encher' : 'Menos tempo por estátua')); if (G.nivel === 3) { while (n() < G.cap) G.v[n()] = K.rnd(10,99); } setTimeout(novaOrdem, 1000); }
+  else novaOrdem();
+}
+function falhou(i){
+  const o = G.ordem; if (!o) return;
+  if (i !== null && i !== undefined) K.anima(document.querySelector(`.estatua[data-i="${i}"]`), 'errou');
+  let html;
+  if (o.t === 'ins') html = `<p>Para inserir na posição ${o.pos}, as estátuas andam uma casa para a direita <b>de trás para frente</b>. Se a primeira a andar fosse a da posição ${o.pos}, ela esmagaria a vizinha antes de a vizinha sair do lugar.</p><p>Ordem certa: ${o.seq.length ? o.seq.map(k=>`posição ${k}`).join(' → ') : '(nenhuma)'} e, por fim, o pedestal ${o.pos}.</p>`;
+  else if (o.t === 'rem') html = `<p>Na remoção, a estátua sai e o buraco é fechado <b>da esquerda para a direita</b>: cada vizinha anda uma casa para a esquerda, começando logo depois do buraco.</p><p>Ordem certa: posição ${o.pos} (sai) e depois ${o.seq.map(k=>`posição ${k}`).join(' → ') || 'nenhuma'}.</p>`;
+  else if (o.t === 'busca') html = `<p>Num vetor sem ordem, a busca linear examina as posições 0, 1, 2… até achar. O ${o.val} estava na posição ${o.seq.length - 1}, então eram ${o.seq.length} comparações.</p>`;
+  else html = `<p>Um vetor dinâmico <b>dobra a capacidade</b> e copia tudo uma vez. Abrir um pedestal por vez faria cada inserção custar O(n); dobrando, o custo médio da inserção no fim fica O(1) amortizado.</p>`;
+  K.erro(html, () => {
+    /* conclui a ordem do jeito certo */
+    if (o.t === 'ins' || o.t === 'rem') { const vals = o.antes.slice(); if (o.t === 'ins') vals.splice(o.pos, 0, o.val); else vals.splice(o.pos, 1); G.v = vals.concat(Array(G.cap - vals.length).fill(null)); }
+    else if (o.t === 'cheio') { G.cap = Math.min(16, G.cap * 2); G.v = G.v.concat(Array(G.cap - G.v.length).fill(null)); G.v[n()] = o.val; }
+    G.ordem = null; desenhar(); proxima();
+  }, {kicker: i === null ? 'O tempo acabou' : 'Ordem errada'});
+}
+
+K.init({
+  id:'vetor', titulo:'O Corredor das Estátuas', kicker:'Masmorra · Lista sequencial', vidas:3, comecar:'Entrar no corredor',
+  ajuda:`<p>As estátuas ficam lado a lado em pedestais numerados, sem buracos: é um vetor. Para abrir ou fechar espaço, elas só podem ser arrastadas uma de cada vez.</p>
+  <ol><li><b>Inserir:</b> clique nas estátuas na ordem em que andam para a direita (a última primeiro) e depois no pedestal livre.</li>
+  <li><b>Remover:</b> clique na estátua que sai e depois nas que andam para a esquerda, começando logo depois do buraco.</li>
+  <li><b>Buscar</b> (nível 2): clique na ordem em que a busca linear examina as estátuas.</li>
+  <li><b>Corredor cheio</b> (nível 3): decida o que um vetor dinâmico faz.</li></ol>
+  <p class="nota">O relógio vale para a ordem inteira. Quanto mais estátuas andarem, mais pontos.</p>`,
+  iniciar(){ G = {nivel:1, cap:8, v:K.distintos(5,10,99).concat(Array(3).fill(null)), feitas:0, rot:{}, vagaAlvo:-1}; novaOrdem(); },
+  auto(){
+    const o = G.ordem; if (!o) return;
+    if (o.t === 'cheio') return acaoCheio('dobrar');
+    if (o.t === 'ins') { if (o.k < o.seq.length) clicar(o.seq[o.k]); else clicarVaga(o.pos); return true; }
+    if (o.t === 'rem') { clicar(o.k === -1 ? o.pos : o.seq[o.k]); return true; }
+    clicar(o.seq[o.k]); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,713 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore Binária de Busca</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-halo{ fill:none; stroke:transparent; stroke-width:3.5; transition: cx .35s ease, cy .35s ease, stroke .25s ease; }
+  .node-circle{ fill:var(--node-fill); stroke:var(--paper); stroke-width:3; transition: cx .35s ease, cy .35s ease; }
+  .node-value{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+
+  .node[data-state="compare"] .node-halo{ stroke:var(--accent); }
+  .node[data-state="new"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="end"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="successor"] .node-halo{ stroke:var(--accent); stroke-dasharray:3 3; }
+  .node[data-state="bad"] .node-halo{ stroke:var(--rust); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.compare{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.new{background:var(--card); border-color:var(--gold);}
+  .legend .swatch.succ{background:var(--card); border-color:var(--accent); border-style:dashed;}
+  .legend .swatch.bad{background:var(--card); border-color:var(--rust);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .height-meter{display:flex; flex-direction:column; gap:6px;}
+  .height-meter-top{display:flex; justify-content:space-between; align-items:baseline; font-size:0.78rem; color:var(--ink-soft);}
+  .height-meter-top .val{font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .height-meter-track{position:relative; height:8px; border-radius:4px; background:var(--line); overflow:visible;}
+  .height-meter-fill{position:absolute; top:0; left:0; height:100%; border-radius:4px; background:var(--success); transition: width .3s ease, background .3s ease;}
+  .height-meter-optimal{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); opacity:0.55;}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.warn{color:var(--gold);} button.warn:hover{border-color:var(--gold); color:var(--gold);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:100px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">A árvore de busca mais simples · sem balanceamento nenhum</span>
+    <h1>Árvore Binária de Busca</h1>
+    <p class="prose">Esta é a árvore que todas as outras desta série tentam consertar. A regra é só uma: para qualquer nó, tudo à esquerda é menor e tudo à direita é maior. Nenhuma altura guardada, nenhuma cor, nenhuma rotação — o que a torna rápida de entender e simples de implementar. O problema aparece na hora de inserir: dependendo da <strong>ordem</strong> dos valores, a árvore pode ficar equilibrada (O(log n)) ou degenerar numa corrente reta (O(n)). Use o botão "pior caso" abaixo para ver isso acontecer.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da árvore binária de busca">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch"></span>nó</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch new"></span>nova / encontrada</span>
+      <span class="item"><span class="swatch succ"></span>sucessor (substitui na remoção)</span>
+      <span class="item"><span class="swatch bad"></span>removida / não encontrada</span>
+    </div>
+
+    <div class="height-meter">
+      <div class="height-meter-top">
+        <span>Altura da árvore</span>
+        <span class="val" id="heightLabel">— · mínima possível: —</span>
+      </div>
+      <div class="height-meter-track">
+        <div class="height-meter-fill" id="heightFill"></div>
+        <div class="height-meter-optimal" id="heightOptimalMark" style="left:0%"></div>
+      </div>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+        <button id="btnRandomInsert">🎲 Inserir aleatório</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Tamanho
+          <input type="range" class="mini" id="sizeSlider" min="1" max="40" value="15" step="1">
+          <span class="mono" id="sizeLabel">15</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova árvore aleatória</button>
+        <button class="warn" id="btnWorstCase">⚠ Sequência ordenada (pior caso)</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Removendo: três casos</h2>
+    <p class="prose">Inserir e buscar são só uma caminhada comparando valores. Remover é o único momento em que a estrutura precisa de cuidado:</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Nó é uma folha</span><span class="prose">Sem filhos — é só desligar o nó do pai.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Nó tem um filho</span><span class="prose">O único filho assume diretamente o lugar do nó removido.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Nó tem dois filhos</span><span class="prose">Copiamos para dentro dele o valor do <em>sucessor</em> (o menor valor da subárvore direita) e removemos o sucessor de lá — que, por ser o menor à direita, nunca tem filho esquerdo, então cai sempre num dos dois casos acima.</span></div></div>
+    </div>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Ordem aleatória</span>
+      <p class="prose">Cada inserção tem, em média, a mesma chance de ir para a esquerda ou direita em cada nível. A altura esperada fica perto de <code>O(log n)</code> — não é uma garantia matemática como numa árvore balanceada, mas na prática funciona bem.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Ordem adversária (já ordenada)</span>
+      <p class="prose">Se os valores chegam em ordem crescente (ou decrescente), cada novo nó vira filho único do anterior — a árvore vira uma lista encadeada com altura <code>n - 1</code>. Toda busca, inserção e remoção passa a custar <code>O(n)</code>.</p>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Melhor e caso médio</span>
+      <h3>O(log n)</h3>
+      <p class="prose">Com a árvore razoavelmente equilibrada, cada comparação descarta metade dos nós restantes — o mesmo princípio da busca binária num array ordenado.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Pior caso</span>
+      <h3>O(n)</h3>
+      <p class="prose">Sem nenhum mecanismo de equilíbrio, nada impede a árvore de degenerar numa corrente. É exatamente esse problema que as árvores AVL, rubro-negra e splay desta série resolvem, cada uma à sua maneira.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma árvore binária de busca sem balanceamento, a estrutura descrita de forma independente por Windley, Booth &amp; Colin, e Hibbard por volta de 1960. Complexidade: O(log n) no melhor caso e caso médio, O(n) no pior caso, para busca, inserção e remoção.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= BST engine (records one step per operation) =================
+  function createBSTEngine() {
+    var nextId = 1;
+    var root = null;
+    var steps = [];
+
+    function cloneTree(node) {
+      if (!node) return null;
+      return { id: node.id, value: node.value, left: cloneTree(node.left), right: cloneTree(node.right) };
+    }
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ root: cloneTree(root), message: message, op: opts.op || "info", highlight: opts.highlight || { ids: [], kind: "" } });
+    }
+
+    function insert(value) {
+      if (!root) {
+        root = { id: nextId++, value: value, left: null, right: null };
+        snapshot(value + " inserida como raiz — a árvore estava vazia.", { op: "insert", highlight: { ids: [root.id], kind: "new" } });
+        return true;
+      }
+      var node = root;
+      while (true) {
+        snapshot("Comparando " + value + " com " + node.value + ".", { op: "insert", highlight: { ids: [node.id], kind: "compare" } });
+        if (value === node.value) { snapshot(value + " já está na árvore — nada a inserir.", { op: "insert", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+        if (value < node.value) {
+          if (!node.left) { node.left = { id: nextId++, value: value, left: null, right: null }; snapshot(value + " é menor — inserida como filho esquerdo de " + node.value + ".", { op: "insert", highlight: { ids: [node.left.id], kind: "new" } }); return true; }
+          node = node.left;
+        } else {
+          if (!node.right) { node.right = { id: nextId++, value: value, left: null, right: null }; snapshot(value + " é maior — inserida como filho direito de " + node.value + ".", { op: "insert", highlight: { ids: [node.right.id], kind: "new" } }); return true; }
+          node = node.right;
+        }
+      }
+    }
+
+    function search(value) {
+      var node = root;
+      if (!node) { snapshot("A árvore está vazia.", { op: "search", highlight: { ids: [], kind: "bad" } }); return false; }
+      while (node) {
+        var found = node.value === value;
+        snapshot("Comparando " + value + " com " + node.value + ".", { op: "search", highlight: { ids: [node.id], kind: found ? "end" : "compare" } });
+        if (found) { snapshot(value + " encontrado.", { op: "search", highlight: { ids: [node.id], kind: "end" } }); return true; }
+        node = value < node.value ? node.left : node.right;
+      }
+      snapshot(value + " não está na árvore — chegamos a um galho vazio sem encontrá-lo.", { op: "search", highlight: { ids: [], kind: "bad" } });
+      return false;
+    }
+
+    function attach(parent, oldChild, newChild) {
+      if (!parent) { root = newChild; return; }
+      if (parent.left === oldChild) parent.left = newChild; else parent.right = newChild;
+    }
+
+    function removeValue(value) {
+      var path = [];
+      var node = root;
+      while (node && node.value !== value) {
+        snapshot("Comparando " + value + " com " + node.value + " para localizar o nó a remover.", { op: "remove", highlight: { ids: [node.id], kind: "compare" } });
+        path.push(node);
+        node = value < node.value ? node.left : node.right;
+      }
+      if (!node) { snapshot(value + " não está na árvore — nada a remover.", { op: "remove", highlight: { ids: [], kind: "bad" } }); return false; }
+      snapshot("Encontramos " + value + ".", { op: "remove", highlight: { ids: [node.id], kind: "bad" } });
+
+      var parent = path.length ? path[path.length - 1] : null;
+
+      if (node.left && node.right) {
+        var succPath = [];
+        var succ = node.right;
+        while (succ.left) { succPath.push(succ); succ = succ.left; }
+        snapshot("O nó tem dois filhos — substituímos seu valor pelo sucessor " + succ.value + " (o menor valor da subárvore direita).",
+          { op: "remove", highlight: { ids: [node.id, succ.id], kind: "successor" } });
+        node.value = succ.value;
+        var succParent = succPath.length ? succPath[succPath.length - 1] : node;
+        attach(succParent, succ, succ.right);
+        snapshot(succ.value + " removido de sua posição original, depois de copiado — o sucessor nunca tem filho esquerdo.",
+          { op: "remove", highlight: { ids: [node.id], kind: "bad" } });
+      } else {
+        var child = node.left || node.right;
+        attach(parent, node, child);
+        snapshot(value + (child ? " removido — seu único filho (" + child.value + ") assume o lugar." : " removido — era uma folha, sem filhos."),
+          { op: "remove", highlight: { ids: child ? [child.id] : [], kind: "bad" } });
+      }
+      return true;
+    }
+
+    function allKeys() {
+      var out = [];
+      (function walk(node) { if (!node) return; walk(node.left); out.push(node.value); walk(node.right); })(root);
+      return out;
+    }
+
+    function height() {
+      return (function h(node) { return node ? 1 + Math.max(h(node.left), h(node.right)) : -1; })(root);
+    }
+
+    return { insert: insert, search: search, remove: removeValue, keys: allKeys, getRoot: function () { return root; }, getSteps: function () { return steps; }, height: height };
+  }
+
+  // ================= layout: in-order x position, depth y position =================
+  function computeLayout(root) {
+    var order = [];
+    (function walk(n) { if (!n) return; walk(n.left); order.push(n); walk(n.right); })(root);
+    var xIndex = {};
+    order.forEach(function (n, i) { xIndex[n.id] = i; });
+    var positions = {};
+    (function walk2(n, depth) {
+      if (!n) return;
+      positions[n.id] = { x: xIndex[n.id], depth: depth, value: n.value, leftId: n.left ? n.left.id : null, rightId: n.right ? n.right.id : null };
+      walk2(n.left, depth + 1); walk2(n.right, depth + 1);
+    })(root, 0);
+    return { positions: positions, count: order.length };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnRandomInsert: document.getElementById("btnRandomInsert"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    btnWorstCase: document.getElementById("btnWorstCase"),
+    errorText: document.getElementById("errorText"),
+    heightLabel: document.getElementById("heightLabel"),
+    heightFill: document.getElementById("heightFill"),
+    heightOptimalMark: document.getElementById("heightOptimalMark")
+  };
+
+  var CELL_W = 42, ROW_H = 62, NODE_R = 17, TOP_PAD = 20, SIDE_PAD = 26;
+  var NS = "http://www.w3.org/2000/svg";
+
+  var engine = createBSTEngine();
+  var state = { stepIndex: 0, playing: false, timer: null, usedValues: {} };
+  var nodeEls = {}, edgeEls = {};
+
+  function rebuildUsedValues() {
+    state.usedValues = {};
+    engine.keys().forEach(function (v) { state.usedValues[v] = true; });
+  }
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    rebuildUsedValues();
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Buscando", info: "Início" };
+
+  function updateHeightMeter() {
+    var n = engine.keys().length;
+    var h = engine.height();
+    if (n === 0) {
+      els.heightLabel.textContent = "— · mínima possível: —";
+      els.heightFill.style.width = "0%";
+      els.heightFill.style.background = "var(--line-strong)";
+      els.heightOptimalMark.style.left = "0%";
+      return;
+    }
+    var optimal = Math.max(0, Math.ceil(Math.log2(n + 1)) - 1);
+    els.heightLabel.textContent = h + " · mínima possível: " + optimal;
+    var worst = Math.max(1, n - 1);
+    var fillPct = Math.min(100, (h / worst) * 100);
+    var optimalPct = Math.min(100, (optimal / worst) * 100);
+    els.heightFill.style.width = fillPct + "%";
+    els.heightOptimalMark.style.left = optimalPct + "%";
+    var ratio = (h + 1) / (optimal + 1);
+    var color = ratio <= 1.5 ? "var(--success)" : (ratio <= 3 ? "var(--gold)" : "var(--rust)");
+    els.heightFill.style.background = color;
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) {
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira valores para começar, ou gere uma árvore aleatória.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      updateHeightMeter();
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function (id) { highlightMap[id] = step.highlight.kind; });
+
+    if (!step.root) {
+      els.treeSvg.setAttribute("viewBox", "0 0 200 60");
+      els.treeSvg.setAttribute("width", 200); els.treeSvg.setAttribute("height", 60);
+      els.treeSvg.innerHTML = "";
+      var emptyText = document.createElementNS(NS, "text");
+      emptyText.setAttribute("x", 100); emptyText.setAttribute("y", 30);
+      emptyText.setAttribute("text-anchor", "middle"); emptyText.setAttribute("dominant-baseline", "central");
+      emptyText.setAttribute("fill", "var(--ink-faint)"); emptyText.setAttribute("font-family", "IBM Plex Mono, monospace"); emptyText.setAttribute("font-size", "13px");
+      emptyText.textContent = "árvore vazia";
+      els.treeSvg.appendChild(emptyText);
+      nodeEls = {}; edgeEls = {};
+      updateHeightMeterFromStep(step);
+      return;
+    }
+
+    var layout = computeLayout(step.root);
+    var count = Math.max(layout.count, 1);
+    var maxDepth = 0;
+    Object.keys(layout.positions).forEach(function (id) { if (layout.positions[id].depth > maxDepth) maxDepth = layout.positions[id].depth; });
+
+    var width = SIDE_PAD * 2 + Math.max(0, count - 1) * CELL_W;
+    var heightPx = TOP_PAD + (maxDepth + 1) * ROW_H;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix) { return SIDE_PAD + ix * CELL_W; }
+    function yFor(depth) { return TOP_PAD + depth * ROW_H + NODE_R; }
+
+    var presentIds = {};
+    var presentEdgeChildIds = {};
+
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var kind = highlightMap[id] || "";
+
+      var rec = nodeEls[id];
+      if (!rec) {
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "node");
+        var halo = document.createElementNS(NS, "circle");
+        halo.setAttribute("class", "node-halo"); halo.setAttribute("r", NODE_R + 4);
+        var circle = document.createElementNS(NS, "circle");
+        circle.setAttribute("class", "node-circle"); circle.setAttribute("r", NODE_R);
+        var text = document.createElementNS(NS, "text");
+        text.setAttribute("class", "node-value");
+        g.appendChild(halo); g.appendChild(circle); g.appendChild(text);
+        rec = { g: g, halo: halo, circle: circle, text: text };
+        nodeEls[id] = rec;
+      }
+      if (kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+      rec.halo.setAttribute("cx", cx); rec.halo.setAttribute("cy", cy);
+      rec.circle.setAttribute("cx", cx); rec.circle.setAttribute("cy", cy);
+      rec.text.setAttribute("x", cx); rec.text.setAttribute("y", cy + 0.5);
+      rec.text.textContent = p.value;
+    });
+
+    Object.keys(layout.positions).forEach(function (idStr) {
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      [p.leftId, p.rightId].forEach(function (childId) {
+        if (childId == null) return;
+        presentEdgeChildIds[childId] = true;
+        var child = layout.positions[childId];
+        var line = edgeEls[childId];
+        if (!line) { line = document.createElementNS(NS, "line"); line.setAttribute("class", "edge-line"); edgeEls[childId] = line; }
+        line.setAttribute("x1", xFor(p.x)); line.setAttribute("y1", yFor(p.depth));
+        line.setAttribute("x2", xFor(child.x)); line.setAttribute("y2", yFor(child.depth));
+      });
+    });
+
+    Object.keys(nodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; } });
+    Object.keys(edgeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentEdgeChildIds[id]) { edgeEls[id].remove(); delete edgeEls[id]; } });
+
+    els.treeSvg.innerHTML = "";
+    Object.keys(edgeEls).forEach(function (id) { els.treeSvg.appendChild(edgeEls[id]); });
+    Object.keys(nodeEls).forEach(function (id) { els.treeSvg.appendChild(nodeEls[id].g); });
+
+    updateHeightMeterFromStep(step);
+  }
+
+  function heightOfSnapshot(node) { return node ? 1 + Math.max(heightOfSnapshot(node.left), heightOfSnapshot(node.right)) : -1; }
+  function countOfSnapshot(node) { return node ? 1 + countOfSnapshot(node.left) + countOfSnapshot(node.right) : 0; }
+  function updateHeightMeterFromStep(step) {
+    var n = step.root ? countOfSnapshot(step.root) : 0;
+    var h = step.root ? heightOfSnapshot(step.root) : -1;
+    if (n === 0) {
+      els.heightLabel.textContent = "— · mínima possível: —";
+      els.heightFill.style.width = "0%"; els.heightFill.style.background = "var(--line-strong)"; els.heightOptimalMark.style.left = "0%";
+      return;
+    }
+    var optimal = Math.max(0, Math.ceil(Math.log2(n + 1)) - 1);
+    els.heightLabel.textContent = h + " · mínima possível: " + optimal;
+    var worst = Math.max(1, n - 1);
+    els.heightFill.style.width = Math.min(100, (h / worst) * 100) + "%";
+    els.heightOptimalMark.style.left = Math.min(100, (optimal / worst) * 100) + "%";
+    var ratio = (h + 1) / (optimal + 1);
+    els.heightFill.style.background = ratio <= 1.5 ? "var(--success)" : (ratio <= 3 ? "var(--gold)" : "var(--rust)");
+  }
+
+  // ================= playback controls =================
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i) {
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function stepBy(delta) { goTo(state.stepIndex + delta); }
+  function togglePlay() {
+    var steps = engine.getSteps();
+    if (state.playing) { stopPlaying(); return; }
+    if (steps.length === 0) return;
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function () {
+      var s = engine.getSteps();
+      if (state.stepIndex >= s.length - 1) { stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function () { goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stepBy(-1); });
+  els.btnNext.addEventListener("click", function () { stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) { togglePlay(); togglePlay(); } });
+
+  function showError(msg) { els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError() { els.errorText.hidden = true; }
+
+  function parseValueInput() {
+    var raw = els.valueInput.value.trim();
+    if (raw === "") { showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v)) { showError('"' + raw + '" não é um número inteiro válido.'); return null; }
+    if (v < -999 || v > 999) { showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsert.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insert(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnRemove.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.remove(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnRandomInsert.addEventListener("click", function () {
+    hideError();
+    if (Object.keys(state.usedValues).length >= 98) { showError("A árvore já cobre quase todos os valores de 1 a 98."); return; }
+    var v; do { v = 1 + Math.floor(Math.random() * 98); } while (state.usedValues[v]);
+    engine.insert(v); jumpToLiveEnd();
+  });
+  els.sizeSlider.addEventListener("input", function () { els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function () {
+    hideError();
+    engine = createBSTEngine();
+    nodeEls = {}; edgeEls = {};
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  });
+  els.btnWorstCase.addEventListener("click", function () {
+    hideError();
+    engine = createBSTEngine();
+    nodeEls = {}; edgeEls = {};
+    var n = Number(els.sizeSlider.value);
+    for (var i = 1; i <= n; i++) engine.insert(i);
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { stepBy(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { stepBy(-1); e.preventDefault(); }
+    else if (e.key === " ") { togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= boot =================
+  (function boot() {
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

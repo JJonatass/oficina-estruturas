@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Roda do Moinho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(circle at 50% 55%,rgba(242,193,78,.10),transparent 55%),linear-gradient(#1b2030,#18151f);padding:10px 16px 16px}
+.palco{display:grid;grid-template-columns:1fr 240px;gap:14px;align-items:center}
+svg.roda{width:100%;max-width:520px;height:auto;margin:0 auto;display:block}
+.raio{stroke:#6b4a2f;stroke-width:6}
+.eixo{fill:#4d3323;stroke:#2a1a10;stroke-width:4}
+.giro{transition:transform .6s cubic-bezier(.4,1.3,.6,1);transform-origin:260px 260px}
+.cesto{cursor:pointer}
+.cesto circle{fill:#3a2c22;stroke:#8a6a4a;stroke-width:4;transition:all .2s}
+.cesto:hover circle,.cesto:focus circle{stroke:var(--ouro)}
+.cesto text.v{font:800 22px var(--sans);fill:var(--texto);text-anchor:middle}
+.cesto text.i{font:600 13px var(--mono);fill:var(--mudo);text-anchor:middle}
+.cesto.cheio circle{fill:#6b5236}
+.cesto.k-dica circle{stroke:var(--ouro);stroke-width:7}
+.cesto.errou circle{stroke:var(--verm);stroke-width:7}
+.marca text{font:700 14px var(--mono);text-anchor:middle}
+.marca.f text{fill:var(--verde)}.marca.r text{fill:var(--azul)}
+.lado{display:grid;gap:10px}
+.info{background:#0f0e14;border:1px solid var(--borda);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:15px;display:grid;gap:4px}
+.info b{color:var(--ouro)}
+.bt{background:var(--chip);border:2px solid var(--borda);border-radius:12px;padding:10px;font-weight:800;font-size:16px}
+.bt:hover{border-color:var(--ouro)}
+.bt.errou{animation:ktreme .4s;border-color:var(--verm)}
+.chegadas{display:flex;gap:6px;flex-wrap:wrap}
+.chegadas span{background:var(--chip);border:1px solid var(--borda);border-radius:8px;padding:3px 8px;font-size:14px;opacity:.6}
+.chegadas span:first-child{opacity:1;border-color:var(--ouro);color:var(--ouro)}
+@media (max-width:760px){.palco{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="palco"><svg class="roda" id="roda" viewBox="0 0 520 520"></svg>
+    <div class="lado"><div class="info" id="info"></div><button class="bt" id="bCheia">A roda está cheia!</button><button class="bt" id="bVazia">A roda está vazia!</button><div class="chegadas" id="cheg"></div></div></div></section>
+  <div class="ordem"><span id="ordem">…</span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+const CX = 260, CY = 260, RA = 190;
+function pos(i){ const a = -Math.PI/2 + i * 2*Math.PI/G.cap; return {x: CX + RA*Math.cos(a), y: CY + RA*Math.sin(a), a}; }
+function desenhar(){
+  let s = `<g class="giro" style="transform:rotate(${G.giro}deg)">`;
+  for (let i = 0; i < G.cap; i++) { const p = pos(i); s += `<line class="raio" x1="${CX}" y1="${CY}" x2="${p.x}" y2="${p.y}"/>`; }
+  s += `<circle cx="${CX}" cy="${CY}" r="${RA}" fill="none" stroke="#6b4a2f" stroke-width="8"/></g><circle class="eixo" cx="${CX}" cy="${CY}" r="34"/>`;
+  for (let i = 0; i < G.cap; i++) {
+    const p = pos(i), v = G.v[i];
+    s += `<g class="cesto ${v!==null?'cheio':''}" data-i="${i}" tabindex="0" role="button" aria-label="Cesto ${i}${v===null?' vazio':' com '+v}"><circle cx="${p.x}" cy="${p.y}" r="36"/><text class="v" x="${p.x}" y="${p.y+8}">${v===null?'':v}</text><text class="i" x="${p.x}" y="${p.y+56}">${i}</text></g>`;
+  }
+  const mf = pos(G.front), mr = pos(G.rear), off = (p, d) => ({x: CX + (RA-70-d)*Math.cos(p.a), y: CY + (RA-70-d)*Math.sin(p.a)});
+  const f = off(mf, 0), r = off(mr, G.front === G.rear ? 26 : 0);
+  s += `<g class="marca f"><text x="${f.x}" y="${f.y+5}">front</text></g><g class="marca r"><text x="${r.x}" y="${r.y+5}">rear</text></g>`;
+  $('#roda').innerHTML = s;
+  $('#roda').querySelectorAll('.cesto').forEach(c => { c.onclick = () => cesto(+c.dataset.i, c); c.onkeydown = e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); cesto(+c.dataset.i, c); } }; });
+  $('#info').innerHTML = `<span>capacidade <b>${G.cap}</b></span><span>front <b>${G.front}</b> · rear <b>${G.rear}</b></span><span>tamanho <b>${G.tam}</b></span>`;
+  $('#cheg').innerHTML = G.fila.slice(G.pi, G.pi + 5).map(p => `<span>${p.t === 'E' ? '🌾 ' + p.x : '🧑‍🌾 pede'}</span>`).join('');
+}
+function novaLeva(){
+  G.fila = []; G.pi = 0;
+  let tam = G.tam;
+  for (let k = 0; k < 10; k++) {
+    let t;
+    if (tam === 0) t = Math.random() < .25 && G.nivel >= 2 ? 'D' : 'E';
+    else if (tam === G.cap) t = Math.random() < .35 ? 'E' : 'D';
+    else t = Math.random() < .55 ? 'E' : 'D';
+    G.fila.push({t, x: K.rnd(10,99)});
+    if (t === 'E' && tam < G.cap) tam++; else if (t === 'D' && tam > 0) tam--;
+  }
+  proximo();
+}
+function proximo(){
+  if (G.pi >= G.fila.length) {
+    K.timer.parar();
+    G.nivel++;
+    if (G.nivel === 3) { /* a roda cresce: esvazia e passa para 8 cestos */ G.cap = 8; G.v = Array(8).fill(null); G.front = K.rnd(0,7); G.rear = G.front; G.tam = 0; }
+    K.subirNivel(G.nivel, G.nivel === 3 ? 'A roda agora tem 8 cestos' : 'A roda gira mais rápido');
+    return setTimeout(novaLeva, 1100);
+  }
+  const p = G.fila[G.pi]; desenhar();
+  const tempo = Math.max(3.5, 9 - G.nivel * .9);
+  if (p.t === 'E') {
+    $('#ordem').innerHTML = `Chegou o saco <b>${p.x}</b>: em qual cesto ele entra?`;
+    K.turno(tempo, () => falhou(null, true), () => G.tam === G.cap ? ['Olhe o tamanho e a capacidade.', 'Está cheia: avise o moleiro.'] : ['O saco novo entra sempre no cesto <code>rear</code>.', `Cesto ${G.rear}.`]);
+  } else {
+    $('#ordem').innerHTML = `O moleiro pede um saco: de qual cesto ele sai?`;
+    K.turno(tempo, () => falhou(null, true), () => G.tam === 0 ? ['Olhe o tamanho.', 'Está vazia: avise o moleiro.'] : ['Sai sempre do cesto <code>front</code>.', `Cesto ${G.front}.`]);
+  }
+}
+function cesto(i, el){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  const p = G.fila[G.pi]; if (!p) return;
+  if (p.t === 'E') {
+    if (G.tam === G.cap || i !== G.rear) return falhou(el);
+    G.v[i] = p.x; const velho = G.rear; G.rear = (G.rear + 1) % G.cap; G.tam++;
+    K.acerto(el, velho === G.cap - 1 ? 140 : 80); if (velho === G.cap - 1) K.flutua('deu a volta!', el, 'var(--azul)');
+  } else {
+    if (G.tam === 0 || i !== G.front) return falhou(el);
+    G.v[i] = null; const velho = G.front; G.front = (G.front + 1) % G.cap; G.tam--;
+    K.acerto(el, velho === G.cap - 1 ? 140 : 80); if (velho === G.cap - 1) K.flutua('deu a volta!', el, 'var(--verde)');
+  }
+  G.giro += 360 / G.cap * 0.25; K.SFX.passo();
+  G.pi++; proximo();
+}
+function aviso(tipo, el){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  const p = G.fila[G.pi]; if (!p) return;
+  const certo = (tipo === 'cheia' && p.t === 'E' && G.tam === G.cap) || (tipo === 'vazia' && p.t === 'D' && G.tam === 0);
+  if (!certo) return falhou(el);
+  K.acerto(el, 120); K.flutua(tipo === 'cheia' ? 'saco recusado' : 'nada para entregar', el, 'var(--verdeC)');
+  G.pi++; proximo();
+}
+function falhou(el, tempo){
+  const p = G.fila[G.pi];
+  if (el) K.anima(el, 'errou');
+  let html;
+  if (p.t === 'E' && G.tam === G.cap) html = `<p>A roda estava <b>cheia</b>: tamanho ${G.tam} = capacidade ${G.cap}. Repare que <code>front</code> e <code>rear</code> estavam no mesmo cesto (${G.front}); é o contador <code>tamanho</code> que diz se isso significa cheia ou vazia.</p>`;
+  else if (p.t === 'D' && G.tam === 0) html = `<p>A roda estava <b>vazia</b> (tamanho 0): não há saco para entregar. <code>front == rear</code> também acontece na roda cheia; o contador desfaz a dúvida.</p>`;
+  else if (p.t === 'E') html = `<p>Enfileirar escreve em <code>v[rear]</code>: o cesto <b>${G.rear}</b>. Depois, <code>rear = (${G.rear} + 1) % ${G.cap} = ${(G.rear+1)%G.cap}</code>.</p>`;
+  else html = `<p>Desenfileirar lê <code>v[front]</code>: o cesto <b>${G.front}</b>. Depois, <code>front = (${G.front} + 1) % ${G.cap} = ${(G.front+1)%G.cap}</code>.</p>`;
+  K.erro(html, () => {
+    if (p.t === 'E' && G.tam < G.cap) { G.v[G.rear] = p.x; G.rear = (G.rear+1)%G.cap; G.tam++; }
+    else if (p.t === 'D' && G.tam > 0) { G.v[G.front] = null; G.front = (G.front+1)%G.cap; G.tam--; }
+    G.pi++; proximo();
+  }, {kicker: tempo ? 'O tempo acabou' : 'Cesto errado'});
+}
+$('#bCheia').onclick = e => aviso('cheia', e.currentTarget);
+$('#bVazia').onclick = e => aviso('vazia', e.currentTarget);
+K.init({
+  id:'fila-circular', titulo:'A Roda do Moinho', kicker:'Masmorra · Fila circular', vidas:3, comecar:'Girar a roda',
+  ajuda:`<p>A roda do moinho tem cestos numerados em círculo: depois do último vem o cesto 0. Os sacos de trigo entram no cesto <code>rear</code> e o moleiro tira do cesto <code>front</code>.</p>
+  <ol><li><b>🌾 Chegou um saco:</b> clique no cesto onde ele entra.</li>
+  <li><b>🧑‍🌾 O moleiro pede:</b> clique no cesto de onde o saco sai.</li>
+  <li>Roda cheia ou vazia? Use os botões de aviso em vez de clicar num cesto.</li>
+  <li>No nível 3, a roda cresce para 8 cestos.</li></ol>`,
+  iniciar(){ G = {nivel:1, cap:6, giro:0}; G.v = Array(6).fill(null); G.front = K.rnd(2,5); G.tam = K.rnd(2,3); for (let k=0;k<G.tam;k++) G.v[(G.front+k)%6] = K.rnd(10,99); G.rear = (G.front + G.tam) % 6; novaLeva(); },
+  auto(){
+    const p = G.fila[G.pi]; if (!p) return;
+    if (p.t === 'E' && G.tam === G.cap) return aviso('cheia', $('#bCheia')), true;
+    if (p.t === 'D' && G.tam === 0) return aviso('vazia', $('#bVazia')), true;
+    const i = p.t === 'E' ? G.rear : G.front; cesto(i, document.querySelector(`.cesto[data-i="${i}"]`)); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

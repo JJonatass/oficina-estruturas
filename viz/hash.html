@@ -1,0 +1,743 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tabela Hash</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+  pre{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; color:var(--ink-soft); line-height:1.6;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="bad"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot{background:var(--rust);}
+  .op-pill[data-op="resize"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="resize"] .dot{background:var(--violet);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .mode-tabs{display:flex; gap:6px; padding:4px; background:var(--paper); border:1px solid var(--line); border-radius:11px;}
+  .mode-tab{
+    flex:1 1 0; text-align:center; padding:9px 10px; border-radius:8px; border:1px solid transparent;
+    background:transparent; color:var(--ink-soft); font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:0.86rem; cursor:pointer;
+  }
+  .mode-tab[aria-selected="true"]{ background:var(--card); border-color:var(--line-strong); color:var(--accent-ink); box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .mode-note{font-size:0.82rem; color:var(--ink-soft);}
+
+  .stat-row{display:flex; flex-wrap:wrap; gap:18px; font-size:0.82rem; color:var(--ink-soft);}
+  .stat-row .stat b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+  .lf-wrap{display:flex; flex-direction:column; gap:5px;}
+  .lf-label{display:flex; justify-content:space-between; font-size:0.76rem; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;}
+  .lf-bar-track{height:10px; border-radius:6px; background:var(--line); position:relative; overflow:hidden;}
+  .lf-bar-fill{height:100%; background:var(--accent); border-radius:6px; transition:width .3s ease, background .3s ease;}
+  .lf-bar-fill.over{background:var(--rust);}
+  .lf-threshold{position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--ink-faint); left:75%;}
+
+  .ht-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(118px,1fr)); gap:10px;}
+  .ht-bucket{
+    border:1.5px solid var(--line-strong); border-radius:10px; background:var(--card);
+    padding:8px; display:flex; flex-direction:column; gap:6px; min-height:64px;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .ht-bucket[data-state="cursor"]{ border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent); }
+  .ht-bucket[data-state="new"]{ border-color:var(--gold); box-shadow:0 0 0 2px color-mix(in srgb, var(--gold) 28%, transparent); }
+  .ht-bucket[data-state="bad"]{ border-color:var(--rust); box-shadow:0 0 0 2px color-mix(in srgb, var(--rust) 22%, transparent); }
+  .ht-bucket-idx{ font-family:'IBM Plex Mono',monospace; font-size:0.68rem; color:var(--ink-faint); display:flex; justify-content:space-between; }
+  .ht-entries{display:flex; flex-direction:column; gap:3px;}
+  .ht-entry{
+    background:var(--accent-soft); border-radius:6px; padding:3px 7px; font-size:0.74rem;
+    font-family:'IBM Plex Mono',monospace; color:var(--ink); display:flex; justify-content:space-between; gap:5px; white-space:nowrap; overflow:hidden;
+  }
+  .ht-entry .k{font-weight:600; overflow:hidden; text-overflow:ellipsis;}
+  .ht-entry .v{color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis;}
+  .ht-chain-link{font-size:0.62rem; color:var(--ink-faint); text-align:center; margin:-2px 0;}
+  .ht-slot-empty{color:var(--ink-faint); font-size:0.72rem; font-family:'IBM Plex Mono',monospace; border:1px dashed var(--line-strong); border-radius:6px; padding:5px 7px; text-align:center;}
+  .ht-slot-tomb{color:var(--rust); font-size:0.66rem; font-family:'IBM Plex Mono',monospace; border:1px dashed var(--rust); border-radius:6px; padding:5px 7px; text-align:center; background:var(--rust-soft); opacity:0.75;}
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.new{border-color:var(--gold);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.tomb{background:var(--rust-soft); border-color:var(--rust);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:108px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Estrutura associativa · chave → valor</span>
+    <h1>Tabela Hash</h1>
+    <p class="prose">Uma função de hash transforma qualquer chave num índice de vetor — <code>O(1)</code> esperado para inserir, buscar e remover, sem precisar percorrer nada. O problema inevitável é a <strong>colisão</strong>: duas chaves diferentes caindo no mesmo índice. Esta ferramenta mostra as duas formas clássicas de resolver isso, lado a lado sobre as mesmas chaves.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da tabela hash">
+    <div class="mode-tabs" role="tablist" aria-label="Estratégia de colisão">
+      <button class="mode-tab" id="tabChaining" role="tab" data-mode="chaining">Encadeamento separado</button>
+      <button class="mode-tab" id="tabLinear" role="tab" data-mode="linear">Endereçamento aberto (sondagem linear)</button>
+    </div>
+    <div class="mode-note" id="modeNote"></div>
+
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat">Capacidade: <b id="statCapacity">–</b></span>
+      <span class="stat">Entradas: <b id="statCount">–</b></span>
+    </div>
+    <div class="lf-wrap">
+      <div class="lf-label"><span>Fator de carga (count / capacidade)</span><span class="mono" id="lfValue">0.00</span></div>
+      <div class="lf-bar-track"><div class="lf-bar-fill" id="lfFill" style="width:0%"></div><div class="lf-threshold"></div></div>
+    </div>
+
+    <div class="ht-grid" id="htGrid"></div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch cursor"></span>hash atual / sondando</span>
+      <span class="item"><span class="swatch new"></span>recém-inserido</span>
+      <span class="item"><span class="swatch bad"></span>não encontrado / inválido</span>
+      <span class="item"><span class="swatch tomb"></span>lápide (removido)</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Chave <input type="text" id="keyInput" placeholder="ex: maçã"></label>
+        <label class="small">Valor <input type="text" id="valueInput" placeholder="ex: 3kg"></label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnSearch">Buscar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+      </div>
+      <div class="controls-row">
+        <button class="danger" id="btnClear">Limpar tabela</button>
+        <div class="spacer"></div>
+        <label class="small">Capacidade inicial
+          <input type="range" class="mini" id="capSlider" min="2" max="8" value="4" step="1">
+          <span class="mono" id="capLabel">4</span>
+        </label>
+        <button class="violet" id="btnNewEmpty">↺ Nova tabela vazia</button>
+        <button class="violet" id="btnNewRandom">🎲 Preencher com exemplo</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>A mesma função de hash, duas formas de guardar a colisão</h2>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <span class="tag">Encadeamento separado</span>
+        <p class="prose">Cada bucket guarda uma pequena lista encadeada. Uma colisão só significa "mais um elo nessa lista" — nunca falha por falta de espaço, mas no pior caso (tudo na mesma lista) a busca vira <code>O(n)</code>.</p>
+      </div>
+      <div class="compare-card">
+        <span class="tag">Endereçamento aberto (sondagem linear)</span>
+        <p class="prose">Todo mundo mora direto no vetor. Uma colisão manda procurar a <strong>próxima</strong> posição livre (<code>(i + 1) % capacidade</code>). Remover exige uma "lápide" (tombstone) — apagar de verdade quebraria a sondagem de outras chaves que passaram por ali.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>A função de hash usada aqui</h2>
+    <p class="prose">Simplificada para ser fácil de acompanhar: soma os códigos dos caracteres com um multiplicador primo (31), depois tira o resto pela capacidade.</p>
+    <pre>h = 0
+para cada caractere c da chave:
+    h = (h * 31 + código(c)) % 2^32
+índice = h % capacidade</pre>
+    <p class="prose">Hashes de uso real (como os usados em <code>HashMap</code>, <code>dict</code> ou <code>unordered_map</code>) aplicam passos extra para espalhar melhor bits parecidos — o princípio de "reduzir a chave a um índice" é o mesmo.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Por que redimensionar</h2>
+    <p class="prose">Quanto mais cheia a tabela, mais colisões — em endereçamento aberto isso degrada rápido (sondagens cada vez mais longas); em encadeamento, listas cada vez maiores. Por isso, sempre que o fator de carga passa de <code>0.75</code>, a tabela dobra de capacidade e <strong>reespalha</strong> (rehash) todas as entradas — cada uma pode ir parar num bucket diferente, porque o índice depende da capacidade.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada operação</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Operação</th><th>Custo médio</th><th>Pior caso</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Inserir</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>Hash direto é O(1); o pior caso acontece se (quase) todas as chaves colidirem.</td></tr>
+          <tr><td class="op">Buscar</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>Mesma lógica: um hash bem distribuído evita o pior caso na prática.</td></tr>
+          <tr><td class="op">Remover</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>Localizar a chave custa o mesmo que buscar.</td></tr>
+          <tr><td class="op">Redimensionar</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>Acontece raramente (dobra a capacidade a cada vez), então o custo médio por inserção continua O(1) amortizado.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Onde aparece de verdade</span>
+      <h3>Em quase todo lugar</h3>
+      <p class="prose">Dicionários e objetos de linguagens dinâmicas, <code>HashMap</code>/<code>HashSet</code> em Java, <code>dict</code>/<code>set</code> em Python, índices de banco de dados, caches, tabelas de símbolos de compiladores.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">O preço a pagar</span>
+      <h3>Sem ordem, e sensível ao hash</h3>
+      <p class="prose">Diferente de árvores balanceadas, uma tabela hash não mantém as chaves em nenhuma ordem. E tudo depende da qualidade da função de hash: uma função ruim (que concentra chaves em poucos buckets) derruba o O(1) esperado na prática.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma tabela hash com encadeamento separado e endereçamento aberto (sondagem linear), redimensionamento automático a 75% de carga, e uma função de hash simplificada para fins de visualização.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Hash table engine (records one step per mutation/comparison) =================
+  var RESIZE_LOAD_FACTOR = 0.75;
+  var TOMBSTONE = { tombstone: true };
+
+  function hashOf(key) {
+    var str = String(key);
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = (Math.imul(h, 31) + str.charCodeAt(i)) >>> 0;
+    return h >>> 0;
+  }
+
+  function createHashTableEngine(capacity, strategy) {
+    if (!(capacity >= 1)) throw new Error("capacity must be >= 1");
+    var buckets = strategy === "chaining" ? new Array(capacity).fill(null).map(function () { return []; }) : new Array(capacity).fill(null);
+    var count = 0;
+    var steps = [];
+
+    function cloneBuckets() {
+      if (strategy === "chaining") return buckets.map(function (chain) { return chain.map(function (e) { return { key: e.key, value: e.value }; }); });
+      return buckets.map(function (slot) { if (slot === null) return null; if (slot === TOMBSTONE) return { tombstone: true }; return { key: slot.key, value: slot.value }; });
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ message: message, buckets: cloneBuckets(), capacity: capacity, count: count, strategy: strategy, op: opts.op || "info", cursorIndex: opts.cursorIndex != null ? opts.cursorIndex : null, highlightIndices: opts.highlightIndices || [], loadFactor: count / capacity });
+    }
+
+    function indexFor(key) { return hashOf(key) % capacity; }
+
+    function placeChaining(key, value) {
+      var idx = indexFor(key);
+      var chain = buckets[idx];
+      for (var i = 0; i < chain.length; i++) { if (chain[i].key === key) { chain[i].value = value; return; } }
+      chain.unshift({ key: key, value: value });
+      count++;
+    }
+
+    function placeLinear(key, value) {
+      var idx = indexFor(key);
+      var firstTombstone = -1;
+      for (var probe = 0; probe < capacity; probe++) {
+        var slotIdx = (idx + probe) % capacity;
+        var slot = buckets[slotIdx];
+        if (slot === null) { var writeAt = firstTombstone !== -1 ? firstTombstone : slotIdx; buckets[writeAt] = { key: key, value: value }; count++; return; }
+        if (slot === TOMBSTONE) { if (firstTombstone === -1) firstTombstone = slotIdx; continue; }
+        if (slot.key === key) { slot.value = value; return; }
+      }
+      if (firstTombstone !== -1) { buckets[firstTombstone] = { key: key, value: value }; count++; }
+    }
+
+    function liveEntries() {
+      var out = [];
+      if (strategy === "chaining") buckets.forEach(function (chain) { chain.forEach(function (e) { out.push({ key: e.key, value: e.value }); }); });
+      else buckets.forEach(function (slot) { if (slot !== null && slot !== TOMBSTONE) out.push({ key: slot.key, value: slot.value }); });
+      return out;
+    }
+
+    function maybeResize() {
+      if (count / capacity <= RESIZE_LOAD_FACTOR) return;
+      var oldCapacity = capacity, oldCount = count;
+      var entries = liveEntries();
+      capacity = capacity * 2;
+      buckets = strategy === "chaining" ? new Array(capacity).fill(null).map(function () { return []; }) : new Array(capacity).fill(null);
+      count = 0;
+      entries.forEach(function (e) { if (strategy === "chaining") placeChaining(e.key, e.value); else placeLinear(e.key, e.value); });
+      snapshot("Fator de carga " + oldCount + "/" + oldCapacity + " > " + RESIZE_LOAD_FACTOR + " — redimensionando para capacidade " + capacity + " e reespalhando " + oldCount + " entradas.", { op: "resize" });
+    }
+
+    function insert(key, value) {
+      key = String(key);
+      var idx = indexFor(key);
+      snapshot('hash("' + key + '") % ' + capacity + ' = ' + idx + '.', { op: "search", cursorIndex: idx, highlightIndices: [idx] });
+
+      if (strategy === "chaining") {
+        var chain = buckets[idx];
+        var existing = -1;
+        for (var i = 0; i < chain.length; i++) { if (chain[i].key === key) { existing = i; break; } }
+        if (existing !== -1) { chain[existing].value = value; snapshot('Chave "' + key + '" já existia no bucket ' + idx + ' — valor atualizado para "' + value + '".', { op: "insert", cursorIndex: idx, highlightIndices: [idx] }); }
+        else if (chain.length === 0) { chain.unshift({ key: key, value: value }); count++; snapshot('Bucket ' + idx + ' vazio — "' + key + '": "' + value + '" inserido diretamente.', { op: "insert", cursorIndex: idx, highlightIndices: [idx] }); }
+        else { var before = chain.length; chain.unshift({ key: key, value: value }); count++; snapshot('Colisão no bucket ' + idx + ' (já havia ' + before + ' entrada' + (before > 1 ? "s" : "") + ') — "' + key + '": "' + value + '" inserido no início da lista encadeada.', { op: "insert", cursorIndex: idx, highlightIndices: [idx] }); }
+      } else {
+        var probe = 0, firstTombstone = -1, placed = false;
+        while (probe < capacity) {
+          var slotIdx = (idx + probe) % capacity;
+          var slot = buckets[slotIdx];
+          if (slot === null) {
+            var writeAt = firstTombstone !== -1 ? firstTombstone : slotIdx;
+            buckets[writeAt] = { key: key, value: value }; count++;
+            snapshot((probe === 0 ? 'Posição ' + idx + ' livre — ' : 'Sondagem linear encontrou posição livre ' + writeAt + ' após ' + (probe + 1) + ' tentativa' + (probe + 1 > 1 ? "s" : "") + ' — ') + '"' + key + '": "' + value + '" inserido.', { op: "insert", cursorIndex: writeAt, highlightIndices: [writeAt] });
+            placed = true; break;
+          }
+          if (slot === TOMBSTONE) { if (firstTombstone === -1) firstTombstone = slotIdx; snapshot('Posição ' + slotIdx + ' é uma lápide (removida antes) — sondando a próxima.', { op: "search", cursorIndex: slotIdx, highlightIndices: [slotIdx] }); probe++; continue; }
+          if (slot.key === key) { slot.value = value; snapshot('Chave "' + key + '" já existia na posição ' + slotIdx + ' — valor atualizado para "' + value + '".', { op: "insert", cursorIndex: slotIdx, highlightIndices: [slotIdx] }); placed = true; break; }
+          snapshot('Posição ' + slotIdx + ' ocupada por outra chave ("' + slot.key + '") — sondagem linear: tentando ' + ((slotIdx + 1) % capacity) + '.', { op: "search", cursorIndex: slotIdx, highlightIndices: [slotIdx] });
+          probe++;
+        }
+        if (!placed && firstTombstone !== -1) { buckets[firstTombstone] = { key: key, value: value }; count++; snapshot('Reaproveitando a lápide na posição ' + firstTombstone + ' — "' + key + '": "' + value + '" inserido.', { op: "insert", cursorIndex: firstTombstone, highlightIndices: [firstTombstone] }); }
+      }
+      maybeResize();
+      return true;
+    }
+
+    function search(key) {
+      key = String(key);
+      var idx = indexFor(key);
+      snapshot('hash("' + key + '") % ' + capacity + ' = ' + idx + '.', { op: "search", cursorIndex: idx, highlightIndices: [idx] });
+      if (strategy === "chaining") {
+        var chain = buckets[idx];
+        for (var i = 0; i < chain.length; i++) { if (chain[i].key === key) { snapshot('Encontrado no bucket ' + idx + ' (posição ' + i + ' da lista): "' + key + '" → "' + chain[i].value + '".', { op: "search", cursorIndex: idx, highlightIndices: [idx] }); return chain[i].value; } }
+        snapshot('Percorrida a lista do bucket ' + idx + ' (' + chain.length + ' entrada' + (chain.length === 1 ? "" : "s") + ') — chave "' + key + '" não encontrada.', { op: "bad", cursorIndex: idx, highlightIndices: [idx] });
+        return undefined;
+      } else {
+        var probe = 0;
+        while (probe < capacity) {
+          var slotIdx = (idx + probe) % capacity;
+          var slot = buckets[slotIdx];
+          if (slot === null) { snapshot('Posição ' + slotIdx + ' vazia (nunca ocupada) — a busca para; chave "' + key + '" não encontrada.', { op: "bad", cursorIndex: slotIdx, highlightIndices: [slotIdx] }); return undefined; }
+          if (slot !== TOMBSTONE && slot.key === key) { snapshot('Encontrado na posição ' + slotIdx + ': "' + key + '" → "' + slot.value + '".', { op: "search", cursorIndex: slotIdx, highlightIndices: [slotIdx] }); return slot.value; }
+          var reason = slot === TOMBSTONE ? "é uma lápide" : 'tem outra chave ("' + slot.key + '")';
+          snapshot('Posição ' + slotIdx + ' ' + reason + ' — sondando ' + ((slotIdx + 1) % capacity) + '.', { op: "search", cursorIndex: slotIdx, highlightIndices: [slotIdx] });
+          probe++;
+        }
+        snapshot('Sondagem deu a volta completa sem achar posição vazia — chave "' + key + '" não encontrada.', { op: "bad" });
+        return undefined;
+      }
+    }
+
+    function remove(key) {
+      key = String(key);
+      var idx = indexFor(key);
+      snapshot('hash("' + key + '") % ' + capacity + ' = ' + idx + '.', { op: "search", cursorIndex: idx, highlightIndices: [idx] });
+      if (strategy === "chaining") {
+        var chain = buckets[idx];
+        for (var i = 0; i < chain.length; i++) {
+          if (chain[i].key === key) { var removedValue = chain[i].value; chain.splice(i, 1); count--; snapshot('Removendo "' + key + '" (posição ' + i + ' da lista do bucket ' + idx + ').', { op: "remove", cursorIndex: idx, highlightIndices: [idx] }); return removedValue; }
+        }
+        snapshot('Chave "' + key + '" não encontrada no bucket ' + idx + ' — nada a remover.', { op: "bad", cursorIndex: idx, highlightIndices: [idx] });
+        return undefined;
+      } else {
+        var probe = 0;
+        while (probe < capacity) {
+          var slotIdx = (idx + probe) % capacity;
+          var slot = buckets[slotIdx];
+          if (slot === null) { snapshot('Posição ' + slotIdx + ' vazia — chave "' + key + '" não encontrada, nada a remover.', { op: "bad", cursorIndex: slotIdx, highlightIndices: [slotIdx] }); return undefined; }
+          if (slot !== TOMBSTONE && slot.key === key) { var v = slot.value; buckets[slotIdx] = TOMBSTONE; count--; snapshot('Removendo "' + key + '" da posição ' + slotIdx + ' — marcada como lápide (tombstone) para não quebrar a sondagem de outras chaves.', { op: "remove", cursorIndex: slotIdx, highlightIndices: [slotIdx] }); return v; }
+          probe++;
+        }
+        snapshot('Sondagem deu a volta completa — chave "' + key + '" não encontrada, nada a remover.', { op: "bad" });
+        return undefined;
+      }
+    }
+
+    function clear() {
+      buckets = strategy === "chaining" ? new Array(capacity).fill(null).map(function () { return []; }) : new Array(capacity).fill(null);
+      count = 0;
+      snapshot("Tabela limpa.", { op: "info" });
+    }
+
+    snapshot("Tabela hash vazia (capacidade " + capacity + ", estratégia: " + (strategy === "chaining" ? "encadeamento separado" : "endereçamento aberto / sondagem linear") + ").", { op: "info" });
+
+    return {
+      insert: insert, search: search, remove: remove, clear: clear, entries: liveEntries,
+      getCapacity: function () { return capacity; }, getCount: function () { return count; },
+      getLoadFactor: function () { return count / capacity; }, getStrategy: function () { return strategy; },
+      getBuckets: function () { return buckets; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= App state & rendering =================
+  var els = {
+    opPill: document.getElementById("opPill"), opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"), message: document.getElementById("message"),
+    scrubber: document.getElementById("scrubber"), htGrid: document.getElementById("htGrid"),
+    btnReset: document.getElementById("btnReset"), btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"), btnNext: document.getElementById("btnNext"), speed: document.getElementById("speed"),
+    keyInput: document.getElementById("keyInput"), valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"), btnSearch: document.getElementById("btnSearch"), btnRemove: document.getElementById("btnRemove"),
+    btnClear: document.getElementById("btnClear"),
+    capSlider: document.getElementById("capSlider"), capLabel: document.getElementById("capLabel"),
+    btnNewEmpty: document.getElementById("btnNewEmpty"), btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText"), modeNote: document.getElementById("modeNote"),
+    tabChaining: document.getElementById("tabChaining"), tabLinear: document.getElementById("tabLinear"),
+    statCapacity: document.getElementById("statCapacity"), statCount: document.getElementById("statCount"),
+    lfValue: document.getElementById("lfValue"), lfFill: document.getElementById("lfFill")
+  };
+
+  var MODE_NOTE = {
+    chaining: "Cada bucket é uma lista encadeada. Trocar para sondagem linear reconstrói uma tabela nova com as mesmas chaves, para comparar.",
+    linear: "Cada bucket é uma única posição do vetor. Trocar para encadeamento reconstrói uma tabela nova com as mesmas chaves, para comparar."
+  };
+
+  var engine = createHashTableEngine(4, "chaining");
+  var state = { stepIndex: 0, playing: false, timer: null };
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+
+  function goTo(idx) {
+    var max = engine.getSteps().length - 1;
+    state.stepIndex = Math.max(0, Math.min(max, idx));
+    render();
+    if (state.stepIndex >= max) stopPlaying();
+  }
+
+  function showError(msg) {
+    if (!msg) { els.errorText.hidden = true; els.errorText.textContent = ""; return; }
+    els.errorText.hidden = false; els.errorText.textContent = msg;
+  }
+
+  function buildGrid(capacity) {
+    els.htGrid.innerHTML = "";
+    var cells = [];
+    for (var i = 0; i < capacity; i++) {
+      var cell = document.createElement("div");
+      cell.className = "ht-bucket";
+      var idxRow = document.createElement("div");
+      idxRow.className = "ht-bucket-idx";
+      idxRow.innerHTML = "<span>#" + i + "</span>";
+      var body = document.createElement("div");
+      body.className = "ht-entries";
+      cell.appendChild(idxRow); cell.appendChild(body);
+      els.htGrid.appendChild(cell);
+      cells.push({ cell: cell, body: body });
+    }
+    return cells;
+  }
+
+  var gridCells = buildGrid(engine.getCapacity());
+
+  function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Consultando", bad: "Não encontrado", resize: "Redimensionando", info: "Início" };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    els.statCapacity.textContent = step.capacity;
+    els.statCount.textContent = step.count;
+    var lf = step.loadFactor;
+    els.lfValue.textContent = lf.toFixed(2);
+    els.lfFill.style.width = Math.min(100, lf * 100) + "%";
+    els.lfFill.classList.toggle("over", lf > RESIZE_LOAD_FACTOR);
+
+    if (gridCells.length !== step.capacity) gridCells = buildGrid(step.capacity);
+
+    for (var i = 0; i < step.capacity; i++) {
+      var rec = gridCells[i];
+      var slot = step.buckets[i];
+      var st = (step.highlightIndices || []).indexOf(i) !== -1
+        ? (step.op === "bad" ? "bad" : (step.op === "insert" ? "new" : "cursor"))
+        : null;
+      if (st) rec.cell.setAttribute("data-state", st); else rec.cell.removeAttribute("data-state");
+
+      if (step.strategy === "chaining") {
+        var chain = slot;
+        if (chain.length === 0) {
+          rec.body.innerHTML = '<div class="ht-slot-empty">vazio</div>';
+        } else {
+          rec.body.innerHTML = chain.map(function (e, idx2) {
+            var link = idx2 > 0 ? '<div class="ht-chain-link">↓</div>' : "";
+            return link + '<div class="ht-entry"><span class="k">' + escapeHtml(e.key) + '</span><span class="v">' + escapeHtml(e.value) + '</span></div>';
+          }).join("");
+        }
+      } else {
+        if (slot === null) rec.body.innerHTML = '<div class="ht-slot-empty">vazio</div>';
+        else if (slot.tombstone) rec.body.innerHTML = '<div class="ht-slot-tomb">✕ removido</div>';
+        else rec.body.innerHTML = '<div class="ht-entry"><span class="k">' + escapeHtml(slot.key) + '</span><span class="v">' + escapeHtml(slot.value) + '</span></div>';
+      }
+    }
+  }
+
+  function readKeyValue(needValue) {
+    var k = els.keyInput.value.trim();
+    if (k === "") { showError("Digite uma chave."); return null; }
+    if (needValue) {
+      var v = els.valueInput.value.trim();
+      if (v === "") { showError("Digite um valor."); return null; }
+      showError(null);
+      return { key: k, value: v };
+    }
+    showError(null);
+    return { key: k };
+  }
+
+  function applyMode(mode, rebuild) {
+    [els.tabChaining, els.tabLinear].forEach(function (tab) { tab.setAttribute("aria-selected", tab.dataset.mode === mode ? "true" : "false"); });
+    els.modeNote.textContent = MODE_NOTE[mode];
+    if (rebuild && engine.getStrategy() !== mode) {
+      var existing = engine.entries();
+      var newEngine = createHashTableEngine(engine.getCapacity(), mode);
+      existing.slice().reverse().forEach(function (e) { newEngine.insert(e.key, e.value); });
+      // Collapse the rebuild into a single clean step so switching modes doesn't replay
+      // dozens of insert steps. getSteps() returns the engine's own live array, so
+      // splicing it in place keeps newEngine's real internal state (buckets/count/
+      // capacity) fully intact and consistent with what's displayed -- unlike patching
+      // a separate fresh engine's displayed snapshot, which would leave its real
+      // internal state empty and break every operation after the switch.
+      var allSteps = newEngine.getSteps();
+      var msg = existing.length === 0
+        ? "Tabela trocada para modo " + (mode === "chaining" ? "encadeamento separado" : "endereçamento aberto") + " (vazia)."
+        : "Tabela reconstruída com " + existing.length + " chave" + (existing.length === 1 ? "" : "s") + " existente" + (existing.length === 1 ? "" : "s") + " em modo " + (mode === "chaining" ? "encadeamento separado" : "endereçamento aberto") + " (capacidade " + newEngine.getCapacity() + ").";
+      if (allSteps.length > 1) allSteps.splice(0, allSteps.length - 1);
+      allSteps[0].message = msg;
+      allSteps[0].op = "info";
+      allSteps[0].highlightIndices = [];
+      allSteps[0].cursorIndex = null;
+      engine = newEngine;
+      gridCells = buildGrid(engine.getCapacity());
+      jumpToLiveEnd();
+    }
+  }
+
+  els.tabChaining.addEventListener("click", function () { applyMode("chaining", true); });
+  els.tabLinear.addEventListener("click", function () { applyMode("linear", true); });
+
+  els.btnInsert.addEventListener("click", function () {
+    var kv = readKeyValue(true); if (!kv) return;
+    engine.insert(kv.key, kv.value); jumpToLiveEnd();
+    els.keyInput.value = ""; els.valueInput.value = ""; els.keyInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function () {
+    var kv = readKeyValue(false); if (!kv) return;
+    engine.search(kv.key); jumpToLiveEnd();
+  });
+  els.btnRemove.addEventListener("click", function () {
+    var kv = readKeyValue(false); if (!kv) return;
+    engine.remove(kv.key); jumpToLiveEnd();
+  });
+  els.btnClear.addEventListener("click", function () { engine.clear(); jumpToLiveEnd(); });
+
+  els.capSlider.addEventListener("input", function () { els.capLabel.textContent = els.capSlider.value; });
+  els.btnNewEmpty.addEventListener("click", function () {
+    var mode = els.tabChaining.getAttribute("aria-selected") === "true" ? "chaining" : "linear";
+    engine = createHashTableEngine(Number(els.capSlider.value), mode);
+    gridCells = buildGrid(engine.getCapacity());
+    jumpToLiveEnd();
+  });
+  var SAMPLE_KEYS = ["maçã", "pera", "uva", "kiwi", "manga", "abacaxi", "limão", "melancia", "pêssego", "ameixa"];
+  els.btnNewRandom.addEventListener("click", function () {
+    var mode = els.tabChaining.getAttribute("aria-selected") === "true" ? "chaining" : "linear";
+    var capacity = Number(els.capSlider.value);
+    engine = createHashTableEngine(capacity, mode);
+    gridCells = buildGrid(engine.getCapacity());
+    var n = 3 + Math.floor(Math.random() * 4);
+    var pool = SAMPLE_KEYS.slice();
+    for (var i = 0; i < n && pool.length; i++) {
+      var pick = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+      engine.insert(pick, String(1 + Math.floor(Math.random() * 20)) + "un");
+    }
+    jumpToLiveEnd();
+  });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex + 1); });
+  els.btnPlay.addEventListener("click", function () {
+    if (state.playing) { stopPlaying(); return; }
+    var max = engine.getSteps().length - 1;
+    if (state.stepIndex >= max) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      var m = engine.getSteps().length - 1;
+      if (state.stepIndex >= m) { stopPlaying(); return; }
+      state.stepIndex++;
+      render();
+      if (state.stepIndex >= m) stopPlaying();
+    }, Number(els.speed.value));
+  });
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) stopPlaying(); });
+  els.keyInput.addEventListener("keydown", function (e) { if (e.key === "Enter") els.btnInsert.click(); });
+  els.valueInput.addEventListener("keydown", function (e) { if (e.key === "Enter") els.btnInsert.click(); });
+
+  // ---- boot: a small pre-filled demo (with a visible collision) so the page is meaningful at rest ----
+  engine = createHashTableEngine(4, "chaining");
+  gridCells = buildGrid(engine.getCapacity());
+  engine.insert("maçã", "12un");
+  engine.insert("pera", "7un");
+  engine.insert("uva", "30un");
+  engine.insert("kiwi", "5un");
+  els.scrubber.max = String(engine.getSteps().length - 1);
+  state.stepIndex = engine.getSteps().length - 1;
+  applyMode("chaining", false);
+  render();
+})();
+</script>
+
+</body></html>

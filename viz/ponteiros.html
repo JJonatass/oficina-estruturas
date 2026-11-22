@@ -1,0 +1,1877 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ponteiros em C</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --code-bg:#1D2420;
+    --code-ink:#DCE6E0;
+    --code-faint:#7C8A82;
+    --code-active:#2E4A3C;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --code-bg:#0D100E; --code-ink:#D7E2DB; --code-faint:#5E6A63; --code-active:#1F3B2E;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --code-bg:#0D100E; --code-ink:#D7E2DB; --code-faint:#5E6A63; --code-active:#1F3B2E;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:34px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:70ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .tabs{display:flex; gap:8px;}
+  .tab{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.9rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink-soft);
+    padding:9px 18px; border-radius:10px 10px 0 0; cursor:pointer; border-bottom:none;
+    transition: background .15s ease, color .15s ease;
+  }
+  .tab[aria-selected="true"]{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tab:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:16px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="traverse"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="traverse"] .dot{background:var(--accent);}
+  .op-pill[data-op="reverse"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="reverse"] .dot{background:var(--violet);}
+  .op-pill[data-op="bad"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:6px;}
+  .stage-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .stage-svg, .stage-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .ll-node-rect, .dll-node-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: x .35s ease, y .35s ease, stroke .2s ease; }
+  .ll-divider, .dll-divider{ stroke:var(--line-strong); stroke-width:1.2; transition: x1 .35s ease, x2 .35s ease; }
+  .ll-dot, .dll-dot{ fill:var(--ink-faint); transition: cx .35s ease; }
+  .ll-value, .dll-value{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); transition: x .35s ease; }
+  .ll-node[data-state="cursor"] .ll-node-rect, .dll-node[data-state="cursor"] .dll-node-rect{ stroke:var(--accent); stroke-width:2.6; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .dll-node[data-state="cursor"][data-dir="backward"] .dll-node-rect{ stroke:var(--violet); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .ll-node[data-state="new"] .ll-node-rect, .dll-node[data-state="new"] .dll-node-rect{ stroke:var(--gold); stroke-width:2.6; }
+  .ll-node[data-state="bad"] .ll-node-rect, .dll-node[data-state="bad"] .dll-node-rect{ stroke:var(--rust); stroke-width:2.2; }
+
+  .ll-arrow, .dll-arrow{ fill:none; stroke-width:1.8; transition: d .35s ease, stroke .2s ease; }
+  .ll-arrow.forward{ stroke:var(--line-strong); }
+  .ll-arrow.backward{ stroke:var(--gold); }
+  .dll-arrow.next.normal{ stroke:var(--line-strong); }
+  .dll-arrow.next.crossed{ stroke:var(--gold); }
+  .dll-arrow.prev.normal{ stroke:var(--violet); }
+  .dll-arrow.prev.crossed{ stroke:var(--rust); }
+  .ll-null-box, .dll-null-box{ fill:none; stroke:var(--line-strong); stroke-width:1.4; stroke-dasharray:4 3; }
+  .ll-null-text, .dll-null-text{ font-size:10px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+
+  .ll-tag-pill, .dll-tag-pill{ font-size:10px; font-weight:700; text-anchor:middle; dominant-baseline:central; fill:#fff; }
+  .ll-tag-bg, .dll-tag-bg{ fill:var(--ink-soft); }
+  .ll-tag-bg.head, .dll-tag-bg.head{ fill:var(--accent); }
+  .ll-tag-bg.tail, .dll-tag-bg.tail{ fill:var(--violet); }
+  .ll-tag-line, .dll-tag-line{ stroke:var(--line-strong); stroke-width:1.2; }
+
+  .empty-text{ font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); font-family:'IBM Plex Mono', monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.back{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.head{background:var(--accent); border-color:transparent;}
+  .legend .swatch.tail{background:var(--violet); border-color:transparent;}
+  .legend .swline{width:16px; height:2px; display:inline-block;}
+  .legend .swline.next{background:var(--line-strong);}
+  .legend .swline.prev{background:var(--violet);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .sync-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
+  @media (max-width:720px){ .sync-grid{grid-template-columns:1fr;} }
+  .panel{border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column;}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 14px; background:var(--paper); border-bottom:1px solid var(--line);}
+  .panel-head .panel-title{font-family:'IBM Plex Mono',monospace; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .panel-head .func-name{font-family:'IBM Plex Mono',monospace; font-size:0.82rem; font-weight:600; color:var(--accent-ink);}
+
+  .struct-block{font-family:'IBM Plex Mono',monospace; font-size:0.78rem; line-height:1.6; color:var(--code-faint); background:var(--code-bg); padding:10px 14px; white-space:pre;}
+  .code-block{background:var(--code-bg); color:var(--code-ink); font-family:'IBM Plex Mono',monospace; font-size:0.82rem; line-height:1.68; padding:10px 0; margin:0; overflow-x:auto;}
+  .code-line{display:flex; gap:12px; padding:0 14px; white-space:pre;}
+  .code-line .ln{color:var(--code-faint); min-width:1.6em; text-align:right; user-select:none;}
+  .code-line.active{ background:var(--code-active); box-shadow: inset 3px 0 0 var(--accent); }
+  .code-line.active .ln{ color:var(--accent-ink); }
+  .code-empty{padding:14px; color:var(--code-faint); font-family:'IBM Plex Mono',monospace; font-size:0.82rem; font-style:italic;}
+
+  .trace-block{background:var(--code-bg); color:var(--code-ink); font-family:'IBM Plex Mono',monospace; font-size:0.82rem; line-height:1.68; padding:12px 14px; margin:0; min-height:3.4em; white-space:pre-wrap;}
+  .trace-block .trace-line{display:block;}
+  .trace-block .trace-empty{color:var(--code-faint); font-style:italic;}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
+  .controls-row.ops{ padding-top:4px; border-top:1px dashed var(--line); }
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.82rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:7px 12px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.op-btn[data-group="insert"].active{background:var(--gold); border-color:var(--gold); color:#fff;}
+  button.op-btn[data-group="remove"].active{background:var(--rust); border-color:var(--rust); color:#fff;}
+  button.op-btn[data-group="search"].active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.op-btn[data-group="reverse"].active{background:var(--violet); border-color:var(--violet); color:#fff;}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:680px){ .explain-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:10px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .compare-card pre{background:var(--code-bg); color:var(--code-ink); font-family:'IBM Plex Mono',monospace; font-size:0.76rem; line-height:1.6; padding:12px 14px; border-radius:8px; margin:0; overflow-x:auto;}
+  .compare-card pre .hl{background:var(--code-active); display:block; margin-inline:-14px; padding-inline:14px; box-shadow: inset 3px 0 0 var(--gold);}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Código C sincronizado · rastro de ponteiros</span>
+    <h1>Ponteiros em C</h1>
+    <p class="prose">Cada passo abaixo mostra três coisas ao mesmo tempo: o desenho da lista, a linha exata do código C que está executando, e o que mudou nos ponteiros — como uma atribuição <code>nó->next = X;</code> de verdade. O rastro de ponteiros não é roteirizado: ele é calculado comparando o estado da lista antes e depois de cada passo, então reflete exatamente o que o motor (já testado à exaustão) fez.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tabSingly" role="tab" aria-selected="true">Lista Simples</button>
+    <button class="tab" id="tabDoubly" role="tab" aria-selected="false">Lista Dupla</button>
+  </div>
+
+  <section class="card" aria-label="Visualizador sincronizado de código e ponteiros">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="stage-svg" id="stageSvg"></svg>
+    </div>
+
+    <div class="legend" id="legend"></div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="sync-grid">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Código C</span><span class="func-name" id="funcName">—</span></div>
+        <div class="struct-block" id="structBlock"></div>
+        <div class="code-block" id="codeBlock"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Rastro de ponteiros</span><span class="func-name" id="traceStepLabel">passo atual</span></div>
+        <pre class="trace-block" id="traceBlock"></pre>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início desta operação">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="600" step="10">
+        </label>
+      </div>
+      <div class="controls-row ops" id="opsInsert"></div>
+      <div class="controls-row ops" id="opsRemove"></div>
+      <div class="controls-row ops" id="opsOther"></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>O mesmo <code>removeTail</code>, duas realidades</h2>
+    <p class="prose">A lista simples não sabe quem vem antes da cauda — precisa percorrer tudo para descobrir. A lista dupla já sabe: <code>tail-&gt;prev</code> <em>é</em> o penúltimo nó. O código abaixo é exatamente o que os painéis acima mostram ao clicar em "Remover do fim" em cada aba.</p>
+    <div class="explain-grid">
+      <div class="compare-card">
+        <span class="tag">Lista simples — O(n)</span>
+        <pre id="cmpSingly"></pre>
+        <p class="prose">A linha destacada é um <code>while</code>: para remover o <strong>último</strong> nó, é preciso visitar todos os outros primeiro, só para achar quem aponta para ele.</p>
+      </div>
+      <div class="compare-card">
+        <span class="tag">Lista dupla — O(1)</span>
+        <pre id="cmpDoubly"></pre>
+        <p class="prose">Não há <code>while</code> nenhum. <code>tail-&gt;prev</code> já é a resposta — o ponteiro extra por nó compra essa remoção instantânea.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>Ferramenta didática complementar à Lista Encadeada (Simples) e à Lista Duplamente Encadeada: reaproveita os dois motores já testados (sem nenhuma alteração) e adiciona uma camada de anotação que mapeia cada passo para a linha de código C correspondente e calcula, mecanicamente, o que mudou nos ponteiros.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Singly linked list engine (verbatim, tested standalone) =================
+  // BEGIN engineSingly.js
+  function createLinkedListEngine() {
+    var nextId = 1;
+    var nodes = {};        // id -> { id, value, next: id|null }
+    var headId = null;
+    var tailId = null;
+    var steps = [];
+
+    function cloneNodes() {
+      var out = {};
+      for (var id in nodes) { if (nodes.hasOwnProperty(id)) out[id] = { id: nodes[id].id, value: nodes[id].value, next: nodes[id].next }; }
+      return out;
+    }
+
+    function chainOrder(nodesSnapshot, startId) {
+      var out = [];
+      var seen = {};
+      var cur = startId;
+      while (cur != null) {
+        if (seen[cur]) return null;
+        seen[cur] = true;
+        out.push(cur);
+        cur = nodesSnapshot[cur].next;
+      }
+      return out;
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message,
+        nodes: cloneNodes(),
+        headId: headId, tailId: tailId,
+        op: opts.op || "info",
+        cursorId: opts.cursorId != null ? opts.cursorId : null,
+        highlightIds: opts.highlightIds || [],
+        pointers: opts.pointers || null,
+        slotOrder: opts.slotOrder || null
+      });
+    }
+
+    function length() {
+      var order = chainOrder(nodes, headId);
+      return order ? order.length : -1;
+    }
+
+    function insertAtHead(value) {
+      var node = { id: nextId++, value: value, next: headId };
+      nodes[node.id] = node;
+      var wasEmpty = headId === null;
+      headId = node.id;
+      if (wasEmpty) tailId = node.id;
+      snapshot((wasEmpty ? "Lista estava vazia. " : "") + value + " inserido como nova cabeça (head).",
+        { op: "insert", cursorId: node.id, highlightIds: [node.id] });
+      return node.id;
+    }
+
+    function insertAtTail(value) {
+      var node = { id: nextId++, value: value, next: null };
+      nodes[node.id] = node;
+      if (tailId === null) {
+        headId = node.id; tailId = node.id;
+        snapshot("Lista estava vazia. " + value + " inserido como único nó.", { op: "insert", cursorId: node.id, highlightIds: [node.id] });
+        return node.id;
+      }
+      snapshot("Seguindo o ponteiro da antiga cauda (" + nodes[tailId].value + ") até o fim da lista.", { op: "traverse", cursorId: tailId, highlightIds: [tailId] });
+      nodes[tailId].next = node.id;
+      tailId = node.id;
+      snapshot(value + " inserido no final — a antiga cauda agora aponta para ele.", { op: "insert", cursorId: node.id, highlightIds: [node.id] });
+      return node.id;
+    }
+
+    function insertAt(index, value) {
+      var n = length();
+      if (index < 0 || index > n) { snapshot("Índice " + index + " fora do intervalo [0, " + n + "] — nada inserido.", { op: "bad" }); return null; }
+      if (index === 0) return insertAtHead(value);
+      if (index === n) return insertAtTail(value);
+
+      var order = chainOrder(nodes, headId);
+      var prevId = order[index - 1];
+      snapshot("Percorrendo até a posição " + (index - 1) + " (\"" + nodes[prevId].value + "\") para inserir depois dela.", { op: "traverse", cursorId: prevId, highlightIds: [prevId] });
+      var node = { id: nextId++, value: value, next: nodes[prevId].next };
+      nodes[node.id] = node;
+      nodes[prevId].next = node.id;
+      snapshot(value + " inserido na posição " + index + ", entre \"" + nodes[prevId].value + "\" e o nó seguinte.", { op: "insert", cursorId: node.id, highlightIds: [prevId, node.id] });
+      return node.id;
+    }
+
+    function removeHead() {
+      if (headId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      var removedId = headId;
+      var removedValue = nodes[removedId].value;
+      snapshot("Removendo a cabeça (\"" + removedValue + "\") — a lista passa a começar no próximo nó.", { op: "remove", highlightIds: [removedId] });
+      headId = nodes[removedId].next;
+      if (headId === null) tailId = null;
+      delete nodes[removedId];
+      snapshot("\"" + removedValue + "\" removido.", { op: "remove", highlightIds: [] });
+      return true;
+    }
+
+    function removeTail() {
+      if (tailId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      if (headId === tailId) return removeHead();
+      var cur = headId;
+      while (nodes[cur].next !== tailId) {
+        snapshot("Procurando o penúltimo nó: \"" + nodes[cur].value + "\" não é — avançando (sem ponteiro para trás, é preciso percorrer tudo).", { op: "traverse", cursorId: cur, highlightIds: [cur] });
+        cur = nodes[cur].next;
+      }
+      var removedValue = nodes[tailId].value;
+      snapshot("Encontrado: \"" + nodes[cur].value + "\" aponta para a cauda — ele será o novo fim.", { op: "traverse", cursorId: cur, highlightIds: [cur, tailId] });
+      nodes[cur].next = null;
+      delete nodes[tailId];
+      tailId = cur;
+      snapshot("\"" + removedValue + "\" removido do final.", { op: "remove", highlightIds: [] });
+      return true;
+    }
+
+    function removeValue(value) {
+      if (headId === null) { snapshot("Lista está vazia — nada a remover.", { op: "bad" }); return false; }
+      if (nodes[headId].value === value) return removeHead();
+      var prev = headId;
+      var cur = nodes[headId].next;
+      while (cur !== null) {
+        snapshot("Comparando \"" + value + "\" com \"" + nodes[cur].value + "\".", { op: "traverse", cursorId: cur, highlightIds: [cur] });
+        if (nodes[cur].value === value) {
+          if (cur === tailId) return removeTailKnownPredecessor(prev);
+          nodes[prev].next = nodes[cur].next;
+          delete nodes[cur];
+          snapshot("\"" + value + "\" removido — \"" + nodes[prev].value + "\" agora aponta para o nó seguinte.", { op: "remove", highlightIds: [prev] });
+          return true;
+        }
+        prev = cur;
+        cur = nodes[cur].next;
+      }
+      snapshot("\"" + value + "\" não está na lista — chegamos ao fim sem encontrá-lo.", { op: "bad", highlightIds: [] });
+      return false;
+    }
+
+    function removeTailKnownPredecessor(prev) {
+      var removedValue = nodes[tailId].value;
+      nodes[prev].next = null;
+      delete nodes[tailId];
+      tailId = prev;
+      snapshot("\"" + removedValue + "\" removido do final — \"" + nodes[prev].value + "\" é a nova cauda.", { op: "remove", highlightIds: [] });
+      return true;
+    }
+
+    function removeAt(index) {
+      var n = length();
+      if (index < 0 || index >= n) { snapshot("Índice " + index + " fora do intervalo [0, " + (n - 1) + "] — nada removido.", { op: "bad" }); return false; }
+      if (index === 0) return removeHead();
+      var order = chainOrder(nodes, headId);
+      if (index === n - 1) return removeTail();
+      var prevId = order[index - 1];
+      var targetId = order[index];
+      snapshot("Percorrendo até a posição " + (index - 1) + " (\"" + nodes[prevId].value + "\") para remover o nó seguinte.", { op: "traverse", cursorId: prevId, highlightIds: [prevId] });
+      var removedValue = nodes[targetId].value;
+      nodes[prevId].next = nodes[targetId].next;
+      delete nodes[targetId];
+      snapshot("\"" + removedValue + "\" removido da posição " + index + ".", { op: "remove", highlightIds: [prevId] });
+      return true;
+    }
+
+    function search(value) {
+      var cur = headId;
+      var index = 0;
+      if (cur === null) { snapshot("Lista está vazia.", { op: "bad" }); return -1; }
+      while (cur !== null) {
+        var found = nodes[cur].value === value;
+        snapshot("Comparando \"" + value + "\" com \"" + nodes[cur].value + "\" (posição " + index + ").", { op: "search", cursorId: cur, highlightIds: [cur] });
+        if (found) { snapshot("\"" + value + "\" encontrado na posição " + index + ".", { op: "search", cursorId: cur, highlightIds: [cur] }); return index; }
+        cur = nodes[cur].next;
+        index++;
+      }
+      snapshot("\"" + value + "\" não está na lista — chegamos ao fim (null) sem encontrá-lo.", { op: "bad", highlightIds: [] });
+      return -1;
+    }
+
+    function reverse() {
+      var order = chainOrder(nodes, headId);
+      if (!order || order.length < 2) {
+        snapshot("Lista com " + (order ? order.length : 0) + " nó" + (order && order.length === 1 ? "" : "s") + " — reverter não muda nada.", { op: "info", slotOrder: order || [] });
+        return;
+      }
+      var slotOrder = order.slice();
+      var prevId = null;
+      var currId = headId;
+      snapshot("Começando a reverter: prev = null, atual = cabeça (\"" + nodes[currId].value + "\").",
+        { op: "reverse", pointers: { prevId: null, currId: currId, nextId: nodes[currId].next }, slotOrder: slotOrder, highlightIds: [currId] });
+
+      while (currId !== null) {
+        var nextId = nodes[currId].next;
+        snapshot("Guardando o próximo nó (" + (nextId != null ? "\"" + nodes[nextId].value + "\"" : "null") + ") antes de sobrescrever o ponteiro de \"" + nodes[currId].value + "\".",
+          { op: "reverse", pointers: { prevId: prevId, currId: currId, nextId: nextId }, slotOrder: slotOrder, highlightIds: [currId] });
+        nodes[currId].next = prevId;
+        snapshot("\"" + nodes[currId].value + "\" agora aponta para " + (prevId != null ? "\"" + nodes[prevId].value + "\"" : "null") + " em vez do nó seguinte.",
+          { op: "reverse", pointers: { prevId: prevId, currId: currId, nextId: nextId }, slotOrder: slotOrder, highlightIds: [currId] });
+        prevId = currId;
+        currId = nextId;
+        if (currId !== null) {
+          snapshot("Avançando: prev = \"" + nodes[prevId].value + "\", atual = \"" + nodes[currId].value + "\".",
+            { op: "reverse", pointers: { prevId: prevId, currId: currId, nextId: nodes[currId].next }, slotOrder: slotOrder, highlightIds: [currId] });
+        }
+      }
+      var oldHeadId = headId;
+      var oldTailId = tailId;
+      headId = prevId;
+      tailId = oldHeadId;
+      snapshot("Fim da lista alcançado. A cabeça passa a ser \"" + nodes[headId].value + "\" (antiga cauda) e a cauda é \"" + nodes[tailId].value + "\" (antiga cabeça).",
+        { op: "reverse", pointers: { prevId: prevId, currId: null, nextId: null }, slotOrder: slotOrder, highlightIds: [headId, oldTailId] });
+    }
+
+    function toArray() {
+      var order = chainOrder(nodes, headId);
+      if (!order) return null;
+      return order.map(function (id) { return nodes[id].value; });
+    }
+
+    snapshot("Lista vazia.", { op: "info" });
+
+    return {
+      insertAtHead: insertAtHead,
+      insertAtTail: insertAtTail,
+      insertAt: insertAt,
+      removeHead: removeHead,
+      removeTail: removeTail,
+      removeValue: removeValue,
+      removeAt: removeAt,
+      search: search,
+      reverse: reverse,
+      length: length,
+      toArray: toArray,
+      getHeadId: function () { return headId; },
+      getTailId: function () { return tailId; },
+      getNodes: function () { return nodes; },
+      getSteps: function () { return steps; }
+    };
+  }
+  // END engineSingly.js
+
+  // ================= Doubly linked list engine (verbatim, tested standalone) =================
+  // BEGIN engineDoubly.js
+  function createDoublyLinkedListEngine() {
+    var nextId = 1;
+    var nodes = {};        // id -> { id, value, prev: id|null, next: id|null }
+    var headId = null;
+    var tailId = null;
+    var steps = [];
+
+    function cloneNodes() {
+      var out = {};
+      for (var id in nodes) {
+        if (nodes.hasOwnProperty(id)) out[id] = { id: nodes[id].id, value: nodes[id].value, prev: nodes[id].prev, next: nodes[id].next };
+      }
+      return out;
+    }
+
+    function chainOrderForward(nodesSnapshot, startId) {
+      var out = [];
+      var seen = {};
+      var cur = startId;
+      while (cur != null) {
+        if (seen[cur]) return null;
+        seen[cur] = true;
+        out.push(cur);
+        cur = nodesSnapshot[cur].next;
+      }
+      return out;
+    }
+
+    function chainOrderBackward(nodesSnapshot, startId) {
+      var out = [];
+      var seen = {};
+      var cur = startId;
+      while (cur != null) {
+        if (seen[cur]) return null;
+        seen[cur] = true;
+        out.push(cur);
+        cur = nodesSnapshot[cur].prev;
+      }
+      return out;
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message,
+        nodes: cloneNodes(),
+        headId: headId,
+        tailId: tailId,
+        op: opts.op || "info",
+        cursorId: opts.cursorId != null ? opts.cursorId : null,
+        highlightIds: opts.highlightIds || [],
+        direction: opts.direction || null,
+        slotOrder: opts.slotOrder || null
+      });
+    }
+
+    function length() {
+      var order = chainOrderForward(nodes, headId);
+      return order ? order.length : -1;
+    }
+
+    function insertAtHead(value) {
+      var id = nextId++;
+      nodes[id] = { id: id, value: value, prev: null, next: headId };
+      if (headId !== null) nodes[headId].prev = id; else tailId = id;
+      headId = id;
+      snapshot('"' + value + '" inserido no início — O(1), só ajustamos head e o prev do antigo primeiro nó.', { op: "insert", cursorId: id, highlightIds: [id] });
+      return id;
+    }
+
+    function insertAtTail(value) {
+      var id = nextId++;
+      nodes[id] = { id: id, value: value, prev: tailId, next: null };
+      if (tailId !== null) nodes[tailId].next = id; else headId = id;
+      tailId = id;
+      snapshot('"' + value + '" inserido no fim — O(1) graças ao ponteiro tail.', { op: "insert", cursorId: id, highlightIds: [id] });
+      return id;
+    }
+
+    function locateByIndex(index) {
+      var n = length();
+      var fromHead = index <= n - 1 - index;
+      var cur, i;
+      if (fromHead) {
+        cur = headId;
+        for (i = 0; i < index; i++) {
+          snapshot('Percorrendo a partir do início (posição ' + i + ' de ' + index + ') — mais perto da cabeça.', { op: "traverse", cursorId: cur, highlightIds: [cur], direction: "forward" });
+          cur = nodes[cur].next;
+        }
+      } else {
+        cur = tailId;
+        var stepsFromTail = n - 1 - index;
+        for (i = 0; i < stepsFromTail; i++) {
+          snapshot('Percorrendo a partir do fim (faltam ' + (stepsFromTail - i) + ') — mais perto da cauda.', { op: "traverse", cursorId: cur, highlightIds: [cur], direction: "backward" });
+          cur = nodes[cur].prev;
+        }
+      }
+      return cur;
+    }
+
+    function insertAt(index, value) {
+      var n = length();
+      if (index < 0 || index > n) { snapshot('Posição ' + index + ' inválida (lista tem ' + n + ' nós).', { op: "bad" }); return false; }
+      if (index === 0) { insertAtHead(value); return true; }
+      if (index === n) { insertAtTail(value); return true; }
+      var targetId = locateByIndex(index);
+      var id = nextId++;
+      var p = nodes[targetId].prev;
+      nodes[id] = { id: id, value: value, prev: p, next: targetId };
+      nodes[p].next = id;
+      nodes[targetId].prev = id;
+      snapshot('"' + value + '" inserido na posição ' + index + '.', { op: "insert", cursorId: id, highlightIds: [id] });
+      return true;
+    }
+
+    function removeHead() {
+      if (headId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      var oldHead = headId;
+      var v = nodes[oldHead].value;
+      snapshot('Removendo "' + v + '" do início — O(1), já temos o ponteiro head.', { op: "remove", cursorId: oldHead, highlightIds: [oldHead] });
+      var newHead = nodes[oldHead].next;
+      if (newHead !== null) nodes[newHead].prev = null; else tailId = null;
+      headId = newHead;
+      delete nodes[oldHead];
+      snapshot('"' + v + '" removido do início.', { op: "remove" });
+      return true;
+    }
+
+    function removeTail() {
+      if (tailId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      var oldTail = tailId;
+      var v = nodes[oldTail].value;
+      snapshot('Removendo "' + v + '" do fim — O(1): o ponteiro prev já nos dá o penúltimo nó, sem percorrer nada.', { op: "remove", cursorId: oldTail, highlightIds: [oldTail] });
+      var newTail = nodes[oldTail].prev;
+      if (newTail !== null) nodes[newTail].next = null; else headId = null;
+      tailId = newTail;
+      delete nodes[oldTail];
+      snapshot('"' + v + '" removido do fim — O(1), sem precisar achar o penúltimo nó percorrendo a lista.', { op: "remove" });
+      return true;
+    }
+
+    function unlinkKnown(id) {
+      if (id === headId) { removeHead(); return; }
+      if (id === tailId) { removeTail(); return; }
+      var v = nodes[id].value;
+      snapshot('Encontrado "' + v + '" — removendo direto com node.prev e node.next (não precisamos ter guardado o nó anterior).', { op: "remove", cursorId: id, highlightIds: [id] });
+      var p = nodes[id].prev, n = nodes[id].next;
+      nodes[p].next = n;
+      nodes[n].prev = p;
+      delete nodes[id];
+      snapshot('"' + v + '" removido.', { op: "remove" });
+    }
+
+    function removeValue(value) {
+      var cur = headId;
+      while (cur !== null) {
+        snapshot('Comparando "' + value + '" com "' + nodes[cur].value + '"...', { op: "search", cursorId: cur, highlightIds: [cur], direction: "forward" });
+        if (nodes[cur].value === value) { unlinkKnown(cur); return true; }
+        cur = nodes[cur].next;
+      }
+      snapshot('"' + value + '" não encontrado na lista.', { op: "bad" });
+      return false;
+    }
+
+    function removeAt(index) {
+      var n = length();
+      if (index < 0 || index > n - 1) { snapshot('Posição ' + index + ' inválida (lista tem ' + n + ' nós).', { op: "bad" }); return false; }
+      var targetId = locateByIndex(index);
+      unlinkKnown(targetId);
+      return true;
+    }
+
+    function search(value) {
+      var cur = headId;
+      var idx = 0;
+      while (cur !== null) {
+        snapshot('Comparando "' + value + '" com "' + nodes[cur].value + '" (posição ' + idx + ')...', { op: "search", cursorId: cur, highlightIds: [cur], direction: "forward" });
+        if (nodes[cur].value === value) { snapshot('"' + value + '" encontrado na posição ' + idx + '.', { op: "search", cursorId: cur, highlightIds: [cur] }); return idx; }
+        cur = nodes[cur].next;
+        idx++;
+      }
+      snapshot('"' + value + '" não encontrado na lista.', { op: "bad" });
+      return -1;
+    }
+
+    function traverseBackward() {
+      if (tailId === null) { snapshot("Lista vazia — nada para percorrer.", { op: "info" }); return []; }
+      var cur = tailId;
+      var values = [];
+      while (cur !== null) {
+        values.push(nodes[cur].value);
+        snapshot('Percorrendo de trás pra frente: "' + nodes[cur].value + '" (via prev).', { op: "traverse", cursorId: cur, highlightIds: [cur], direction: "backward" });
+        cur = nodes[cur].prev;
+      }
+      snapshot('Ordem de trás pra frente: ' + values.map(function (v) { return '"' + v + '"'; }).join(' → ') + '.', { op: "traverse" });
+      return values;
+    }
+
+    function reverse() {
+      var order = chainOrderForward(nodes, headId);
+      if (!order || order.length < 2) { snapshot(order && order.length === 1 ? "Lista de um nó só — reverter não muda nada." : "Lista vazia — nada para reverter.", { op: "info", slotOrder: order || [] }); return; }
+      var slotOrder = order.slice();
+      for (var i = 0; i < order.length; i++) {
+        var id = order[i];
+        var oldPrev = nodes[id].prev, oldNext = nodes[id].next;
+        snapshot('Olhando "' + nodes[id].value + '": prev e next vão trocar de lugar.', { op: "reverse", cursorId: id, highlightIds: [id], slotOrder: slotOrder });
+        nodes[id].prev = oldNext;
+        nodes[id].next = oldPrev;
+        snapshot('"' + nodes[id].value + '" invertido: agora prev e next estão trocados.', { op: "reverse", cursorId: id, highlightIds: [id], slotOrder: slotOrder });
+      }
+      var oldHead = headId, oldTail = tailId;
+      headId = oldTail; tailId = oldHead;
+      snapshot('Fim: cabeça e cauda trocadas — "' + nodes[headId].value + '" agora é a cabeça, "' + nodes[tailId].value + '" é a cauda.', { op: "reverse", highlightIds: [headId, oldTail], slotOrder: slotOrder });
+    }
+
+    function toArray() {
+      var order = chainOrderForward(nodes, headId);
+      return order ? order.map(function (id) { return nodes[id].value; }) : null;
+    }
+
+    function toArrayBackward() {
+      var order = chainOrderBackward(nodes, tailId);
+      return order ? order.map(function (id) { return nodes[id].value; }) : null;
+    }
+
+    snapshot("Lista vazia.", { op: "info" });
+
+    return {
+      insertAtHead: insertAtHead, insertAtTail: insertAtTail, insertAt: insertAt,
+      removeHead: removeHead, removeTail: removeTail, removeValue: removeValue, removeAt: removeAt,
+      search: search, traverseBackward: traverseBackward, reverse: reverse,
+      length: length, toArray: toArray, toArrayBackward: toArrayBackward,
+      getHeadId: function () { return headId; }, getTailId: function () { return tailId; },
+      getNodes: function () { return nodes; }, getSteps: function () { return steps; }
+    };
+  }
+  // END engineDoubly.js
+
+  // ================= Annotation layer: C code + pointer-trace mapping (tested standalone) =================
+  // BEGIN annotate.js
+  var SINGLY_STRUCT = [
+    "typedef struct Node {",
+    "    int value;",
+    "    struct Node *next;",
+    "} Node;",
+    "",
+    "Node *head = NULL;",
+    "Node *tail = NULL;"
+  ];
+
+  var DOUBLY_STRUCT = [
+    "typedef struct Node {",
+    "    int value;",
+    "    struct Node *prev;",
+    "    struct Node *next;",
+    "} Node;",
+    "",
+    "Node *head = NULL;",
+    "Node *tail = NULL;"
+  ];
+
+  var SINGLY_FUNCS = {
+    insertAtHead: { title: "insertAtHead", code: [
+      "void insertAtHead(int value) {",
+      "    Node *novo = malloc(sizeof(Node));",
+      "    novo->value = value;",
+      "    novo->next  = head;",
+      "    if (head == NULL)",
+      "        tail = novo;",
+      "    head = novo;",
+      "}"
+    ] },
+    insertAtTail: { title: "insertAtTail", code: [
+      "void insertAtTail(int value) {",
+      "    Node *novo = malloc(sizeof(Node));",
+      "    novo->value = value;",
+      "    novo->next  = NULL;",
+      "    if (tail == NULL) {",
+      "        head = novo;",
+      "    } else {",
+      "        tail->next = novo;",
+      "    }",
+      "    tail = novo;",
+      "}"
+    ] },
+    removeHead: { title: "removeHead", code: [
+      "void removeHead(void) {",
+      "    if (head == NULL) return;",
+      "    Node *antigo = head;",
+      "    head = head->next;",
+      "    if (head == NULL)",
+      "        tail = NULL;",
+      "    free(antigo);",
+      "}"
+    ] },
+    removeTail: { title: "removeTail", code: [
+      "void removeTail(void) {",
+      "    if (tail == NULL) return;",
+      "    if (head == tail) { removeHead(); return; }",
+      "    Node *atual = head;",
+      "    while (atual->next != tail)",
+      "        atual = atual->next;",
+      "    Node *antigaCauda = tail;",
+      "    atual->next = NULL;",
+      "    tail = atual;",
+      "    free(antigaCauda);",
+      "}"
+    ] },
+    removeValue: { title: "removeValue", code: [
+      "void removeValue(int value) {",
+      "    if (head == NULL) return;",
+      "    if (head->value == value) { removeHead(); return; }",
+      "    Node *anterior = head;",
+      "    Node *atual = head->next;",
+      "    while (atual != NULL) {",
+      "        if (atual->value == value) {",
+      "            anterior->next = atual->next;",
+      "            free(atual);",
+      "            return;",
+      "        }",
+      "        anterior = atual;",
+      "        atual = atual->next;",
+      "    }",
+      "}"
+    ] },
+    reverse: { title: "reverse", code: [
+      "void reverse(void) {",
+      "    Node *anterior = NULL;",
+      "    Node *atual = head;",
+      "    while (atual != NULL) {",
+      "        Node *proximo = atual->next;",
+      "        atual->next = anterior;",
+      "        anterior = atual;",
+      "        atual = proximo;",
+      "    }",
+      "    tail = head;",
+      "    head = anterior;",
+      "}"
+    ] },
+    insertAt: { title: "insertAt", code: [
+      "void insertAt(int index, int value) {",
+      "    int n = length();",
+      "    if (index < 0 || index > n) return;         // fora do intervalo",
+      "    if (index == 0) { insertAtHead(value); return; }",
+      "    if (index == n) { insertAtTail(value); return; }",
+      "    Node *anterior = head;",
+      "    for (int i = 0; i < index - 1; i++)",
+      "        anterior = anterior->next;",
+      "    Node *novo = malloc(sizeof(Node));",
+      "    novo->value = value;",
+      "    novo->next  = anterior->next;",
+      "    anterior->next = novo;",
+      "}"
+    ] },
+    removeAt: { title: "removeAt", code: [
+      "void removeAt(int index) {",
+      "    int n = length();",
+      "    if (index < 0 || index >= n) return;        // fora do intervalo",
+      "    if (index == 0) { removeHead(); return; }",
+      "    if (index == n - 1) { removeTail(); return; }",
+      "    Node *anterior = head;",
+      "    for (int i = 0; i < index - 1; i++)",
+      "        anterior = anterior->next;",
+      "    Node *alvo = anterior->next;",
+      "    anterior->next = alvo->next;",
+      "    free(alvo);",
+      "}"
+    ] },
+    search: { title: "search", code: [
+      "int search(int value) {",
+      "    Node *atual = head;",
+      "    int index = 0;",
+      "    while (atual != NULL) {",
+      "        if (atual->value == value)",
+      "            return index;",
+      "        atual = atual->next;",
+      "        index++;",
+      "    }",
+      "    return -1;",
+      "}"
+    ] }
+  };
+
+  var DOUBLY_FUNCS = {
+    insertAtHead: { title: "insertAtHead", code: [
+      "void insertAtHead(int value) {",
+      "    Node *novo = malloc(sizeof(Node));",
+      "    novo->value = value;",
+      "    novo->prev = NULL;",
+      "    novo->next = head;",
+      "    if (head != NULL)",
+      "        head->prev = novo;",
+      "    else",
+      "        tail = novo;",
+      "    head = novo;",
+      "}"
+    ] },
+    insertAtTail: { title: "insertAtTail", code: [
+      "void insertAtTail(int value) {",
+      "    Node *novo = malloc(sizeof(Node));",
+      "    novo->value = value;",
+      "    novo->next = NULL;",
+      "    novo->prev = tail;",
+      "    if (tail != NULL)",
+      "        tail->next = novo;",
+      "    else",
+      "        head = novo;",
+      "    tail = novo;",
+      "}"
+    ] },
+    removeHead: { title: "removeHead", code: [
+      "void removeHead(void) {",
+      "    if (head == NULL) return;",
+      "    Node *antigo = head;",
+      "    head = head->next;",
+      "    if (head != NULL)",
+      "        head->prev = NULL;",
+      "    else",
+      "        tail = NULL;",
+      "    free(antigo);",
+      "}"
+    ] },
+    removeTail: { title: "removeTail", code: [
+      "void removeTail(void) {",
+      "    if (tail == NULL) return;",
+      "    Node *antiga = tail;",
+      "    tail = tail->prev;",
+      "    if (tail != NULL)",
+      "        tail->next = NULL;",
+      "    else",
+      "        head = NULL;",
+      "    free(antiga);",
+      "}"
+    ] },
+    unlinkKnown: { title: "unlinkKnown", code: [
+      "void unlinkKnown(Node *alvo) {",
+      "    if (alvo == head) { removeHead(); return; }",
+      "    if (alvo == tail) { removeTail(); return; }",
+      "    alvo->prev->next = alvo->next;",
+      "    alvo->next->prev = alvo->prev;",
+      "    free(alvo);",
+      "}"
+    ] },
+    removeValue: { title: "removeValue", code: [
+      "void removeValue(int value) {",
+      "    Node *atual = head;",
+      "    while (atual != NULL) {",
+      "        if (atual->value == value) {",
+      "            unlinkKnown(atual);",
+      "            return;",
+      "        }",
+      "        atual = atual->next;",
+      "    }",
+      "}"
+    ] },
+    reverse: { title: "reverse", code: [
+      "void reverse(void) {",
+      "    Node *ordem[MAX];           // ordem ANTES de qualquer troca",
+      "    int n = capturarOrdem(ordem);",
+      "    for (int i = 0; i < n; i++) {",
+      "        Node *atual = ordem[i];",
+      "        Node *tmp = atual->prev;",
+      "        atual->prev = atual->next;",
+      "        atual->next = tmp;",
+      "    }",
+      "    Node *tmp2 = head;",
+      "    head = tail;",
+      "    tail = tmp2;",
+      "}"
+    ] },
+    traverseBackward: { title: "percorrerDeTrasPraFrente", code: [
+      "void percorrerDeTrasPraFrente(void) {",
+      "    Node *atual = tail;",
+      "    while (atual != NULL) {",
+      "        imprimir(atual->value);",
+      "        atual = atual->prev;",
+      "    }",
+      "}"
+    ] },
+    insertAt: { title: "insertAt", code: [
+      "void insertAt(int index, int value) {",
+      "    int n = length();",
+      "    if (index < 0 || index > n) return;          // posição inválida",
+      "    if (index == 0) { insertAtHead(value); return; }",
+      "    if (index == n) { insertAtTail(value); return; }",
+      "    Node *alvo = locateByIndex(index);           // anda do lado mais perto",
+      "    Node *novo = malloc(sizeof(Node));",
+      "    novo->value = value;",
+      "    novo->prev  = alvo->prev;",
+      "    novo->next  = alvo;",
+      "    alvo->prev->next = novo;",
+      "    alvo->prev       = novo;",
+      "}"
+    ] },
+    removeAt: { title: "removeAt", code: [
+      "void removeAt(int index) {",
+      "    int n = length();",
+      "    if (index < 0 || index > n - 1) return;      // posição inválida",
+      "    Node *alvo = locateByIndex(index);           // anda do lado mais perto",
+      "    unlinkKnown(alvo);",
+      "}"
+    ] },
+    search: { title: "search", code: [
+      "int search(int value) {",
+      "    Node *atual = head;",
+      "    int idx = 0;",
+      "    while (atual != NULL) {",
+      "        if (atual->value == value)",
+      "            return idx;",
+      "        atual = atual->next;",
+      "        idx++;",
+      "    }",
+      "    return -1;",
+      "}"
+    ] }
+  };
+
+  function buildSinglyRules() {
+    return [
+      { test: function (m) { return m === "Lista vazia."; }, func: null, lines: [] },
+      { test: function (m) { return m.indexOf("inserido como nova cabeça") !== -1; }, func: "insertAtHead", lines: [2, 3, 4, 5, 6, 7] },
+      { test: function (m) { return m.indexOf("inserido como único nó") !== -1; }, func: "insertAtTail", lines: [2, 3, 4, 5, 6, 10] },
+      { test: function (m) { return m.indexOf("Seguindo o ponteiro da antiga cauda") !== -1; }, func: "insertAtTail", lines: [8] },
+      { test: function (m) { return m.indexOf("inserido no final — a antiga cauda agora aponta") !== -1; }, func: "insertAtTail", lines: [8, 10] },
+      { test: function (m) { return m.indexOf("Removendo a cabeça") !== -1; }, func: "removeHead", lines: [3] },
+      { test: function (m) { return /^"[^"]+" removido\.$/.test(m); }, func: "removeHead", lines: [4, 5, 6, 7] },
+      { test: function (m) { return m.indexOf("Procurando o penúltimo nó") !== -1; }, func: "removeTail", lines: [5, 6] },
+      { test: function (m) { return m.indexOf("aponta para a cauda — ele será o novo fim") !== -1; }, func: "removeTail", lines: [5] },
+      { test: function (m) { return m.indexOf("removido do final — ") !== -1 && m.indexOf("é a nova cauda") !== -1; }, func: "removeTail", lines: [7, 8, 9, 10] },
+      { test: function (m) { return /removido do final\.$/.test(m); }, func: "removeTail", lines: [7, 8, 9, 10] },
+      { test: function (m) { return m.indexOf("Lista está vazia — nada a remover") !== -1; }, func: "removeValue", lines: [2] },
+      { test: function (m, step) { return step.op === "traverse" && m.indexOf("Comparando") !== -1 && m.indexOf("posição") === -1; }, func: "removeValue", lines: [6, 7] },
+      { test: function (m) { return m.indexOf("agora aponta para o nó seguinte") !== -1; }, func: "removeValue", lines: [8, 9, 10] },
+      { test: function (m) { return m.indexOf("não está na lista — chegamos ao fim sem encontrá-lo") !== -1; }, func: "removeValue", lines: [6] },
+      { test: function (m, step, op) { return m.indexOf("Lista já está vazia — nada a remover.") !== -1; }, func: function (op) { return op === "removeHead" ? "removeHead" : "removeTail"; }, lines: function (op) { return op === "removeHead" ? [2] : [2]; } },
+      { test: function (m) { return m.indexOf("reverter não muda nada") !== -1; }, func: "reverse", lines: [] },
+      { test: function (m) { return m.indexOf("Começando a reverter") !== -1; }, func: "reverse", lines: [2, 3] },
+      { test: function (m) { return m.indexOf("Guardando o próximo nó") !== -1; }, func: "reverse", lines: [5] },
+      { test: function (m) { return m.indexOf("agora aponta para") !== -1 && m.indexOf("em vez do nó seguinte") !== -1; }, func: "reverse", lines: [6] },
+      { test: function (m) { return m.indexOf("Avançando: prev =") !== -1; }, func: "reverse", lines: [7, 8] },
+      { test: function (m) { return m.indexOf("Fim da lista alcançado") !== -1; }, func: "reverse", lines: [10, 11] },
+      { test: function (m) { return m.indexOf("fora do intervalo") !== -1 && m.indexOf("nada inserido") !== -1; }, func: "insertAt", lines: [3] },
+      { test: function (m) { return m.indexOf("para inserir depois dela") !== -1; }, func: "insertAt", lines: [6, 7, 8] },
+      { test: function (m) { return m.indexOf("inserido na posição") !== -1 && m.indexOf("entre") !== -1; }, func: "insertAt", lines: [9, 10, 11, 12] },
+      { test: function (m) { return m.indexOf("fora do intervalo") !== -1 && m.indexOf("nada removido") !== -1; }, func: "removeAt", lines: [3] },
+      { test: function (m) { return m.indexOf("para remover o nó seguinte") !== -1; }, func: "removeAt", lines: [6, 7, 8] },
+      { test: function (m) { return m.indexOf("removido da posição") !== -1; }, func: "removeAt", lines: [9, 10, 11] },
+      { test: function (m) { return m === "Lista está vazia."; }, func: "search", lines: [2, 4] },
+      { test: function (m, step) { return step.op === "search" && m.indexOf("Comparando") !== -1 && m.indexOf("posição") !== -1; }, func: "search", lines: [4, 5] },
+      { test: function (m) { return m.indexOf("encontrado na posição") !== -1; }, func: "search", lines: [6] },
+      { test: function (m) { return m.indexOf("chegamos ao fim (null) sem encontrá-lo") !== -1; }, func: "search", lines: [10] }
+    ];
+  }
+
+  function buildDoublyRules() {
+    return [
+      { test: function (m) { return m === "Lista vazia."; }, func: null, lines: [] },
+      { test: function (m) { return m.indexOf("inserido no início — O(1)") !== -1; }, func: "insertAtHead", lines: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
+      { test: function (m) { return m.indexOf("inserido no fim — O(1) graças ao ponteiro tail") !== -1; }, func: "insertAtTail", lines: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
+      { test: function (m) { return m.indexOf("Removendo") !== -1 && m.indexOf("do início — O(1)") !== -1; }, func: "removeHead", lines: [3] },
+      { test: function (m) { return /removido do início\.$/.test(m); }, func: "removeHead", lines: [4, 5, 6, 7, 8, 9] },
+      { test: function (m) { return m.indexOf("Removendo") !== -1 && m.indexOf("do fim — O(1)") !== -1; }, func: "removeTail", lines: [3] },
+      { test: function (m) { return m.indexOf("removido do fim — O(1), sem precisar achar") !== -1; }, func: "removeTail", lines: [4, 5, 6, 7, 8, 9] },
+      { test: function (m, step, op) { return m.indexOf("Lista já está vazia — nada a remover.") !== -1; }, func: function (op) { return op === "removeHead" ? "removeHead" : "removeTail"; }, lines: function () { return [2]; } },
+      { test: function (m) { return m.indexOf("Encontrado") !== -1 && m.indexOf("removendo direto com node.prev e node.next") !== -1; }, func: "unlinkKnown", lines: [4, 5] },
+      { test: function (m) { return /^"[^"]+" removido\.$/.test(m); }, func: "unlinkKnown", lines: [6] },
+      { test: function (m, step) { return step.op === "search" && m.indexOf("Comparando") !== -1 && m.indexOf("posição") === -1; }, func: "removeValue", lines: [3, 4] },
+      { test: function (m) { return m.indexOf("Lista de um nó só — reverter não muda nada") !== -1 || m.indexOf("Lista vazia — nada para reverter") !== -1; }, func: "reverse", lines: [] },
+      { test: function (m) { return m.indexOf("prev e next vão trocar de lugar") !== -1; }, func: "reverse", lines: [5, 6] },
+      { test: function (m) { return m.indexOf("invertido: agora prev e next estão trocados") !== -1; }, func: "reverse", lines: [7, 8] },
+      { test: function (m) { return m.indexOf("Fim: cabeça e cauda trocadas") !== -1; }, func: "reverse", lines: [10, 11, 12] },
+      { test: function (m) { return m.indexOf("Lista vazia — nada para percorrer") !== -1; }, func: "traverseBackward", lines: [2, 3] },
+      { test: function (m) { return m.indexOf("Percorrendo de trás pra frente:") !== -1; }, func: "traverseBackward", lines: [4, 5] },
+      { test: function (m) { return m.indexOf("Ordem de trás pra frente:") !== -1; }, func: "traverseBackward", lines: [3] },
+      { test: function (m, step, op) { return /^Posição -?\d+ inválida \(lista tem \d+ nós\)\.$/.test(m); }, func: function (op) { return op === "removeAt" ? "removeAt" : "insertAt"; }, lines: function (op) { return op === "removeAt" ? [3] : [3]; } },
+      { test: function (m, step, op) { return m.indexOf("Percorrendo a partir do início") !== -1 || m.indexOf("Percorrendo a partir do fim") !== -1; }, func: function (op) { return op === "removeAt" ? "removeAt" : "insertAt"; }, lines: function (op) { return op === "removeAt" ? [4] : [6]; } },
+      { test: function (m) { return /^"[^"]+" inserido na posição \d+\.$/.test(m); }, func: "insertAt", lines: [7, 8, 9, 10, 11, 12] },
+      { test: function (m, step) { return step.op === "search" && m.indexOf("Comparando") !== -1 && m.indexOf("posição") !== -1; }, func: "search", lines: [4, 5] },
+      { test: function (m) { return m.indexOf("encontrado na posição") !== -1; }, func: "search", lines: [6] },
+      { test: function (m, step, op) { return m.indexOf("não encontrado na lista") !== -1; }, func: function (op) { return op === "search" ? "search" : "removeValue"; }, lines: function (op) { return op === "search" ? [10] : [3]; } }
+    ];
+  }
+
+  var SINGLY_RULES = buildSinglyRules();
+  var DOUBLY_RULES = buildDoublyRules();
+
+  function resolveActive(listType, step, currentOperation) {
+    var rules = listType === "doubly" ? DOUBLY_RULES : SINGLY_RULES;
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      if (r.test(step.message, step, currentOperation)) {
+        var func = typeof r.func === "function" ? r.func(currentOperation) : r.func;
+        var lines = typeof r.lines === "function" ? r.lines(currentOperation) : r.lines;
+        return { func: func, lines: lines };
+      }
+    }
+    return { func: currentOperation, lines: [] };
+  }
+
+  function getFuncDef(listType, funcKey) {
+    if (funcKey == null) return null;
+    var table = listType === "doubly" ? DOUBLY_FUNCS : SINGLY_FUNCS;
+    return table[funcKey] || null;
+  }
+
+  function getStruct(listType) {
+    return listType === "doubly" ? DOUBLY_STRUCT : SINGLY_STRUCT;
+  }
+
+  function diffPointers(beforeStep, afterStep, listType) {
+    var lines = [];
+    var beforeNodes = beforeStep ? beforeStep.nodes : {};
+    var afterNodes = afterStep.nodes;
+
+    function label(id) {
+      if (id == null) return "NULL";
+      if (afterNodes[id]) return 'nó(' + afterNodes[id].value + ')';
+      if (beforeNodes[id]) return 'nó(' + beforeNodes[id].value + ')';
+      return "nó(?)";
+    }
+
+    if (!beforeStep) {
+      lines.push("head = NULL;");
+      lines.push("tail = NULL;");
+      return lines;
+    }
+
+    if (beforeStep.headId !== afterStep.headId) {
+      lines.push("head = " + label(afterStep.headId) + ";");
+    }
+    if (beforeStep.tailId !== afterStep.tailId) {
+      lines.push("tail = " + label(afterStep.tailId) + ";");
+    }
+
+    Object.keys(afterNodes).forEach(function (idStr) {
+      var id = Number(idStr);
+      var a = afterNodes[id];
+      var b = beforeNodes[id];
+      if (!b) {
+        lines.push('Node *novo = malloc(sizeof(Node));  // nó(' + a.value + ')');
+        return;
+      }
+      if (a.next !== b.next) {
+        lines.push('nó(' + a.value + ')->next = ' + label(a.next) + ';');
+      }
+      if (listType === "doubly" && a.prev !== b.prev) {
+        lines.push('nó(' + a.value + ')->prev = ' + label(a.prev) + ';');
+      }
+    });
+    Object.keys(beforeNodes).forEach(function (idStr) {
+      var id = Number(idStr);
+      if (!afterNodes[id]) {
+        lines.push('free(nó(' + beforeNodes[id].value + '));');
+      }
+    });
+
+    return lines;
+  }
+  // END annotate.js
+
+  // ================= Renderers (simplified, reuse the series' visual language) =================
+  var NS = "http://www.w3.org/2000/svg";
+
+  function createSinglyRenderer(svg) {
+    var NODE_W = 92, NODE_H = 52, PTR_W = 28, CELL_W = 136;
+    var TOP_PAD = 46, BOTTOM_PAD = 40, SIDE_PAD = 24;
+    var NULL_W = 44, NULL_GAP = 20;
+    var CY = TOP_PAD + NODE_H / 2;
+    var nodeEls = {}, arrowEls = {}, headTag = null, tailTag = null, nullBox = null, nullText = null, emptyTextEl = null;
+
+    function xFor(i) { return SIDE_PAD + i * CELL_W + NODE_W / 2; }
+    function dotX(cx) { return cx + NODE_W / 2 - PTR_W / 2; }
+    function arcPath(x1, y1, x2, y2, bow) {
+      var midX = (x1 + x2) / 2, midY = (y1 + y2) / 2 + bow;
+      return "M " + x1 + " " + y1 + " Q " + midX + " " + midY + " " + x2 + " " + y2;
+    }
+
+    function build() {
+      svg.innerHTML = "";
+      nodeEls = {}; arrowEls = {};
+      var defs = document.createElementNS(NS, "defs");
+      [["arrowForward", "var(--line-strong)"], ["arrowBackward", "var(--gold)"]].forEach(function (pair) {
+        var marker = document.createElementNS(NS, "marker");
+        marker.setAttribute("id", pair[0]); marker.setAttribute("viewBox", "0 0 10 10");
+        marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+        marker.setAttribute("markerWidth", "6.5"); marker.setAttribute("markerHeight", "6.5"); marker.setAttribute("orient", "auto-start-reverse");
+        var path = document.createElementNS(NS, "path");
+        path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); path.setAttribute("fill", pair[1]);
+        marker.appendChild(path); defs.appendChild(marker);
+      });
+      svg.appendChild(defs);
+      var arrowLayer = document.createElementNS(NS, "g"); arrowLayer.setAttribute("id", "sgArrowLayer");
+      var nodeLayer = document.createElementNS(NS, "g"); nodeLayer.setAttribute("id", "sgNodeLayer");
+      var tagLayer = document.createElementNS(NS, "g"); tagLayer.setAttribute("id", "sgTagLayer");
+      svg.appendChild(arrowLayer); svg.appendChild(nodeLayer); svg.appendChild(tagLayer);
+
+      nullBox = document.createElementNS(NS, "rect"); nullBox.setAttribute("class", "ll-null-box");
+      nullBox.setAttribute("width", NULL_W); nullBox.setAttribute("height", NODE_H); nullBox.setAttribute("rx", 8);
+      nullText = document.createElementNS(NS, "text"); nullText.setAttribute("class", "ll-null-text"); nullText.textContent = "null";
+      nodeLayer.appendChild(nullBox); nodeLayer.appendChild(nullText);
+
+      emptyTextEl = document.createElementNS(NS, "text"); emptyTextEl.setAttribute("class", "empty-text"); emptyTextEl.textContent = "lista vazia";
+      nodeLayer.appendChild(emptyTextEl);
+
+      function makeTag(cls) {
+        var g = document.createElementNS(NS, "g");
+        var line = document.createElementNS(NS, "line"); line.setAttribute("class", "ll-tag-line");
+        var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "ll-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 40); bg.setAttribute("height", 18);
+        var text = document.createElementNS(NS, "text"); text.setAttribute("class", "ll-tag-pill"); text.textContent = cls;
+        g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+        tagLayer.appendChild(g);
+        return { g: g, line: line, bg: bg, text: text };
+      }
+      headTag = makeTag("head");
+      tailTag = makeTag("tail");
+    }
+
+    function render(step) {
+      var order = step.slotOrder ? step.slotOrder : (function () {
+        var out = []; var seen = {}; var cur = step.headId;
+        while (cur != null && !seen[cur]) { seen[cur] = true; out.push(cur); cur = step.nodes[cur].next; }
+        return out;
+      })();
+      var isReverseLayout = !!step.slotOrder;
+      var slotIndex = {};
+      order.forEach(function (id, i) { slotIndex[id] = i; });
+
+      var width = SIDE_PAD * 2 + Math.max(0, order.length) * CELL_W + (isReverseLayout ? 0 : (NULL_W + NULL_GAP));
+      width = Math.max(width, 300);
+      var height = TOP_PAD + NODE_H + BOTTOM_PAD;
+      svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+
+      if (order.length === 0) {
+        emptyTextEl.setAttribute("x", width / 2); emptyTextEl.setAttribute("y", CY);
+        emptyTextEl.style.display = "";
+      } else { emptyTextEl.style.display = "none"; }
+
+      var presentIds = {};
+      order.forEach(function (id) {
+        presentIds[id] = true;
+        var n = step.nodes[id];
+        var cx = xFor(slotIndex[id]);
+        var rec = nodeEls[id];
+        if (!rec) {
+          var g = document.createElementNS(NS, "g"); g.setAttribute("class", "ll-node");
+          var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "ll-node-rect");
+          rect.setAttribute("width", NODE_W); rect.setAttribute("height", NODE_H); rect.setAttribute("rx", 10);
+          var divider = document.createElementNS(NS, "line"); divider.setAttribute("class", "ll-divider");
+          var dot = document.createElementNS(NS, "circle"); dot.setAttribute("class", "ll-dot"); dot.setAttribute("r", 3.2);
+          var text = document.createElementNS(NS, "text"); text.setAttribute("class", "ll-value");
+          g.appendChild(rect); g.appendChild(divider); g.appendChild(dot); g.appendChild(text);
+          document.getElementById("sgNodeLayer").appendChild(g);
+          rec = { g: g, rect: rect, divider: divider, dot: dot, text: text };
+          nodeEls[id] = rec;
+        }
+        var left = cx - NODE_W / 2, top = CY - NODE_H / 2;
+        rec.rect.setAttribute("x", left); rec.rect.setAttribute("y", top);
+        var dx = left + NODE_W - PTR_W;
+        rec.divider.setAttribute("x1", dx); rec.divider.setAttribute("x2", dx); rec.divider.setAttribute("y1", top); rec.divider.setAttribute("y2", top + NODE_H);
+        rec.dot.setAttribute("cx", dotX(cx)); rec.dot.setAttribute("cy", CY);
+        rec.text.setAttribute("x", left + (NODE_W - PTR_W) / 2); rec.text.setAttribute("y", CY + 0.5);
+        rec.text.textContent = n.value;
+
+        var st = null;
+        if ((step.highlightIds || []).indexOf(id) !== -1) {
+          if (step.op === "bad") st = "bad";
+          else if (step.op === "insert" && id === step.cursorId) st = "new";
+          else st = "cursor";
+        }
+        if (step.cursorId === id && !st) st = "cursor";
+        if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+      });
+      Object.keys(nodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; } });
+
+      var presentArrow = {};
+      order.forEach(function (id) {
+        var n = step.nodes[id];
+        if (n.next == null) return;
+        if (!presentIds[n.next] && !isReverseLayout) return;
+        presentArrow[id] = true;
+        var path = arrowEls[id];
+        if (!path) { path = document.createElementNS(NS, "path"); path.setAttribute("class", "ll-arrow"); document.getElementById("sgArrowLayer").appendChild(path); arrowEls[id] = path; }
+        var fromSlot = slotIndex[id], toSlot = slotIndex[n.next];
+        var fromX = dotX(xFor(fromSlot));
+        var toX = xFor(toSlot) - NODE_W / 2;
+        var normal = toSlot > fromSlot;
+        var bow = normal ? 20 : 54;
+        path.setAttribute("class", "ll-arrow " + (normal ? "forward" : "backward"));
+        path.setAttribute("marker-end", "url(#" + (normal ? "arrowForward" : "arrowBackward") + ")");
+        path.setAttribute("d", arcPath(fromX, CY, toX, CY, bow));
+      });
+      Object.keys(arrowEls).forEach(function (idStr) {
+        if (idStr === "null") return;
+        var id = Number(idStr);
+        if (!presentArrow[id]) { arrowEls[id].remove(); delete arrowEls[id]; }
+      });
+
+      var tailInOrder = order.length && !isReverseLayout ? order[order.length - 1] : null;
+      if (tailInOrder != null && step.nodes[tailInOrder].next == null) {
+        var nx = xFor(order.length) - NODE_W / 2 + 18;
+        nullBox.setAttribute("x", nx); nullBox.setAttribute("y", CY - NODE_H / 2);
+        nullText.setAttribute("x", nx + NULL_W / 2); nullText.setAttribute("y", CY);
+        nullBox.style.display = ""; nullText.style.display = "";
+        var pathN = arrowEls["null"];
+        if (!pathN) { pathN = document.createElementNS(NS, "path"); pathN.setAttribute("class", "ll-arrow forward"); pathN.setAttribute("marker-end", "url(#arrowForward)"); document.getElementById("sgArrowLayer").appendChild(pathN); arrowEls["null"] = pathN; }
+        pathN.setAttribute("d", arcPath(dotX(xFor(order.length - 1)), CY, nx, CY, 20));
+        pathN.style.display = "";
+      } else {
+        nullBox.style.display = "none"; nullText.style.display = "none";
+        if (arrowEls["null"]) arrowEls["null"].style.display = "none";
+      }
+
+      function placeTag(tag, id, labelOffset) {
+        if (id == null || !presentIds[id]) { tag.g.style.display = "none"; return; }
+        tag.g.style.display = "";
+        var cx = xFor(slotIndex[id]) - PTR_W / 2 + labelOffset;
+        var top = CY - NODE_H / 2;
+        tag.bg.setAttribute("x", cx - 20); tag.bg.setAttribute("y", top - 30);
+        tag.text.setAttribute("x", cx); tag.text.setAttribute("y", top - 21);
+        tag.line.setAttribute("x1", cx); tag.line.setAttribute("x2", cx);
+        tag.line.setAttribute("y1", top - 12); tag.line.setAttribute("y2", top);
+      }
+      var headNodeId = order.length ? (isReverseLayout ? (step.headId != null && presentIds[step.headId] ? step.headId : null) : order[0]) : null;
+      var tailNodeId = order.length ? (isReverseLayout ? (step.tailId != null && presentIds[step.tailId] ? step.tailId : null) : order[order.length - 1]) : null;
+      if (headNodeId != null && headNodeId === tailNodeId) {
+        placeTag(headTag, headNodeId, -22);
+        placeTag(tailTag, tailNodeId, 22);
+      } else {
+        placeTag(headTag, headNodeId, 0);
+        placeTag(tailTag, tailNodeId, 0);
+      }
+    }
+
+    return { build: build, render: render };
+  }
+
+  function createDoublyRenderer(svg) {
+    var NODE_W = 104, NODE_H = 52, PTR_W = 24, CELL_W = 150;
+    var TOP_PAD = 58, BOTTOM_PAD = 54, SIDE_PAD = 26;
+    var NULL_W = 48, NULL_GAP = 22;
+    var CY = TOP_PAD + NODE_H / 2;
+    var nodeEls = {}, nextArrowEls = {}, prevArrowEls = {};
+    var headTag = null, tailTag = null, nullBoxR = null, nullTextR = null, nullBoxL = null, nullTextL = null, emptyTextEl = null;
+
+    function xFor(i) { return SIDE_PAD + NULL_W + NULL_GAP + i * CELL_W + NODE_W / 2; }
+    function leftDotX(cx) { return cx - NODE_W / 2 + PTR_W / 2; }
+    function rightDotX(cx) { return cx + NODE_W / 2 - PTR_W / 2; }
+    function arcPath(x1, y1, x2, y2, bow) {
+      var midX = (x1 + x2) / 2, midY = (y1 + y2) / 2 + bow;
+      return "M " + x1 + " " + y1 + " Q " + midX + " " + midY + " " + x2 + " " + y2;
+    }
+
+    function build() {
+      svg.innerHTML = "";
+      nodeEls = {}; nextArrowEls = {}; prevArrowEls = {};
+      var defs = document.createElementNS(NS, "defs");
+      [["arrowNextNormal", "var(--line-strong)"], ["arrowNextCrossed", "var(--gold)"],
+       ["arrowPrevNormal", "var(--violet)"], ["arrowPrevCrossed", "var(--rust)"]].forEach(function (pair) {
+        var marker = document.createElementNS(NS, "marker");
+        marker.setAttribute("id", pair[0]); marker.setAttribute("viewBox", "0 0 10 10");
+        marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+        marker.setAttribute("markerWidth", "6.5"); marker.setAttribute("markerHeight", "6.5"); marker.setAttribute("orient", "auto-start-reverse");
+        var path = document.createElementNS(NS, "path");
+        path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); path.setAttribute("fill", pair[1]);
+        marker.appendChild(path); defs.appendChild(marker);
+      });
+      svg.appendChild(defs);
+
+      var prevArrowLayer = document.createElementNS(NS, "g"); prevArrowLayer.setAttribute("id", "dbPrevArrowLayer");
+      var nextArrowLayer = document.createElementNS(NS, "g"); nextArrowLayer.setAttribute("id", "dbNextArrowLayer");
+      var nodeLayer = document.createElementNS(NS, "g"); nodeLayer.setAttribute("id", "dbNodeLayer");
+      var tagLayer = document.createElementNS(NS, "g"); tagLayer.setAttribute("id", "dbTagLayer");
+      svg.appendChild(prevArrowLayer); svg.appendChild(nextArrowLayer); svg.appendChild(nodeLayer); svg.appendChild(tagLayer);
+
+      function makeNullBox() {
+        var box = document.createElementNS(NS, "rect"); box.setAttribute("class", "dll-null-box");
+        box.setAttribute("width", NULL_W); box.setAttribute("height", NODE_H); box.setAttribute("rx", 8);
+        var text = document.createElementNS(NS, "text"); text.setAttribute("class", "dll-null-text"); text.textContent = "null";
+        nodeLayer.appendChild(box); nodeLayer.appendChild(text);
+        return { box: box, text: text };
+      }
+      var nr = makeNullBox(); nullBoxR = nr.box; nullTextR = nr.text;
+      var nl = makeNullBox(); nullBoxL = nl.box; nullTextL = nl.text;
+
+      emptyTextEl = document.createElementNS(NS, "text"); emptyTextEl.setAttribute("class", "empty-text"); emptyTextEl.textContent = "lista vazia";
+      nodeLayer.appendChild(emptyTextEl);
+
+      function makeTag(cls) {
+        var g = document.createElementNS(NS, "g");
+        var line = document.createElementNS(NS, "line"); line.setAttribute("class", "dll-tag-line");
+        var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "dll-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 40); bg.setAttribute("height", 18);
+        var text = document.createElementNS(NS, "text"); text.setAttribute("class", "dll-tag-pill"); text.textContent = cls;
+        g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+        tagLayer.appendChild(g);
+        return { g: g, line: line, bg: bg, text: text };
+      }
+      headTag = makeTag("head");
+      tailTag = makeTag("tail");
+    }
+
+    function render(step) {
+      var order = step.slotOrder ? step.slotOrder : (function () {
+        var out = []; var seen = {}; var cur = step.headId;
+        while (cur != null && !seen[cur]) { seen[cur] = true; out.push(cur); cur = step.nodes[cur].next; }
+        return out;
+      })();
+      var isReverseLayout = !!step.slotOrder;
+      var slotIndex = {};
+      order.forEach(function (id, i) { slotIndex[id] = i; });
+
+      var width = SIDE_PAD * 2 + NULL_W + NULL_GAP + Math.max(0, order.length) * CELL_W + (isReverseLayout ? 0 : (NULL_W + NULL_GAP));
+      width = Math.max(width, 320);
+      var height = TOP_PAD + NODE_H + BOTTOM_PAD;
+      svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+
+      if (order.length === 0) {
+        emptyTextEl.setAttribute("x", width / 2); emptyTextEl.setAttribute("y", CY);
+        emptyTextEl.style.display = "";
+      } else { emptyTextEl.style.display = "none"; }
+
+      var presentIds = {};
+      order.forEach(function (id) {
+        presentIds[id] = true;
+        var n = step.nodes[id];
+        var cx = xFor(slotIndex[id]);
+        var rec = nodeEls[id];
+        if (!rec) {
+          var g = document.createElementNS(NS, "g"); g.setAttribute("class", "dll-node");
+          var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "dll-node-rect");
+          rect.setAttribute("width", NODE_W); rect.setAttribute("height", NODE_H); rect.setAttribute("rx", 10);
+          var dividerL = document.createElementNS(NS, "line"); dividerL.setAttribute("class", "dll-divider");
+          var dividerR = document.createElementNS(NS, "line"); dividerR.setAttribute("class", "dll-divider");
+          var dotL = document.createElementNS(NS, "circle"); dotL.setAttribute("class", "dll-dot"); dotL.setAttribute("r", 3.2);
+          var dotR = document.createElementNS(NS, "circle"); dotR.setAttribute("class", "dll-dot"); dotR.setAttribute("r", 3.2);
+          var text = document.createElementNS(NS, "text"); text.setAttribute("class", "dll-value");
+          g.appendChild(rect); g.appendChild(dividerL); g.appendChild(dividerR); g.appendChild(dotL); g.appendChild(dotR); g.appendChild(text);
+          document.getElementById("dbNodeLayer").appendChild(g);
+          rec = { g: g, rect: rect, dividerL: dividerL, dividerR: dividerR, dotL: dotL, dotR: dotR, text: text };
+          nodeEls[id] = rec;
+        }
+        var left = cx - NODE_W / 2, top = CY - NODE_H / 2;
+        rec.rect.setAttribute("x", left); rec.rect.setAttribute("y", top);
+        var dxL = left + PTR_W, dxR = left + NODE_W - PTR_W;
+        rec.dividerL.setAttribute("x1", dxL); rec.dividerL.setAttribute("x2", dxL); rec.dividerL.setAttribute("y1", top); rec.dividerL.setAttribute("y2", top + NODE_H);
+        rec.dividerR.setAttribute("x1", dxR); rec.dividerR.setAttribute("x2", dxR); rec.dividerR.setAttribute("y1", top); rec.dividerR.setAttribute("y2", top + NODE_H);
+        rec.dotL.setAttribute("cx", leftDotX(cx)); rec.dotL.setAttribute("cy", CY);
+        rec.dotR.setAttribute("cx", rightDotX(cx)); rec.dotR.setAttribute("cy", CY);
+        rec.text.setAttribute("x", cx); rec.text.setAttribute("y", CY + 0.5);
+        rec.text.textContent = n.value;
+
+        var st = null;
+        var dir = (step.highlightIds || []).indexOf(id) !== -1 ? step.direction : null;
+        if ((step.highlightIds || []).indexOf(id) !== -1) {
+          if (step.op === "bad") st = "bad";
+          else if (step.op === "insert" && id === step.cursorId) st = "new";
+          else st = "cursor";
+        }
+        if (step.cursorId === id && !st) st = "cursor";
+        if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+        if (dir === "backward") rec.g.setAttribute("data-dir", "backward"); else rec.g.removeAttribute("data-dir");
+      });
+      Object.keys(nodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; } });
+
+      var presentNext = {};
+      order.forEach(function (id) {
+        var n = step.nodes[id];
+        if (n.next == null) return;
+        if (!presentIds[n.next] && !isReverseLayout) return;
+        presentNext[id] = true;
+        var path = nextArrowEls[id];
+        if (!path) { path = document.createElementNS(NS, "path"); path.setAttribute("class", "dll-arrow next"); document.getElementById("dbNextArrowLayer").appendChild(path); nextArrowEls[id] = path; }
+        var fromSlot = slotIndex[id], toSlot = slotIndex[n.next];
+        var fromX = rightDotX(xFor(fromSlot));
+        var toX = leftDotX(xFor(toSlot));
+        var normal = toSlot > fromSlot;
+        var bow = normal ? 20 : 54;
+        path.setAttribute("class", "dll-arrow next " + (normal ? "normal" : "crossed"));
+        path.setAttribute("marker-end", "url(#" + (normal ? "arrowNextNormal" : "arrowNextCrossed") + ")");
+        path.setAttribute("d", arcPath(fromX, CY, toX, CY, bow));
+      });
+      Object.keys(nextArrowEls).forEach(function (idStr) {
+        if (idStr === "nullR") return;
+        var id = Number(idStr);
+        if (!presentNext[id]) { nextArrowEls[id].remove(); delete nextArrowEls[id]; }
+      });
+
+      var presentPrev = {};
+      order.forEach(function (id) {
+        var n = step.nodes[id];
+        if (n.prev == null) return;
+        if (!presentIds[n.prev] && !isReverseLayout) return;
+        presentPrev[id] = true;
+        var path = prevArrowEls[id];
+        if (!path) { path = document.createElementNS(NS, "path"); path.setAttribute("class", "dll-arrow prev"); document.getElementById("dbPrevArrowLayer").appendChild(path); prevArrowEls[id] = path; }
+        var fromSlot = slotIndex[id], toSlot = slotIndex[n.prev];
+        var fromX = leftDotX(xFor(fromSlot));
+        var toX = rightDotX(xFor(toSlot));
+        var normal = toSlot < fromSlot;
+        var bow = normal ? -20 : -54;
+        path.setAttribute("class", "dll-arrow prev " + (normal ? "normal" : "crossed"));
+        path.setAttribute("marker-end", "url(#" + (normal ? "arrowPrevNormal" : "arrowPrevCrossed") + ")");
+        path.setAttribute("d", arcPath(fromX, CY, toX, CY, bow));
+      });
+      Object.keys(prevArrowEls).forEach(function (idStr) {
+        if (idStr === "nullL") return;
+        var id = Number(idStr);
+        if (!presentPrev[id]) { prevArrowEls[id].remove(); delete prevArrowEls[id]; }
+      });
+
+      var headInOrder = order.length && !isReverseLayout ? order[0] : null;
+      var tailInOrder = order.length && !isReverseLayout ? order[order.length - 1] : null;
+      if (tailInOrder != null && step.nodes[tailInOrder].next == null) {
+        var nxR = xFor(order.length) - NODE_W / 2 + 14;
+        nullBoxR.setAttribute("x", nxR); nullBoxR.setAttribute("y", CY - NODE_H / 2);
+        nullTextR.setAttribute("x", nxR + NULL_W / 2); nullTextR.setAttribute("y", CY);
+        nullBoxR.style.display = ""; nullTextR.style.display = "";
+        var pathR = nextArrowEls["nullR"];
+        if (!pathR) { pathR = document.createElementNS(NS, "path"); pathR.setAttribute("class", "dll-arrow next normal"); pathR.setAttribute("marker-end", "url(#arrowNextNormal)"); document.getElementById("dbNextArrowLayer").appendChild(pathR); nextArrowEls["nullR"] = pathR; }
+        pathR.setAttribute("d", arcPath(rightDotX(xFor(order.length - 1)), CY, nxR, CY, 20));
+        pathR.style.display = "";
+      } else {
+        nullBoxR.style.display = "none"; nullTextR.style.display = "none";
+        if (nextArrowEls["nullR"]) nextArrowEls["nullR"].style.display = "none";
+      }
+      if (headInOrder != null && step.nodes[headInOrder].prev == null) {
+        var nxL = xFor(0) - NODE_W / 2 - NULL_GAP - NULL_W;
+        nullBoxL.setAttribute("x", nxL); nullBoxL.setAttribute("y", CY - NODE_H / 2);
+        nullTextL.setAttribute("x", nxL + NULL_W / 2); nullTextL.setAttribute("y", CY);
+        nullBoxL.style.display = ""; nullTextL.style.display = "";
+        var pathL = prevArrowEls["nullL"];
+        if (!pathL) { pathL = document.createElementNS(NS, "path"); pathL.setAttribute("class", "dll-arrow prev normal"); pathL.setAttribute("marker-end", "url(#arrowPrevNormal)"); document.getElementById("dbPrevArrowLayer").appendChild(pathL); prevArrowEls["nullL"] = pathL; }
+        pathL.setAttribute("d", arcPath(leftDotX(xFor(0)), CY, nxL + NULL_W, CY, -20));
+        pathL.style.display = "";
+      } else {
+        nullBoxL.style.display = "none"; nullTextL.style.display = "none";
+        if (prevArrowEls["nullL"]) prevArrowEls["nullL"].style.display = "none";
+      }
+
+      function placeTag(tag, id, labelOffset) {
+        if (id == null || !presentIds[id]) { tag.g.style.display = "none"; return; }
+        tag.g.style.display = "";
+        var cx = xFor(slotIndex[id]) + labelOffset;
+        var top = CY - NODE_H / 2;
+        tag.bg.setAttribute("x", cx - 20); tag.bg.setAttribute("y", top - 30);
+        tag.text.setAttribute("x", cx); tag.text.setAttribute("y", top - 21);
+        tag.line.setAttribute("x1", cx); tag.line.setAttribute("x2", cx);
+        tag.line.setAttribute("y1", top - 12); tag.line.setAttribute("y2", top);
+      }
+      var headNodeId = order.length ? (isReverseLayout ? (step.headId != null && presentIds[step.headId] ? step.headId : null) : order[0]) : null;
+      var tailNodeId = order.length ? (isReverseLayout ? (step.tailId != null && presentIds[step.tailId] ? step.tailId : null) : order[order.length - 1]) : null;
+      if (headNodeId != null && headNodeId === tailNodeId) {
+        placeTag(headTag, headNodeId, -22);
+        placeTag(tailTag, tailNodeId, 22);
+      } else {
+        placeTag(headTag, headNodeId, 0);
+        placeTag(tailTag, tailNodeId, 0);
+      }
+    }
+
+    return { build: build, render: render };
+  }
+
+  // ================= App =================
+  var els = {
+    tabSingly: document.getElementById("tabSingly"),
+    tabDoubly: document.getElementById("tabDoubly"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    stageSvg: document.getElementById("stageSvg"),
+    legend: document.getElementById("legend"),
+    message: document.getElementById("message"),
+    funcName: document.getElementById("funcName"),
+    structBlock: document.getElementById("structBlock"),
+    codeBlock: document.getElementById("codeBlock"),
+    traceBlock: document.getElementById("traceBlock"),
+    traceStepLabel: document.getElementById("traceStepLabel"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"),
+    btnNext: document.getElementById("btnNext"),
+    speed: document.getElementById("speed"),
+    opsInsert: document.getElementById("opsInsert"),
+    opsRemove: document.getElementById("opsRemove"),
+    opsOther: document.getElementById("opsOther"),
+    cmpSingly: document.getElementById("cmpSingly"),
+    cmpDoubly: document.getElementById("cmpDoubly")
+  };
+
+  var LEGEND_SINGLY = [
+    ["head", "head", "swatch head"], ["tail", "tail", "swatch tail"],
+    ["cursor", "percorrendo / atual", "swatch cursor"], ["new", "novo nó", "swatch new"],
+    ["bad", "não encontrado", "swatch bad"], ["next", "ponteiro next", "swline next"]
+  ];
+  var LEGEND_DOUBLY = [
+    ["head", "head", "swatch head"], ["tail", "tail", "swatch tail"],
+    ["cursor", "percorrendo via next", "swatch cursor"], ["back", "percorrendo via prev", "swatch back"],
+    ["new", "novo nó", "swatch new"], ["bad", "não encontrado", "swatch bad"],
+    ["next", "ponteiro next", "swline next"], ["prev", "ponteiro prev", "swline prev"]
+  ];
+
+  function renderLegend(listType) {
+    var items = listType === "doubly" ? LEGEND_DOUBLY : LEGEND_SINGLY;
+    els.legend.innerHTML = items.map(function (it) {
+      var cls = it[2];
+      var isLine = cls.indexOf("swline") === 0;
+      var swatchHtml = isLine ? '<span class="' + cls + '"></span>' : '<span class="' + cls + '"></span>';
+      return '<span class="item">' + swatchHtml + it[1] + '</span>';
+    }).join("");
+  }
+
+  var SINGLY_ACTIONS = [
+    { key: "insertAtHead", group: "insert", label: "+ Início: insertAtHead(5)", run: function (e) { e.insertAtHead(5); } },
+    { key: "insertAtTail", group: "insert", label: "+ Fim: insertAtTail(50)", run: function (e) { e.insertAtTail(50); } },
+    { key: "insertAt", group: "insert", label: "+ Posição 2: insertAt(2, 99)", run: function (e) { e.insertAt(2, 99); } },
+    { key: "removeHead", group: "remove", label: "− Início: removeHead()", run: function (e) { e.removeHead(); } },
+    { key: "removeTail", group: "remove", label: "− Fim: removeTail()", run: function (e) { e.removeTail(); } },
+    { key: "removeValue", group: "remove", label: "− Valor: removeValue(30)", run: function (e) { e.removeValue(30); } },
+    { key: "removeAt", group: "remove", label: "− Posição 1: removeAt(1)", run: function (e) { e.removeAt(1); } },
+    { key: "search", group: "search", label: "Buscar 30 (existe)", run: function (e) { e.search(30); } },
+    { key: "search", group: "search", label: "Buscar 99 (não existe)", run: function (e) { e.search(99); } },
+    { key: "reverse", group: "reverse", label: "⇄ reverse()", run: function (e) { e.reverse(); } }
+  ];
+  var DOUBLY_ACTIONS = [
+    { key: "insertAtHead", group: "insert", label: "+ Início: insertAtHead(5)", run: function (e) { e.insertAtHead(5); } },
+    { key: "insertAtTail", group: "insert", label: "+ Fim: insertAtTail(50)", run: function (e) { e.insertAtTail(50); } },
+    { key: "insertAt", group: "insert", label: "+ Posição 2: insertAt(2, 99)", run: function (e) { e.insertAt(2, 99); } },
+    { key: "removeHead", group: "remove", label: "− Início: removeHead()", run: function (e) { e.removeHead(); } },
+    { key: "removeTail", group: "remove", label: "− Fim: removeTail()", run: function (e) { e.removeTail(); } },
+    { key: "removeValue", group: "remove", label: "− Valor: removeValue(30)", run: function (e) { e.removeValue(30); } },
+    { key: "removeAt", group: "remove", label: "− Posição 1: removeAt(1)", run: function (e) { e.removeAt(1); } },
+    { key: "search", group: "search", label: "Buscar 30 (existe)", run: function (e) { e.search(30); } },
+    { key: "search", group: "search", label: "Buscar 99 (não existe)", run: function (e) { e.search(99); } },
+    { key: "reverse", group: "reverse", label: "⇄ reverse()", run: function (e) { e.reverse(); } },
+    { key: "traverseBackward", group: "reverse", label: "◀◀ traverseBackward()", run: function (e) { e.traverseBackward(); } }
+  ];
+
+  var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Buscando", traverse: "Percorrendo", reverse: "Revertendo", bad: "Não encontrado", info: "Início" };
+
+  var state = {
+    listType: "singly",
+    renderer: null,
+    steps: [],
+    baseIndex: 0,
+    displayIndex: 0,
+    action: null,
+    actions: SINGLY_ACTIONS,
+    playing: false,
+    timer: null
+  };
+
+  var singlyRenderer = createSinglyRenderer(els.stageSvg);
+  var doublyRenderer = createDoublyRenderer(els.stageSvg);
+
+  function buildOpsButtons() {
+    els.opsInsert.innerHTML = "";
+    els.opsRemove.innerHTML = "";
+    els.opsOther.innerHTML = "";
+    state.actions.forEach(function (action, idx) {
+      var btn = document.createElement("button");
+      btn.className = "op-btn";
+      btn.dataset.group = action.group;
+      btn.dataset.idx = String(idx);
+      btn.textContent = action.label;
+      btn.addEventListener("click", function () { loadScenario(action); });
+      if (action.group === "insert") els.opsInsert.appendChild(btn);
+      else if (action.group === "remove") els.opsRemove.appendChild(btn);
+      else els.opsOther.appendChild(btn);
+    });
+  }
+
+  function highlightActiveButton() {
+    var idx = state.actions.indexOf(state.action);
+    [els.opsInsert, els.opsRemove, els.opsOther].forEach(function (row) {
+      Array.prototype.forEach.call(row.children, function (btn) {
+        btn.classList.toggle("active", Number(btn.dataset.idx) === idx);
+      });
+    });
+  }
+
+  function renderStruct() {
+    els.structBlock.textContent = getStruct(state.listType).join("\n");
+  }
+
+  function renderCode(resolved) {
+    var funcDef = getFuncDef(state.listType, resolved.func);
+    if (!funcDef) {
+      els.funcName.textContent = "—";
+      els.codeBlock.innerHTML = "";
+      var empty = document.createElement("div");
+      empty.className = "code-empty";
+      empty.textContent = "Nenhuma função em execução neste passo.";
+      els.codeBlock.appendChild(empty);
+      return;
+    }
+    els.funcName.textContent = funcDef.title + "()";
+    els.codeBlock.innerHTML = "";
+    funcDef.code.forEach(function (lineText, idx) {
+      var lineNum = idx + 1;
+      var row = document.createElement("div");
+      row.className = "code-line" + (resolved.lines.indexOf(lineNum) !== -1 ? " active" : "");
+      var ln = document.createElement("span"); ln.className = "ln"; ln.textContent = String(lineNum);
+      var code = document.createElement("span"); code.textContent = lineText;
+      row.appendChild(ln); row.appendChild(code);
+      els.codeBlock.appendChild(row);
+    });
+  }
+
+  function renderTrace(prevStep, step) {
+    var lines = diffPointers(prevStep, step, state.listType);
+    els.traceBlock.innerHTML = "";
+    if (lines.length === 0) {
+      var span = document.createElement("span");
+      span.className = "trace-empty";
+      span.textContent = "— nenhum ponteiro mudou neste passo —";
+      els.traceBlock.appendChild(span);
+      return;
+    }
+    lines.forEach(function (l) {
+      var span = document.createElement("span");
+      span.className = "trace-line";
+      span.textContent = l;
+      els.traceBlock.appendChild(span);
+    });
+  }
+
+  function render() {
+    var step = state.steps[state.baseIndex + state.displayIndex];
+    var prevStep = state.steps[state.baseIndex + state.displayIndex - 1];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    var total = state.steps.length - state.baseIndex;
+    els.stepCounter.textContent = "Passo " + (state.displayIndex + 1) + " / " + total;
+    els.scrubber.value = String(state.displayIndex);
+    els.message.textContent = step.message;
+
+    state.renderer.render(step);
+
+    var resolved = resolveActive(state.listType, step, state.action.key);
+    renderCode(resolved);
+    renderTrace(prevStep, step);
+  }
+
+  function loadScenario(action) {
+    stopPlaying();
+    var factory = state.listType === "doubly" ? createDoublyLinkedListEngine : createLinkedListEngine;
+    var e = factory();
+    [10, 20, 30, 40].forEach(function (v) { e.insertAtTail(v); });
+    var baseCount = e.getSteps().length;
+    action.run(e);
+    state.steps = e.getSteps();
+    state.baseIndex = baseCount;
+    state.action = action;
+    state.displayIndex = 0;
+    els.scrubber.min = "0";
+    els.scrubber.max = String(Math.max(0, state.steps.length - 1 - state.baseIndex));
+    els.scrubber.value = "0";
+    highlightActiveButton();
+    render();
+  }
+
+  function switchListType(newType) {
+    if (newType === state.listType) return;
+    state.listType = newType;
+    els.tabSingly.setAttribute("aria-selected", String(newType === "singly"));
+    els.tabDoubly.setAttribute("aria-selected", String(newType === "doubly"));
+    state.renderer = newType === "doubly" ? doublyRenderer : singlyRenderer;
+    state.renderer.build();
+    state.actions = newType === "doubly" ? DOUBLY_ACTIONS : SINGLY_ACTIONS;
+    buildOpsButtons();
+    renderLegend(newType);
+    renderStruct();
+    loadScenario(state.actions[0]);
+  }
+
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+
+  function goTo(idx) {
+    var max = state.steps.length - 1 - state.baseIndex;
+    state.displayIndex = Math.max(0, Math.min(max, idx));
+    render();
+    if (state.displayIndex >= max) stopPlaying();
+  }
+
+  els.tabSingly.addEventListener("click", function () { switchListType("singly"); });
+  els.tabDoubly.addEventListener("click", function () { switchListType("doubly"); });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.displayIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.displayIndex + 1); });
+  els.btnPlay.addEventListener("click", function () {
+    if (state.playing) { stopPlaying(); return; }
+    var max = state.steps.length - 1 - state.baseIndex;
+    if (state.displayIndex >= max) state.displayIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      if (state.displayIndex >= max) { stopPlaying(); return; }
+      state.displayIndex++;
+      render();
+      if (state.displayIndex >= max) stopPlaying();
+    }, Number(els.speed.value));
+  });
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () {
+    if (state.playing) { stopPlaying(); }
+  });
+
+  // ---- static removeTail comparison (for the explanatory section below) ----
+  function renderComparisonCode(container, codeLines, activeLines) {
+    container.innerHTML = codeLines.map(function (line, idx) {
+      var ln = idx + 1;
+      var cls = activeLines.indexOf(ln) !== -1 ? ' class="hl"' : "";
+      return "<span" + cls + ">" + line.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</span>";
+    }).join("\n");
+  }
+  renderComparisonCode(els.cmpSingly, SINGLY_FUNCS.removeTail.code, [5, 6]);
+  renderComparisonCode(els.cmpDoubly, DOUBLY_FUNCS.removeTail.code, [4]);
+
+  // ---- boot ----
+  state.renderer = singlyRenderer;
+  state.renderer.build();
+  buildOpsButtons();
+  renderLegend("singly");
+  renderStruct();
+  loadScenario(SINGLY_ACTIONS[0]);
+})();
+</script>
+
+</body></html>

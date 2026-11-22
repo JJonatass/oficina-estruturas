@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Taverna do Hash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--fundo:#121119;--mesa:#1B1A24;--painel:#23222F;--borda:#45425A;--chip:#2E2C3D;--texto:#ECE3CF;--mudo:#A9A1B8;--ouro:#F2C14E;--laranja:#F2A93B;--verde:#7FD8A4;--verdeC:#B7F0CC;--verm:#FF7A6B;--vermC:#FFB3A6;--azul:#7FB8FF;--madeira:#5a3d2b;--madeiraC:#7a5238;
+--titulo:"IM Fell English SC",Georgia,serif;--sans:"Alegreya Sans","Trebuchet MS",sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fundo);color:var(--texto);font-family:var(--sans);font-size:17px;line-height:1.4;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--borda);border-radius:5px;padding:0 5px;background:#121119;color:var(--ouro)}
+code{font-family:var(--mono);font-size:.9em;color:var(--ouro)}
+.hud{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--mesa);border-bottom:1px solid var(--borda)}
+.kick{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--ouro)}
+h1{margin:0;font-family:var(--titulo);font-weight:400;font-size:28px;line-height:1.05}
+.stats{display:flex;gap:20px;align-items:center}
+.stats div{display:grid;text-align:center}
+.stats span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mudo)}
+.stats b{font-size:22px;font-variant-numeric:tabular-nums}
+#combo.quente{color:var(--laranja);text-shadow:0 0 12px rgba(242,169,59,.6)}
+.vidas{font-size:22px;letter-spacing:2px;color:var(--verm)}
+.vidas i{font-style:normal;transition:opacity .3s,transform .3s}.vidas i.perdida{opacity:.18;transform:scale(.7)}
+.bts{display:flex;gap:8px}
+.bts button{background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:6px 12px;font-weight:700;font-size:15px}
+.bts .ouro{border-color:var(--ouro);color:var(--ouro)}
+main{max-width:1100px;margin:0 auto;padding:14px}
+/* cena */
+.cena{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--borda);
+  background:radial-gradient(ellipse at 50% -10%,rgba(242,169,59,.18),transparent 60%),repeating-linear-gradient(90deg,#2a1f19 0 118px,#241a15 118px 122px),#241a15}
+.cena::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 120%,transparent 40%,rgba(0,0,0,.55))}
+.topo-cena{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 0;position:relative;z-index:2}
+.placa{font-family:var(--titulo);font-size:20px;color:var(--ouro);background:#1a120d;border:2px solid #6b4a2f;border-radius:8px;padding:2px 14px;box-shadow:0 3px 0 #0006}
+.carga{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mudo)}
+.carga .trk{width:150px;height:9px;border-radius:5px;background:#0006;overflow:hidden;position:relative}
+.carga .trk i{display:block;height:100%;background:linear-gradient(90deg,var(--verde),var(--ouro));transition:width .4s}
+.carga .trk b{position:absolute;left:75%;top:-3px;bottom:-3px;width:2px;background:var(--verm)}
+.parede{position:relative;z-index:2;padding:14px 16px 6px}
+.viga{height:14px;border-radius:7px;background:linear-gradient(#7a5238,#4d3323);box-shadow:0 4px 0 #0007;margin:0 6px}
+.ganchos{display:grid;gap:8px;margin-top:-4px}
+.gancho{position:relative;height:118px;border:0;background:transparent;padding:0;display:flex;flex-direction:column;align-items:center;border-radius:12px;transition:background .2s}
+.gancho:hover{background:rgba(242,193,78,.08)}
+.gancho .prego{width:6px;height:26px;background:linear-gradient(#d9d2c4,#8d8678);border-radius:3px;margin-top:2px}
+.gancho .idx{position:absolute;bottom:0;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--mudo);background:#0007;border-radius:6px;padding:0 6px}
+.gancho.alvo-dica{background:rgba(242,193,78,.16);box-shadow:inset 0 0 0 2px var(--ouro)}
+.gancho.sonda{animation:sonda .35s ease}
+@keyframes sonda{50%{background:rgba(127,184,255,.25)}}
+.gancho.errou{animation:treme .4s}
+@keyframes treme{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.bolsa{width:58px;height:62px;margin-top:-2px;position:relative;display:grid;place-items:center;font-weight:800;font-size:19px;color:#2b1a0e;font-variant-numeric:tabular-nums}
+.bolsa svg{position:absolute;inset:0;width:100%;height:100%}
+.bolsa span{position:relative;margin-top:14px}
+.lapide{width:50px;height:58px;margin-top:2px;display:grid;place-items:center;font-family:var(--titulo);font-size:15px;color:#cfc8d8;background:linear-gradient(#5d5975,#3b384d);border-radius:22px 22px 6px 6px;box-shadow:0 3px 0 #0007}
+.balcao{position:relative;z-index:2;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;padding:8px 16px 16px}
+.fila{display:flex;gap:10px;align-items:flex-end;min-height:120px}
+.cliente{display:grid;justify-items:center;gap:4px;transition:transform .45s cubic-bezier(.3,1.4,.5,1),opacity .3s;opacity:.55;transform:scale(.82)}
+.cliente.atual{opacity:1;transform:scale(1)}
+.cliente .rosto{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:#3a2b3d;border:3px solid #6b5470}
+.cliente .pedido{font-weight:800;font-size:15px;background:var(--chip);border:1px solid var(--borda);border-radius:8px;padding:2px 9px;white-space:nowrap}
+.cliente.atual .pedido{border-color:var(--ouro);color:var(--ouro);font-size:17px}
+.cliente.entra{animation:entra .5s ease}
+@keyframes entra{from{transform:translateX(-80px) scale(.8);opacity:0}}
+.relogio{position:relative;width:96px;height:96px}
+.relogio svg{width:96px;height:96px;transform:rotate(-90deg)}
+.relogio circle{fill:none;stroke-width:9}
+.relogio .f{stroke:#0006}.relogio .v{stroke:var(--verde);stroke-linecap:round;transition:stroke .3s}
+.relogio b{position:absolute;inset:0;display:grid;place-items:center;font-size:24px;font-variant-numeric:tabular-nums}
+.ordem{position:relative;z-index:2;margin:0 16px 14px;background:rgba(18,17,25,.82);border:1px solid var(--borda);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ordem p{margin:0;font-size:18px}
+.ordem .conta{font-family:var(--mono);color:var(--mudo);font-size:14px}
+#dicas{font-size:15px;color:var(--ouro)}
+/* efeitos */
+.voo{position:fixed;z-index:30;pointer-events:none;transition:transform .55s cubic-bezier(.4,1.4,.6,1)}
+.flutua{position:fixed;z-index:31;pointer-events:none;font-weight:800;font-size:22px;color:var(--ouro);text-shadow:0 2px 0 #000;animation:flutua 1s ease forwards}
+@keyframes flutua{to{transform:translateY(-60px);opacity:0}}
+.banner{position:absolute;z-index:20;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);opacity:0;font-family:var(--titulo);font-size:46px;color:var(--ouro);text-shadow:0 4px 0 #000,0 0 30px rgba(242,193,78,.5);white-space:nowrap;pointer-events:none;transition:all .35s}
+.banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.cena.dano{animation:dano .4s}
+@keyframes dano{30%{box-shadow:inset 0 0 0 4px var(--verm),0 0 40px rgba(255,122,107,.4)}}
+/* janelas */
+.modal[hidden]{display:none}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(8,7,12,.86);display:flex;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}
+.caixa{margin:auto;max-width:680px;width:100%;background:var(--painel);border:2px solid var(--ouro);border-radius:16px;padding:18px 22px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.caixa h2{font-family:var(--titulo);font-weight:400;font-size:32px;line-height:1.1;margin:4px 0 10px}
+.caixa ol{padding-left:22px}.caixa li{margin:6px 0}
+.nota{color:var(--mudo);font-size:15px}
+.mbts{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap}
+.mbts button{background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:8px 16px;font-weight:700}
+.mbts .pri{background:var(--laranja);border-color:var(--laranja);color:#1d1408;font-weight:800}
+.mini{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.mini span{width:46px;height:46px;border-radius:9px;display:grid;place-items:center;background:var(--chip);border:2px solid var(--borda);font-weight:800;position:relative}
+.mini span small{position:absolute;bottom:-17px;font-family:var(--mono);font-size:11px;color:var(--mudo);font-weight:500}
+.mini .oc{opacity:.75}.mini .certo{border-color:var(--verde);background:#20352b}.mini .clicado{border-color:var(--verm)}.mini .ini{box-shadow:0 0 0 2px var(--azul)}
+.ops{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.ops label{display:flex;gap:6px;align-items:center;font-size:15px;color:var(--mudo)}
+.placar{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}
+.placar div{flex:1;min-width:120px;background:var(--mesa);border:1px solid var(--borda);border-radius:12px;padding:10px;text-align:center;display:grid}
+.placar span{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mudo)}
+.placar b{font-size:28px;font-variant-numeric:tabular-nums}.placar b.ouro{color:var(--ouro)}
+@media (max-width:700px){h1{font-size:22px}.stats{gap:10px}.stats b{font-size:17px}.gancho{height:96px}.bolsa{width:44px;height:48px;font-size:15px}.relogio,.relogio svg{width:72px;height:72px}.fila{min-height:100px}.cliente .rosto{width:40px;height:40px;font-size:20px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hud">
+  <div><p class="kick">Masmorra · Tabela hash</p><h1>A Taverna do Hash</h1></div>
+  <div class="stats">
+    <div><span>Pontos</span><b id="pontos">0</b></div>
+    <div><span>Combo</span><b id="combo">×1</b></div>
+    <div><span>Onda</span><b id="onda">1</b></div>
+    <div><span>Vidas</span><b class="vidas" id="vidas"></b></div>
+    <div><span>Recorde</span><b id="rec">0</b></div>
+  </div>
+  <div class="bts"><button id="bSom">Som <kbd>M</kbd></button><button id="bPausa">Pausar <kbd>P</kbd></button><button id="bDica" class="ouro">Dica <kbd>H</kbd></button></div>
+</header>
+<main>
+  <section class="cena" id="cena">
+    <div class="topo-cena"><span class="placa" id="placa">Guarda-volumes · 7 ganchos</span>
+      <span class="carga">Ocupação <span class="trk"><i id="cargaBar"></i><b title="limite 0,75"></b></span><span id="cargaTxt">0/7</span></span></div>
+    <div class="parede"><div class="viga"></div><div class="ganchos" id="ganchos"></div></div>
+    <div class="ordem"><p id="ordem">A taverna abre em instantes…</p><span class="conta" id="conta"></span><span id="dicas"></span></div>
+    <div class="balcao"><div class="fila" id="fila"></div><div class="relogio"><svg viewBox="0 0 100 100"><circle class="f" cx="50" cy="50" r="42"/><circle class="v" id="anel" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="0"/></svg><b id="seg">–</b></div></div>
+    <div class="banner" id="banner"></div>
+  </section>
+</main>
+<div class="modal" id="modal" hidden><div class="caixa" role="dialog" aria-modal="true"><div id="mc"></div></div></div>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const LAPIDE = '†';
+const ROSTOS = ['🧙','🧝','🧛','🧟','🦉','🐸','🧌','🦊','🐺','🧚','🐲','🦇'];
+const CHAVE = 'oficina-taverna-recorde';
+
+/* ---------- som (Web Audio, criado só depois do primeiro clique) ---------- */
+let ctx = null, som = true;
+function tom(f, d=0.12, tipo='triangle', v=0.07, atraso=0){
+  if (!som) return;
+  try {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ctx.currentTime + atraso, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = tipo; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + d + 0.02);
+  } catch(e) {}
+}
+const SFX = {
+  acerto(c){ [523,659,784].forEach((f,i)=>tom(f*(1+0.06*Math.min(c,5)), .13, 'triangle', .07, i*.05)); },
+  erro(){ tom(196,.25,'sawtooth',.06); tom(147,.3,'sawtooth',.05,.08); },
+  sonda(){ tom(880,.05,'square',.025); },
+  onda(){ [392,523,659,784,1046].forEach((f,i)=>tom(f,.18,'triangle',.06,i*.09)); },
+  tic(){ tom(1200,.03,'square',.02); },
+  fim(){ [523,392,330,262].forEach((f,i)=>tom(f,.3,'triangle',.07,i*.16)); }
+};
+
+/* ---------- estado ---------- */
+let S = null, recorde = 0;
+try { recorde = +localStorage.getItem(CHAVE) || 0; } catch(e) {}
+$('#rec').textContent = recorde.toLocaleString('pt-BR');
+const opc = { explicar:true, instrucoes:true };
+
+function novoJogo(){
+  S = { m:7, t:Array(7).fill(null), n:0, vidas:3, pontos:0, combo:1, onda:0, fila:[], atual:null,
+        tempo:0, limite:0, pausado:false, ocupado:false, dica:0, acertosOnda:0, rodando:true };
+  desenharVidas(); placar(); desenharGanchos(); proximaOnda();
+}
+
+/* sonda linear: caminho até a posição de inserção (reusa a 1ª lápide) ou até achar a chave */
+function caminhoInserir(k){
+  const m = S.m, cam = []; let i = k % m, lap = -1;
+  for (let c = 0; c < m; c++) {
+    cam.push(i);
+    if (S.t[i] === null) return {pos: lap >= 0 ? lap : i, cam: lap >= 0 ? cam.slice(0, cam.indexOf(lap)+1) : cam, reusou: lap >= 0};
+    if (S.t[i] === LAPIDE && lap < 0) lap = i;
+    i = (i + 1) % m;
+  }
+  return {pos: lap, cam: cam.slice(0, cam.indexOf(lap)+1), reusou:true};
+}
+function caminhoBuscar(k){
+  const cam = []; let i = k % S.m;
+  for (let c = 0; c < S.m; c++) { cam.push(i); if (S.t[i] === k) return {pos:i, cam}; if (S.t[i] === null) break; i = (i+1) % S.m; }
+  return {pos:-1, cam};
+}
+const chaves = () => S.t.filter(x => x !== null && x !== LAPIDE);
+/* chaves que ainda não têm um pedido de retirada pendente */
+const chavesLivres = () => chaves().filter(k => !S.fila.some(p => p.tipo === 'd' && p.k === k) && !(S.atual && S.atual.tipo === 'd' && S.atual.k === k));
+function chaveNova(colidir){
+  const existentes = new Set(chaves());
+  for (let t = 0; t < 300; t++) {
+    let k;
+    if (colidir) { const ocup = S.t.map((x,i)=>i).filter(i=>S.t[i] !== null); if (!ocup.length) colidir = false; else { const r = pick(ocup); k = r + S.m * rnd(1, Math.floor(98 / S.m)); } }
+    if (!colidir) k = rnd(10, 99);
+    if (k >= 10 && k <= 99 && !existentes.has(k) && !S.fila.some(p => p.k === k)) return k;
+  }
+  return rnd(10,99);
+}
+
+/* ---------- ondas ---------- */
+function proximaOnda(){
+  S.onda++; S.acertosOnda = 0;
+  $('#onda').textContent = S.onda;
+  const o = S.onda, plano = [];
+  if (o === 1) plano.push(['g',0],['g',1],['g',0],['g',1]);
+  else if (o === 2) plano.push(['g',1],['d'],['g',1],['d']);
+  else {
+    const qtd = 4 + Math.min(4, o - 2);
+    for (let i = 0; i < qtd; i++) plano.push(Math.random() < 0.3 ? ['d'] : ['g', Math.random() < 0.65 ? 1 : 0]);
+  }
+  S.plano = plano; S.fila = [];
+  S.tMax = Math.max(4, 13 - (o - 1) * 1.6);
+  banner(`Onda ${o}`); SFX.onda();
+  setTimeout(() => { encherFila(); proximoCliente(); }, 900);
+}
+function encherFila(){
+  while (S.fila.length < 4 && S.plano.length) {
+    const [tipo, col] = S.plano.shift();
+    if (tipo === 'd') {
+      const cs = chavesLivres();
+      if (cs.length < 2) { S.fila.push({tipo:'g', k:chaveNova(1), rosto:pick(ROSTOS)}); continue; }
+      S.fila.push({tipo:'d', k:pick(cs), rosto:pick(ROSTOS)});
+    } else S.fila.push({tipo:'g', k:null, col, rosto:pick(ROSTOS)});
+  }
+}
+function proximoCliente(){
+  if (!S.rodando) return;
+  if (!S.fila.length) {
+    encherFila();
+    if (!S.fila.length) { return proximaOnda(); }
+  }
+  S.atual = S.fila.shift();
+  /* a chave de quem guarda é sorteada só agora, para depender do estado real da tabela */
+  if (S.atual.tipo === 'g') {
+    if (S.n + 1 > 0.75 * S.m && S.m < 14) return rehash();
+    if (S.n + 1 > 0.75 * S.m) { const r = S.atual.rosto; S.atual = null; S.atual = {tipo:'d', k:pick(chavesLivres()), rosto:r}; }
+    else S.atual.k = chaveNova(S.atual.col);
+  }
+  S.dica = 0; $('#dicas').textContent = '';
+  encherFila();
+  desenharFila(true);
+  const a = S.atual;
+  $('#ordem').innerHTML = a.tipo === 'g'
+    ? `${a.rosto} quer <b>guardar</b> a bolsa <b>${a.k}</b>. Em qual gancho ela fica?`
+    : (a.tipo === 'r' ? `Mudança de parede! Pendure de novo a bolsa <b>${a.k}</b>.` : `${a.rosto} quer <b>retirar</b> a bolsa <b>${a.k}</b>. Em qual gancho ela está?`);
+  $('#conta').textContent = `${a.k} % ${S.m} = ?`;
+  S.limite = a.tipo === 'r' ? Math.max(7, S.tMax) : S.tMax; S.tempo = S.limite; S.ocupado = false;
+}
+
+/* ---------- rehash: a parede dobra e o jogador pendura tudo de novo ---------- */
+function rehash(){
+  const velhas = S.t.map((x,i)=>[x,i]).filter(([x]) => x !== null && x !== LAPIDE).map(([x]) => x);
+  S.fila.unshift(S.atual);
+  banner('Rehash! 7 → 14 ganchos'); SFX.onda();
+  S.ocupado = true;
+  setTimeout(() => {
+    S.m = 14; S.t = Array(14).fill(null); S.n = 0;
+    desenharGanchos(true);
+    S.fila = velhas.map(k => ({tipo:'r', k, rosto:'📦'})).concat(S.fila.map(p => ({...p, k: p.tipo==='g' ? null : p.k})));
+    $('#placa').textContent = 'Guarda-volumes · 14 ganchos';
+    proximoCliente();
+  }, 1400);
+}
+
+/* ---------- jogada ---------- */
+function escolher(i){
+  if (!S || !S.rodando || S.pausado || S.ocupado || !S.atual || !$('#modal').hidden) return;
+  const a = S.atual;
+  const r = (a.tipo === 'd') ? caminhoBuscar(a.k) : caminhoInserir(a.k);
+  if (i === r.pos) acertou(i, r); else errou(i, r, false);
+}
+function acertou(i, r){
+  S.ocupado = true;
+  const a = S.atual, frac = S.tempo / S.limite;
+  const ganho = Math.round((100 + 150 * frac - (S.dica ? 40 * S.dica : 0)) * S.combo);
+  /* anima a sondagem: cada gancho visitado pisca */
+  r.cam.forEach((g, k) => setTimeout(() => { const el = ganchoEl(g); el && el.classList.remove('sonda'); void (el && el.offsetWidth); el && el.classList.add('sonda'); SFX.sonda(); }, k * 110));
+  setTimeout(() => {
+    if (a.tipo === 'd') {
+      voarDoGancho(i);
+      S.t[i] = LAPIDE; S.n--;
+    } else {
+      voarParaGancho(i, a.k);
+      S.t[i] = a.k; S.n++;
+    }
+    S.pontos += Math.max(20, ganho); S.combo = Math.min(5, S.combo + 1);
+    flutua(`+${Math.max(20, ganho)}${S.combo > 2 ? ' ×' + (S.combo-1) : ''}`, ganchoEl(i));
+    SFX.acerto(S.combo);
+    placar();
+    setTimeout(() => { desenharGanchos(); S.atual = null; proximoCliente(); }, 560);
+  }, r.cam.length * 110 + 80);
+}
+function errou(i, r, tempoEsgotado){
+  S.ocupado = true; S.combo = 1; S.vidas--; placar(); desenharVidas();
+  SFX.erro();
+  $('#cena').classList.remove('dano'); void $('#cena').offsetWidth; $('#cena').classList.add('dano');
+  if (i >= 0) { const el = ganchoEl(i); if (el) { el.classList.remove('errou'); void el.offsetWidth; el.classList.add('errou'); } }
+  const continuar = () => {
+    if (S.vidas <= 0) return fimDeJogo();
+    /* a jogada certa acontece mesmo assim, para a tabela seguir consistente */
+    const a = S.atual;
+    if (a.tipo === 'd') { S.t[r.pos] = LAPIDE; S.n--; } else { S.t[r.pos] = a.k; S.n++; }
+    desenharGanchos(); S.atual = null; proximoCliente();
+  };
+  if (opc.explicar) setTimeout(() => explicar(i, r, tempoEsgotado, continuar), 380);
+  else setTimeout(continuar, 700);
+}
+function explicar(i, r, tempoEsgotado, depois){
+  const a = S.atual, m = S.m, ini = a.k % m;
+  const casas = S.t.map((x,j) => {
+    const cls = [x !== null ? 'oc' : '', j === r.pos ? 'certo' : '', j === i ? 'clicado' : '', j === ini ? 'ini' : ''].join(' ');
+    return `<span class="${cls}">${x === null ? '' : x}<small>${j}</small></span>`;
+  }).join('');
+  let porque;
+  if (a.tipo === 'd') porque = `A busca começa em ${a.k} % ${m} = <b>${ini}</b> e anda para a direita${r.cam.length > 1 ? ` passando por ${r.cam.slice(0,-1).join(', ')}` : ''}, até achar ${a.k} no gancho <b>${r.pos}</b>. Lápides (†) não param a busca; só um gancho vazio pararia.`;
+  else if (a.tipo === 'r' || a.tipo === 'g') {
+    const ocup = r.cam.slice(0,-1);
+    porque = `${a.k} % ${m} = <b>${ini}</b>. ${ocup.length ? `Ocupado${ocup.length>1?'s':''}: ${ocup.join(', ')}. ` : ''}${r.reusou ? `A primeira lápide do caminho é reaproveitada: gancho <b>${r.pos}</b>.` : `Primeiro gancho livre: <b>${r.pos}</b>.`}${a.tipo==='r' ? ' Depois do rehash a parede tem 14 ganchos, então o resto da divisão muda.' : ''}`;
+  }
+  modal(`<p class="kick">${tempoEsgotado ? 'O cliente cansou de esperar' : 'Gancho errado'}</p><h2>A jogada certa</h2>
+    <p>${porque}</p><div class="mini">${casas}</div><p class="nota">Azul = onde a sondagem começa · verde = resposta · vermelho = seu clique.</p>`,
+    [{t:'Continuar', pri:true, f:depois}]);
+}
+
+/* ---------- tempo ---------- */
+let ult = performance.now();
+function laco(t){
+  const dt = Math.min(0.1, (t - ult) / 1000); ult = t;
+  if (S && S.rodando && !S.pausado && !S.ocupado && S.atual && $('#modal').hidden) {
+    const antes = Math.ceil(S.tempo);
+    S.tempo -= dt;
+    if (Math.ceil(S.tempo) !== antes && S.tempo < 3.5 && S.tempo > 0) SFX.tic();
+    if (S.tempo <= 0) { S.tempo = 0; const a = S.atual; errou(-1, a.tipo === 'd' ? caminhoBuscar(a.k) : caminhoInserir(a.k), true); }
+  }
+  if (S && S.atual) {
+    const f = Math.max(0, S.tempo / S.limite);
+    $('#anel').style.strokeDashoffset = String(264 * (1 - f));
+    $('#anel').style.stroke = f > .5 ? 'var(--verde)' : (f > .25 ? 'var(--ouro)' : 'var(--verm)');
+    $('#seg').textContent = Math.ceil(S.tempo);
+  }
+  requestAnimationFrame(laco);
+}
+requestAnimationFrame(laco);
+
+/* ---------- desenho ---------- */
+function bolsaSVG(k, cor){ return `<div class="bolsa"><svg viewBox="0 0 60 64"><path d="M22 8 Q30 2 38 8 L36 16 Q52 22 54 42 Q54 60 30 60 Q6 60 6 42 Q8 22 24 16 Z" fill="${cor}" stroke="#2b1a0e" stroke-width="2.5"/><path d="M22 16 Q30 20 38 16" stroke="#2b1a0e" stroke-width="2.5" fill="none"/></svg><span>${k}</span></div>`; }
+const corDe = k => ['#e8c27a','#d9a066','#c98b5e','#e3b778','#f0cf8f'][k % 5];
+function desenharGanchos(entrada){
+  const g = $('#ganchos');
+  g.style.gridTemplateColumns = `repeat(${S.m === 14 ? 7 : 7}, 1fr)`;
+  g.innerHTML = S.t.map((x,i) => `<button class="gancho" data-i="${i}" aria-label="Gancho ${i}${x===null?' vazio':(x===LAPIDE?' com lápide':' com a bolsa '+x)}"><span class="prego"></span>${x === null ? '' : (x === LAPIDE ? `<span class="lapide">${LAPIDE}</span>` : bolsaSVG(x, corDe(x)))}<span class="idx">${i}</span></button>`).join('');
+  g.querySelectorAll('.gancho').forEach(b => b.onclick = () => escolher(+b.dataset.i));
+  $('#cargaBar').style.width = (100 * S.n / S.m) + '%';
+  $('#cargaTxt').textContent = `${S.n}/${S.m}`;
+}
+const ganchoEl = i => document.querySelector(`.gancho[data-i="${i}"]`);
+function desenharFila(entra){
+  const lista = [S.atual, ...S.fila].filter(Boolean).slice(0, 5);
+  $('#fila').innerHTML = lista.map((p, j) => `<div class="cliente ${j===0?'atual':''} ${entra && j===lista.length-1?'entra':''}"><div class="rosto">${p.rosto}</div><div class="pedido">${p.tipo==='d' ? '🎟 ' + p.k : (p.tipo==='r' ? '📦 ' + p.k : '👜 ' + (p.k ?? '?'))}</div></div>`).join('');
+}
+function desenharVidas(){ $('#vidas').innerHTML = [0,1,2].map(i => `<i class="${i >= S.vidas ? 'perdida' : ''}">♥</i>`).join(''); }
+function placar(){
+  $('#pontos').textContent = S.pontos.toLocaleString('pt-BR');
+  $('#combo').textContent = '×' + S.combo; $('#combo').classList.toggle('quente', S.combo >= 3);
+}
+function voarParaGancho(i, k){
+  const de = document.querySelector('.cliente.atual .pedido'), para = ganchoEl(i);
+  if (!de || !para) return;
+  const a = de.getBoundingClientRect(), b = para.getBoundingClientRect();
+  const v = document.createElement('div'); v.className = 'voo'; v.innerHTML = bolsaSVG(k, corDe(k));
+  v.style.left = a.left + 'px'; v.style.top = (a.top - 30) + 'px'; document.body.appendChild(v);
+  requestAnimationFrame(() => { v.style.transform = `translate(${b.left + b.width/2 - 29 - a.left}px, ${b.top + 26 - a.top + 30}px)`; });
+  setTimeout(() => v.remove(), 600);
+}
+function voarDoGancho(i){
+  const de = ganchoEl(i), para = document.querySelector('.cliente.atual');
+  if (!de || !para) return;
+  const a = de.getBoundingClientRect(), b = para.getBoundingClientRect(), k = S.t[i];
+  const v = document.createElement('div'); v.className = 'voo'; v.innerHTML = bolsaSVG(k, corDe(k));
+  v.style.left = (a.left + a.width/2 - 29) + 'px'; v.style.top = (a.top + 26) + 'px'; document.body.appendChild(v);
+  requestAnimationFrame(() => { v.style.transform = `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(.6)`; });
+  setTimeout(() => v.remove(), 600);
+}
+function flutua(txt, el){
+  if (!el) return; const r = el.getBoundingClientRect();
+  const f = document.createElement('div'); f.className = 'flutua'; f.textContent = txt;
+  f.style.left = (r.left + r.width/2 - 30) + 'px'; f.style.top = (r.top + 10) + 'px';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 1000);
+}
+function banner(txt){ const b = $('#banner'); b.textContent = txt; b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1100); }
+
+/* ---------- dica ---------- */
+function dica(){
+  if (!S || !S.atual || S.ocupado || S.dica >= 2) return;
+  const a = S.atual, r = a.tipo === 'd' ? caminhoBuscar(a.k) : caminhoInserir(a.k);
+  S.dica++; S.tempo = Math.min(S.limite, S.tempo + 3); S.combo = 1; placar();
+  if (S.dica === 1) { $('#conta').textContent = `${a.k} % ${S.m} = ${a.k % S.m}`; $('#dicas').textContent = 'Comece pelo gancho ' + (a.k % S.m) + ' e ande para a direita.'; ganchoEl(a.k % S.m)?.classList.add('alvo-dica'); }
+  else { document.querySelectorAll('.alvo-dica').forEach(x=>x.classList.remove('alvo-dica')); ganchoEl(r.pos)?.classList.add('alvo-dica'); $('#dicas').textContent = `Caminho: ${r.cam.join(' → ')}.`; }
+}
+
+/* ---------- janelas ---------- */
+function modal(html, botoes){
+  $('#mc').innerHTML = html + `<div class="mbts">${botoes.map((b,i)=>`<button data-i="${i}" class="${b.pri?'pri':''}">${b.t}</button>`).join('')}</div>`;
+  $('#modal').hidden = false;
+  $('#mc').querySelectorAll('[data-i]').forEach(x => x.onclick = () => { $('#modal').hidden = true; botoes[+x.dataset.i].f && botoes[+x.dataset.i].f(); });
+  setTimeout(() => ($('#mc .pri') || $('#mc button'))?.focus(), 30);
+}
+function comoJogar(inicio){
+  modal(`<p class="kick">Masmorra · Tabela hash</p><h2>A Taverna do Hash</h2>
+  <p>Os clientes chegam com bolsas numeradas. Cada bolsa vai no gancho <code>número % ganchos</code>. Se o gancho estiver ocupado, ande para a direita até achar um livre (sondagem linear), dando a volta no fim da parede.</p>
+  <ol><li><b>👜 Guardar:</b> clique no gancho onde a bolsa fica.</li>
+  <li><b>🎟 Retirar</b> (a partir da onda 2): clique no gancho onde a bolsa está. Ela sai e deixa uma lápide <b>†</b>. A busca passa por lápides sem parar, e uma bolsa nova reaproveita a primeira lápide do caminho.</li>
+  <li><b>Rehash:</b> quando a ocupação passa de 0,75, a parede dobra para 14 ganchos e você pendura todas as bolsas de novo.</li>
+  <li>Acertos seguidos multiplicam os pontos. Cada erro ou cliente que cansa de esperar custa uma vida ♥.</li></ol>
+  <p class="nota">Dica <kbd>H</kbd>: 1ª camada mostra o resto da divisão, 2ª mostra o caminho. Dica zera o combo e dá +3 s. Teclado: números de 0 a 9 escolhem o gancho.</p>
+  <div class="ops"><label><input type="checkbox" id="oExp" ${opc.explicar?'checked':''}> Explicar cada erro numa janela</label></div>`,
+  inicio ? [{t:'Abrir a taverna', pri:true, f:() => { opc.explicar = $('#oExp') ? $('#oExp').checked : opc.explicar; novoJogo(); }}]
+         : [{t:'Voltar ao jogo', pri:true, f:() => { S.pausado = false; }}]);
+  const cb = $('#oExp'); if (cb) cb.onchange = () => opc.explicar = cb.checked;
+}
+function fimDeJogo(){
+  S.rodando = false; SFX.fim();
+  const novo = S.pontos > recorde;
+  if (novo) { recorde = S.pontos; try { localStorage.setItem(CHAVE, String(recorde)); } catch(e) {} $('#rec').textContent = recorde.toLocaleString('pt-BR'); }
+  modal(`<p class="kick">A taverna fechou</p><h2>${novo ? 'Novo recorde neste aparelho!' : 'Fim de expediente'}</h2>
+    <div class="placar"><div><span>Pontos</span><b class="ouro">${S.pontos.toLocaleString('pt-BR')}</b></div><div><span>Onda</span><b>${S.onda}</b></div><div><span>Recorde</span><b>${recorde.toLocaleString('pt-BR')}</b></div></div>
+    <p class="nota">Cada partida sorteia clientes novos. Tente passar do rehash sem perder vidas.</p>`,
+    [{t:'Jogar de novo', pri:true, f:novoJogo}]);
+}
+function pausar(){
+  if (!S || !S.rodando || !$('#modal').hidden) return;
+  S.pausado = true;
+  modal('<p class="kick">Pausa</p><h2>A taverna espera por você</h2><p class="nota">O relógio está parado.</p>', [{t:'Continuar', pri:true, f:() => S.pausado = false}, {t:'Como jogar', f:() => { comoJogar(false); }}]);
+}
+
+/* ---------- controles ---------- */
+$('#bSom').onclick = () => { som = !som; $('#bSom').innerHTML = (som ? 'Som' : 'Mudo') + ' <kbd>M</kbd>'; };
+$('#bPausa').onclick = pausar;
+$('#bDica').onclick = dica;
+let buf = '', bufT = null;
+document.addEventListener('keydown', e => {
+  if (!$('#modal').hidden) { if (e.key === 'Enter' || e.key === 'Escape') { const b = $('#mc .pri'); if (b) { e.preventDefault(); b.click(); } } return; }
+  const k = e.key.toLowerCase();
+  if (k === 'm') $('#bSom').click();
+  else if (k === 'p') pausar();
+  else if (k === 'h') dica();
+  else if (/^[0-9]$/.test(k) && S && S.atual) {
+    if (S.m > 10) { buf += k; clearTimeout(bufT); if (buf.length === 2 || +buf > 1) { const v = +buf; buf = ''; if (v < S.m) escolher(v); } else bufT = setTimeout(() => { const v = +buf; buf = ''; escolher(v); }, 600); }
+    else if (+k < S.m) escolher(+k);
+  }
+});
+/* gancho para testes automáticos */
+window.__resposta = () => { if (!S || !S.atual) return null; const a = S.atual; return (a.tipo === 'd' ? caminhoBuscar(a.k) : caminhoInserir(a.k)).pos; };
+window.__estado = () => S;
+
+S = { m:7, t:Array(7).fill(null), n:0, vidas:3, pontos:0, combo:1 };
+desenharGanchos(); desenharVidas(); placar();
+comoJogar(true);
+})();
+</script>
+</body>
+</html>

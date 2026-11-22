@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oficina de Estruturas de Dados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f8fa; --surface:#ffffff; --ink:#1f2328; --muted:#59636e; --line:#d1d9e0; --accent:#0969da; --ok:#1a7f37;
+  --warn:#9a6700; --bad:#cf222e; --soft:#eef3f8; --term:#0d1117; --termink:#e6edf3;
+  --k:#ff7b72; --s:#a5d6ff; --c:#8b949e; --n:#79c0ff; --f:#d2a8ff; --p:#ffa657;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1117;--surface:#151b23;--ink:#e6edf3;--muted:#9198a1;--line:#30363d;--accent:#4493f8;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--soft:#1c2430;--term:#010409;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1117;--surface:#151b23;--ink:#e6edf3;--muted:#9198a1;--line:#30363d;--accent:#4493f8;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--soft:#1c2430;--term:#010409;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,pre{font-family:var(--mono);font-size:.9em}
+code{background:var(--soft);padding:.1em .35em;border-radius:4px}
+h2,h3{text-wrap:balance}
+
+/* Topo */
+header.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:12px;padding:10px 16px;max-width:1400px;margin:0 auto;flex-wrap:wrap}
+.brand{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px;letter-spacing:-.01em;border:0;background:none;padding:0}
+.brand small{font-weight:500;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.modo{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.modo button{border:0;background:transparent;padding:6px 14px;font-weight:600;color:var(--muted)}
+.modo button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.prog{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;margin-left:auto}
+.prog .trk{width:120px;height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
+.prog .trk i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.tema{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tema svg{width:16px;height:16px}
+nav.mods{display:flex;gap:6px;padding:0 16px 10px;max-width:1400px;margin:0 auto;overflow-x:auto;align-items:center;scrollbar-width:thin}
+nav.mods .era{flex:none;font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:0 2px 0 8px;border-left:1px solid var(--line)}
+nav.mods .era:first-child{border-left:0;padding-left:0}
+nav.mods button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:13px;display:flex;gap:6px;align-items:center;white-space:nowrap}
+nav.mods button b{font-family:var(--mono);font-size:12px}
+nav.mods button[aria-current="true"]{border-color:var(--ink);background:var(--ink);color:var(--surface)}
+.anel{width:12px;height:12px;flex:none}
+.anel circle{fill:none;stroke-width:3}
+.anel .f{stroke:var(--line)} .anel .v{stroke:var(--ok);transition:stroke-dasharray .3s}
+nav.mods button[aria-current="true"] .anel .f{stroke:#ffffff44}
+main{max-width:1400px;margin:0 auto;padding:16px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;font-weight:500;font-size:14px}
+.btn.pri{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.sm{padding:3px 8px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.small{font-size:12.5px;color:var(--muted)}
+
+/* Mapa */
+.mapa{max-width:1100px;margin:0 auto}
+.hero{padding:18px 4px 8px}
+.hero .kick{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.hero h1{font-size:30px;margin:4px 0 8px;letter-spacing:-.02em;text-wrap:balance}
+.hero p{max-width:70ch;margin:0;color:var(--muted)}
+.como{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:18px 0 8px}
+.como div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px}
+.como b{display:block;margin-bottom:2px}
+.eraBox{margin-top:22px}
+.eraBox h2{font-size:18px;margin:0;display:flex;gap:10px;align-items:baseline}
+.eraBox h2 span{font-family:var(--mono);font-size:13px;color:var(--muted);font-weight:600}
+.eraBox p{margin:2px 0 10px;color:var(--muted);font-size:14px}
+.gradeMods{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.cardMod{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:4px;align-content:start}
+.cardMod:hover{border-color:var(--accent)}
+.cardMod .n{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.cardMod .t{font-weight:600;font-size:15px}
+.cardMod .s{font-size:13px;color:var(--muted)}
+.barra{height:4px;background:var(--soft);border-radius:2px;overflow:hidden;margin-top:6px}
+.barra i{display:block;height:100%;background:var(--ok)}
+
+/* Cabeçalho do módulo */
+.modTop{max-width:1100px;margin:0 auto 12px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.modTop .kick{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.modTop h2{font-size:24px;margin:2px 0 0;letter-spacing:-.015em}
+.modTop .acoes{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Teoria */
+.deck{max-width:1100px;margin:0 auto;display:grid;gap:12px}
+.trilho{display:flex;gap:4px}
+.trilho button{flex:1;height:6px;border:0;border-radius:3px;background:var(--line);padding:0}
+.trilho button.feito{background:var(--ok)}.trilho button.atual{background:var(--accent)}
+.slide{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:26px 32px;min-height:380px}
+.slide > h2{font-size:24px;margin:0 0 12px;letter-spacing:-.01em}
+.slide .etq{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:4px}
+.slide p,.slide li{max-width:72ch}
+.slide .lead{font-size:17px}
+.slide h3{font-size:16px;margin:20px 0 6px}
+.slide pre{background:var(--term);color:var(--termink);padding:12px 14px;border-radius:8px;overflow-x:auto;line-height:1.5;font-size:13.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:10px 0}
+.card{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);font-size:14px}
+.card b{display:block;margin-bottom:2px}
+.objetivos,.resumo{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;padding:10px 16px;margin:14px 0;background:var(--bg)}
+.resumo{border-left-color:var(--ok)}
+.objetivos ul,.resumo ul{margin:6px 0 0;padding-left:20px}.objetivos li,.resumo li{margin:3px 0}
+.analogia{border-radius:10px;background:var(--soft);padding:12px 16px;margin:14px 0}
+.analogia > b:first-child{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
+.alerta{margin-top:14px;border-left:4px solid var(--bad);background:var(--soft);padding:10px 14px;font-size:14px;border-radius:0 8px 8px 0}
+.free{margin-top:14px;border-left:4px solid var(--ok);background:var(--soft);padding:10px 14px;font-size:14px;border-radius:0 8px 8px 0}
+table.cmp{border-collapse:collapse;width:100%;font-size:14px;display:block;overflow-x:auto}
+table.cmp td,table.cmp th{border-bottom:1px solid var(--line);padding:7px 10px;vertical-align:top;text-align:left}
+table.cmp th{background:var(--soft)}
+table.custo td:nth-child(2){font-family:var(--mono);white-space:nowrap;color:var(--accent);font-weight:600}
+.deck-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;bottom:0;background:var(--bg);padding:10px 0 14px;border-top:1px solid var(--line)}
+.deck-nav .btn{min-width:120px;padding:8px 14px}
+.irpratica{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* Código */
+.codigos{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px}
+.codigos[data-lang="ambos"]{grid-template-columns:1fr 1fr}
+.codigos[data-lang="c"] .cod.py,.codigos[data-lang="py"] .cod.c{display:none}
+.cod{border-radius:10px;overflow:hidden;background:var(--term);min-width:0;display:flex;flex-direction:column}
+.cod-h{display:flex;justify-content:space-between;align-items:center;padding:6px 10px 6px 12px;background:#161b22;color:#c9d1d9;font-size:12.5px;font-family:var(--mono);border-bottom:1px solid #30363d}
+.cod-h b{color:#fff}
+.cod-h button{border:1px solid #30363d;background:#21262d;color:#c9d1d9;border-radius:6px;padding:2px 8px;font-size:12px}
+.cod pre{margin:0;padding:12px 14px;overflow:auto;color:var(--termink);font-size:12.8px;line-height:1.5;max-height:520px;flex:1}
+.cod .k{color:var(--k)}.cod .s{color:var(--s)}.cod .c{color:var(--c);font-style:italic}.cod .n{color:var(--n)}.cod .f{color:var(--f)}.cod .p{color:var(--p)}
+.langtabs{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+.langtabs button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 16px;font-size:13.5px;font-weight:600}
+.langtabs button.amb{margin-left:auto;font-weight:500;color:var(--muted)}
+.langtabs button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+@media (max-width:900px){.codigos[data-lang="ambos"]{grid-template-columns:1fr}}
+
+/* Modo apresentação */
+body.foco header.top,body.foco .modTop{display:none}
+body.foco main{max-width:none;padding:0}
+body.foco .deck{position:fixed;inset:0;z-index:60;background:var(--bg);max-width:none;margin:0;padding:16px clamp(16px,4vw,48px) 0;overflow:auto;display:flex;flex-direction:column;gap:12px}
+body.foco .deck > *{width:100%;max-width:1150px;margin:0 auto}
+body.foco .slide{flex:1;font-size:18px;padding:36px 48px}
+body.foco .slide > h2{font-size:32px}
+body.foco .slide .card,body.foco .slide table{font-size:16px}
+body.foco .cod pre{font-size:14.5px;max-height:none}
+
+/* Prática */
+.pratica{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:16px;align-items:start}
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;position:sticky;top:112px;max-height:calc(100vh - 128px);overflow:auto}
+.ex h3{font-size:17px;margin:0 0 4px}
+.tarefas{list-style:none;padding:0;margin:12px 0;display:grid;gap:10px}
+.tarefa{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.tarefa.ok{border-color:var(--ok)}
+.tarefa label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:600;font-size:14px}
+.tarefa input{margin-top:4px;accent-color:var(--ok);width:16px;height:16px;flex:none}
+.tarefa .d{font-size:13.5px;margin:4px 0 0 26px}
+.tarefa .obs{font-size:13px;margin:6px 0 0 26px;background:var(--soft);border-radius:6px;padding:6px 9px}
+.tarefa .obs::before{content:"O que observar: ";font-weight:600;color:var(--accent)}
+.vizbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0;display:flex;flex-direction:column}
+.vizbar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--bg);font-size:13px}
+.vizbox iframe{border:0;width:100%;height:calc(100vh - 170px);min-height:560px;display:block;background:var(--bg)}
+.desafios{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:16px;align-items:start}
+.desafios .vizbox iframe{background:#121119}
+@media (max-width:900px){.desafios{grid-template-columns:1fr}}
+@media (max-width:900px){.pratica{grid-template-columns:1fr}.ex{position:static;max-height:none}.vizbox iframe{height:80vh}}
+body.vizfull header.top,body.vizfull .modTop,body.vizfull .ex{display:none}
+body.vizfull main{max-width:none;padding:0}
+body.vizfull .pratica{display:block}
+body.vizfull .vizbox{position:fixed;inset:0;z-index:60;border-radius:0;border:0}
+body.vizfull .desafios{display:block}
+body.vizfull .vizbox iframe{height:calc(100vh - 40px)}
+
+/* Desafios */
+.jogoLista{display:grid;gap:8px;margin:12px 0}
+.jogoLista button{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
+.jogoLista button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.jogoLista .jt{font-weight:600;font-size:14.5px}
+.jogoLista .jf{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.jogoLista .jd{font-size:13px}
+.foco-jogo{font-size:13px;background:var(--soft);border-radius:8px;padding:8px 10px;margin-top:6px}
+.foco-jogo::before{content:"Neste módulo: ";font-weight:600;color:var(--accent)}
+.aviso{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+.aviso a{color:var(--accent)}
+.tagJogo{font-family:var(--mono);font-size:11px;color:var(--warn);border:1px solid currentColor;border-radius:999px;padding:0 6px}
+
+/* Exercícios */
+.exercicios{max-width:1000px;margin:0 auto;display:grid;gap:18px}
+.secao{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 22px}
+.secao > h3{margin:0 0 2px;font-size:18px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.placar{font-family:var(--mono);font-size:13px;color:var(--muted);font-weight:600}
+.q{border-top:1px solid var(--line);padding:14px 0 4px}
+.q:first-of-type{border-top:0}
+.q .enun{font-weight:500;margin-bottom:8px}
+.q .enun b.num{font-family:var(--mono);color:var(--muted);margin-right:6px}
+.ops{display:grid;gap:6px}
+.ops button{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 12px;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.ops button .l{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:600}
+.ops button:hover:not(:disabled){border-color:var(--accent)}
+.ops button.certo{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--bg))}
+.ops button.errado{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--bg))}
+.ops button:disabled{cursor:default;color:var(--ink)}
+.fb{margin-top:8px;font-size:14px;border-radius:8px;padding:8px 12px;background:var(--soft)}
+.fb b{color:var(--ok)}.fb.nao b{color:var(--bad)}
+.progx{border-top:1px solid var(--line);padding:16px 0 6px}
+.progx:first-of-type{border-top:0}
+.progx h4{margin:0 0 4px;font-size:15.5px;display:flex;gap:8px;align-items:center}
+.progx h4 .feita{font-size:12px;color:var(--ok);font-weight:600;font-family:var(--mono)}
+.progx .enun{font-size:14.5px;margin-bottom:8px}
+.progx .bts{display:flex;gap:6px;flex-wrap:wrap}
+.dica{margin-top:8px;font-size:14px;background:var(--soft);border-radius:8px;padding:8px 12px}
+.dica::before{content:"Dica: ";font-weight:600;color:var(--warn)}
+.vazio{color:var(--muted);font-size:14px}
+footer{max-width:1100px;margin:30px auto 20px;padding:0 16px;font-size:12.5px;color:var(--muted);text-align:center}
+@media (max-width:600px){.slide{padding:18px 16px}.secao{padding:14px}.prog .trk{width:70px}.bar{gap:8px}.modo button{padding:6px 10px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <button class="brand" id="home" title="Mapa da trilha">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M10.7 7.2 7.3 15.8M13.3 7.2l3.4 8.6"/></g></svg>
+      Oficina de Estruturas de Dados <small>profjon</small>
+    </button>
+    <div class="modo" role="group" aria-label="Modo">
+      <button data-v="mapa">Mapa</button>
+      <button data-v="teoria">Teoria</button>
+      <button data-v="pratica">Prática</button>
+      <button data-v="exercicios">Exercícios</button>
+      <button data-v="desafios" hidden>Desafios</button>
+    </div>
+    <div class="prog" title="Progresso geral"><span id="progTxt">0%</span><span class="trk"><i id="progBar" style="width:0"></i></span></div>
+    <button class="tema" id="tema" aria-label="Alternar tema"></button>
+  </div>
+  <nav class="mods" id="mods" aria-label="Módulos"></nav>
+</header>
+<main id="app"></main>
+<footer>Oficina de Estruturas de Dados · profjon · códigos em C11 e Python 3, testados antes da publicação. O progresso fica salvo neste navegador.</footer>
+
+<script src="data/era1.js"></script>
+<script src="data/era2.js"></script>
+<script src="data/era3.js"></script>
+<script src="data/era4.js"></script>
+<script src="data/era5.js"></script>
+<script src="data/era6.js"></script>
+<script src="data/era7.js"></script>
+<script>
+(function(){
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LETRAS = 'ABCDEFGH';
+MODS.sort((a,b)=>a.n-b.n);
+const porId = Object.fromEntries(MODS.map(m=>[m.id,m]));
+
+/* ---------- Jogos da Masmorra das Árvores ---------- */
+const JOGOS = {
+  queda:     {t:'A Queda das Chaves', f:'Arcade · contra o relógio', arq:'jogos/queda-das-chaves.html', d:'As chaves caem pela árvore e você decide ← ou → em cada sala. A partir da onda 3 a árvore vira AVL e as rotações são feitas com duas setas.'},
+  heroi:     {t:'O Herói da Cripta', f:'RPG por turnos', arq:'jogos/heroi-da-cripta.html', d:'Ande pelas salas e enfrente os chefes. Recolorir, girar, zig e zag são feitiços com custo de mana.'},
+  mercado:   {t:'O Mercado da Torre', f:'Contra o relógio', arq:'jogos/mercado-da-torre.html', d:'Atenda 11 fregueses numa torre splay: desça até o item e suba-o com zig, zig-zig e zig-zag.'},
+  biblioteca:{t:'A Biblioteca dos Ecos', f:'Contra o relógio', arq:'jogos/biblioteca-dos-ecos.html', d:'Guarde palavras numa trie, classifique consultas (palavra, só prefixo, não existe) e faça o autocompletar.'},
+  forja:     {t:'A Forja de Huffman', f:'Contra o relógio', arq:'jogos/forja-de-huffman.html', d:'Forje a árvore de Huffman juntando sempre os dois menores pesos (é o heap em ação), codifique uma palavra em bits e decifre outra.'},
+  perguntas: {t:'A Masmorra (andares)', f:'Desafios por andar', arq:'jogos/masmorra-perguntas.html', d:'Cinco andares de desafios curtos: ABB, AVL, rubro-negra, splay e o chefão.'},
+  ponteiros:          {t:'O Cartógrafo', f:'Programa ao vivo', arq:'jogos/oficina2/ponteiros.html', d:'Execute um pergaminho em C linha por linha: mova as placas-mapa (ponteiros) e conte as moedas das casas que mudam.', novo:true},
+  vetor:              {t:'O Corredor das Estátuas', f:'Contra o relógio', arq:'jogos/oficina2/vetor.html', d:'Arraste as estátuas na ordem certa para inserir, remover e buscar. No nível 3 o corredor enche e precisa dobrar.', novo:true},
+  estatica:           {t:'Os Armários do Alquimista', f:'Névoa e memória', arq:'jogos/oficina2/estatica.html', d:'Armários fechados: abra-os seguindo os bilhetes prox, guarde poções pela lista livre e descarte as que pedirem.', novo:true},
+  simples:            {t:'A Corrente de Elos', f:'Ação e código', arq:'jogos/oficina2/simples.html', d:'Leve o goblin pela corrente sem passar do ponto para cortar ou encaixar elos; reverta a corrente montando o laço na ordem certa.', novo:true},
+  dupla:              {t:'A Ponte de Cordas', f:'Contra a rajada', arq:'jogos/oficina2/dupla.html', d:'Amarre as cordas prev e prox certas antes da rajada de vento, tirando ou encaixando tábuas.', novo:true},
+  'pilha-fila-deque': {t:'O Salão das Três Portas', f:'Arcade · memória', arq:'jogos/oficina2/pilha-fila-deque.html', d:'Abra a porta certa para quem entra e aponte quem sai, em pilha, fila e deque. Da onda 4 em diante, o salão fica na névoa.', novo:true},
+  'fila-circular':    {t:'A Roda do Moinho', f:'Arcade', arq:'jogos/oficina2/fila-circular.html', d:'Sacos entram no cesto rear e saem do front de uma roda que dá a volta. Avise quando a roda estiver cheia ou vazia.', novo:true},
+  'arvore-b':         {t:'Os Cofres do Rei Anão', f:'Construção contínua', arq:'jogos/oficina2/arvore-b.html', d:'Guie cada chave pelas frestas dos cofres e divida os cheios pelo caminho. A árvore cresce de rodada em rodada.', novo:true},
+  'arvore-bmais':     {t:'As Galerias da Mina', f:'Vagão de mina', arq:'jogos/oficina2/arvore-bmais.html', d:'Desça o vagão pelos túneis, colete o minério de uma encomenda seguindo o trilho das folhas e divida galerias que estouram.', novo:true},
+  smoothsort:         {t:'O Jardim de Leonardo', f:'Construção contínua', arq:'jogos/oficina2/smoothsort.html', d:'Plante mudas decidindo quando as árvores de Leonardo se fundem, e peneire cada árvore para manter o max-heap.', novo:true},
+  'arvore-decisao':   {t:'O Oráculo das Frutas', f:'Investigação', arq:'jogos/oficina2/arvore-decisao.html', d:'Escolha os cortes de menor Gini para montar a árvore do oráculo e use-a para classificar frutas novas.', novo:true},
+  'union-find':       {t:'As Alianças dos Clãs', f:'Diplomacia rápida', arq:'jogos/oficina2/union-find.html', d:'Decida qual raiz fica por baixo em cada aliança, ache líderes com find (e veja a compressão) e evite alianças repetidas.', novo:true},
+  'bfs-dfs':          {t:'O Batedor e o Explorador', f:'Masmorra com névoa', arq:'jogos/oficina2/bfs-dfs.html', d:'Revele a masmorra sala por sala na ordem da BFS (fila) ou da DFS (pilha de chamadas).', novo:true},
+  agm:                {t:'A Rede de Pontes', f:'Mercado e mapa', arq:'jogos/oficina2/agm.html', d:'Construa ou descarte as pontes do mercado (Kruskal) e faça o reino crescer a partir de A (Prim), gastando o mínimo de ouro.', novo:true},
+  taverna:   {t:'A Taverna do Hash', f:'Arcade · tempo real', arq:'jogos/oficina2/taverna.html', d:'Clientes chegam com bolsas numeradas: pendure cada uma no gancho certo antes que o relógio acabe. Lápides, combo, ondas e um rehash no meio da noite.', novo:true},
+  dragao:    {t:'O Mensageiro e o Dragão', f:'Batalha contra chefes', arq:'jogos/oficina2/dragao.html', d:'Confirme as cidades na ordem do Dijkstra para lançar magias no dragão. Erros e demora viram bolas de fogo. Covis cada vez maiores.', novo:true},
+  arena:     {t:'Arena das Árvores', f:'Quiz · individual ou turma', arq:'jogos/arena-das-arvores.html', d:'15 perguntas de todos os assuntos, até 30 s cada. No modo equipes, a turma responde no telão com cartões A, B, C e D.'}
+};
+const DESAFIOS = {
+  bst:          [['queda','Ondas 1 e 2: a árvore ainda é uma ABB simples.'], ['perguntas','Andar 1 (ABB).'], ['arena','Desafio individual com perguntas de toda a era.']],
+  avl:          [['queda','Comece na onda 3: a árvore vira AVL e você escolhe a rotação com duas setas.'], ['perguntas','Andar 2 (AVL).'], ['arena','Desafio individual com perguntas de toda a era.']],
+  'rubro-negra':[['heroi','Capítulo da rubro-negra: recolorir ou girar?'], ['perguntas','Andar 3 (rubro-negra).'], ['arena','Desafio individual com perguntas de toda a era.']],
+  splay:        [['mercado','A torre inteira é uma splay.'], ['heroi','Capítulo da splay: zig e zag viram feitiços.'], ['perguntas','Andar 4 (splay) e o chefão.'], ['arena','Desafio individual com perguntas de toda a era.']],
+  heap:         [['forja','A cada passo, saem do heap os dois menores pesos.']],
+  trie:         [['biblioteca','Inserir, buscar, prefixo e autocompletar.']]
+};
+for (const id of ['ponteiros','vetor','estatica','simples','dupla','pilha-fila-deque','fila-circular','arvore-b','arvore-bmais','smoothsort','arvore-decisao','hash','union-find','bfs-dfs','dijkstra','agm'])
+  DESAFIOS[id] = [[id, 'Três vidas, combo de até ×5 e níveis cada vez mais rápidos. A janela de erro explica a jogada certa.']];
+DESAFIOS.hash = [['taverna', 'Comece devagar: a partir da onda 2 aparecem as retiradas com lápide, e na onda 3 vem o rehash.']];
+DESAFIOS.dijkstra = [['dragao', 'A cada dois covis vencidos você recupera uma vida. Os desafios rápidos valem bônus e não custam vida.']];
+const SITE_MASMORRA = 'https://masmorra-das-arvores.vercel.app';
+const NA_VERCEL = /\.vercel\.app$/.test(location.hostname);
+
+/* ---------- Estado e persistência ---------- */
+const CHAVE = 'oficina-ed-profjon-v1';
+let P = {};
+try { P = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch(e) { P = {}; }
+function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify(P)); } catch(e) {} }
+function pm(id){ return P[id] || (P[id] = {slides:0, tarefas:[], quiz:{}, prog:[]}); }
+function fracao(m){
+  const p = P[m.id]; if (!p) return 0;
+  const t = Math.min(1, (p.slides||0) / (totalSlides(m)));
+  const pr = (p.tarefas||[]).filter(Boolean).length / m.pratica.length;
+  const q = Object.entries(p.quiz||{}).filter(([i,r]) => m.quiz[i] && r === m.quiz[i].ok).length / m.quiz.length;
+  const g = (p.prog||[]).filter(Boolean).length / m.prog.length;
+  return (t + pr + q + g) / 4;
+}
+const totalSlides = m => m.slides.length + 3;
+
+let estado = { v:'mapa', m:MODS[0].id, s:0, lang:'c' };
+try { const l = localStorage.getItem(CHAVE + '-lang'); if (['c','py','ambos'].includes(l)) estado.lang = l; } catch(e) {}
+function lerHash(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h === 'mapa') { estado.v = 'mapa'; return; }
+  const m = h.match(/^([a-z0-9-]+?)-(teoria|pratica|exercicios|desafios)(?:-(\d+))?$/);
+  if (m && porId[m[1]]) { estado.m = m[1]; estado.v = (m[2] === 'desafios' && !DESAFIOS[m[1]]) ? 'teoria' : m[2]; estado.s = m[3] ? Math.max(0, parseInt(m[3],10) - 1) : 0; }
+}
+function escreverHash(){
+  const h = estado.v === 'mapa' ? 'mapa' : `${estado.m}-${estado.v}` + (estado.v==='teoria' && estado.s ? `-${estado.s+1}` : '');
+  if (location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h);
+}
+
+/* ---------- Tema ---------- */
+const SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const LUA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+let tema = null;
+try { tema = localStorage.getItem(CHAVE + '-tema'); } catch(e) {}
+function temaAtual(){ return tema || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+function aplicarTema(){
+  const t = temaAtual();
+  document.documentElement.dataset.theme = t;
+  $('#tema').innerHTML = (t === 'dark' ? SOL + 'Claro' : LUA + 'Escuro');
+  const f = $('#viz'); if (f) temaNoIframe(f);
+}
+function temaNoIframe(f){ try { f.contentDocument.documentElement.dataset.theme = temaAtual(); } catch(e) {} }
+$('#tema').onclick = () => { tema = temaAtual() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(CHAVE + '-tema', tema); } catch(e) {} aplicarTema(); };
+
+/* ---------- Realce de código ---------- */
+const KW = {
+  c: new Set('int char double float long short unsigned signed void return if else for while do switch case break continue struct typedef enum static const sizeof extern NULL define include'.split(' ')),
+  py: new Set('def return if elif else for while in not and or is None True False class import from as with try except raise pass break continue lambda yield global nonlocal'.split(' '))
+};
+const FN = { c:new Set('printf malloc calloc free strcpy strlen strcmp memset qsort abs perror exit'.split(' ')), py:new Set('print len range list dict set sorted sum max min enumerate zip reversed isinstance int str float any all super self'.split(' ')) };
+function realce(src, lang){
+  const re = lang === 'c'
+    ? /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|(^[ \t]*#[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/gm
+    : /(#[^\n]*)|(@\w+)|("""[\s\S]*?"""|[rf]?"(?:\\.|[^"\\\n])*"|[rf]?'(?:\\.|[^'\\\n])*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/gm;
+  let out = '', last = 0, m;
+  while ((m = re.exec(src))) {
+    out += esc(src.slice(last, m.index));
+    const [t, com, pp, str, num, id] = m;
+    if (com) out += `<span class="c">${esc(t)}</span>`;
+    else if (pp) out += `<span class="p">${esc(t)}</span>`;
+    else if (str) out += `<span class="s">${esc(t)}</span>`;
+    else if (num) out += `<span class="n">${esc(t)}</span>`;
+    else if (KW[lang].has(id)) out += `<span class="k">${esc(t)}</span>`;
+    else if (FN[lang].has(id) || src[re.lastIndex] === '(') out += `<span class="f">${esc(t)}</span>`;
+    else out += esc(t);
+    last = re.lastIndex;
+  }
+  return out + esc(src.slice(last));
+}
+function blocoCodigo(c, py, rotulos){
+  rotulos = rotulos || ['C', 'Python'];
+  return `<div class="langtabs" role="group" aria-label="Linguagem"><button data-lang="c" aria-pressed="${estado.lang==='c'}">C</button><button data-lang="py" aria-pressed="${estado.lang==='py'}">Python</button><button class="amb" data-lang="ambos" aria-pressed="${estado.lang==='ambos'}">Lado a lado</button></div>
+  <div class="codigos" data-lang="${estado.lang}">
+    <div class="cod c"><div class="cod-h"><b>${rotulos[0]}</b><button data-copiar="c">Copiar</button></div><pre>${realce(c,'c')}</pre></div>
+    <div class="cod py"><div class="cod-h"><b>${rotulos[1]}</b><button data-copiar="py">Copiar</button></div><pre>${realce(py,'py')}</pre></div>
+  </div>`;
+}
+function ligarCodigo(raiz, c, py){
+  raiz.querySelectorAll('.langtabs button').forEach(b => b.onclick = () => {
+    estado.lang = b.dataset.lang;
+    try { localStorage.setItem(CHAVE + '-lang', estado.lang); } catch(e) {}
+    document.querySelectorAll('.langtabs button').forEach(x => x.setAttribute('aria-pressed', x.dataset.lang === estado.lang));
+    document.querySelectorAll('.codigos').forEach(x => x.dataset.lang = estado.lang);
+    raiz.querySelectorAll('.langtabs button').forEach(x => x.setAttribute('aria-pressed', x.dataset.lang === estado.lang));
+    raiz.querySelectorAll('.codigos').forEach(x => x.dataset.lang = estado.lang);
+  });
+  raiz.querySelectorAll('[data-copiar]').forEach(b => b.onclick = async () => {
+    const txt = b.dataset.copiar === 'c' ? c : py;
+    try { await navigator.clipboard.writeText(txt); b.textContent = 'Copiado'; }
+    catch(e) { b.textContent = 'Selecione e copie'; }
+    setTimeout(() => b.textContent = 'Copiar', 1500);
+  });
+}
+
+/* ---------- Navegação de módulos ---------- */
+function anel(fr){
+  const c = 2 * Math.PI * 4.5;
+  return `<svg class="anel" viewBox="0 0 12 12" aria-hidden="true"><circle class="f" cx="6" cy="6" r="4.5"/><circle class="v" cx="6" cy="6" r="4.5" stroke-dasharray="${(fr*c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 6 6)"/></svg>`;
+}
+const CURTO = {ponteiros:'Ponteiros', vetor:'Vetor', estatica:'Lista estática', simples:'Lista simples', dupla:'Lista dupla', 'pilha-fila-deque':'Pilha, fila e deque', 'fila-circular':'Fila circular', bst:'ABB', avl:'AVL', 'rubro-negra':'Rubro-negra', splay:'Splay', 'arvore-b':'Árvore B', 'arvore-bmais':'Árvore B+', heap:'Heap', smoothsort:'Smoothsort', trie:'Trie', 'arvore-decisao':'Árvore de decisão', hash:'Tabela hash', 'union-find':'Union-Find', 'bfs-dfs':'BFS e DFS', dijkstra:'Dijkstra', agm:'AGM'};
+function curto(t){ const m = MODS.find(x => x.titulo === t); return (m && CURTO[m.id]) || t; }
+function desenharNav(){
+  let h = '', era = -1;
+  for (const m of MODS) {
+    if (m.era !== era) { era = m.era; h += `<span class="era">${ERAS[era].n} · ${ERAS[era].t}</span>`; }
+    h += `<button data-m="${m.id}" ${m.id===estado.m && estado.v!=='mapa' ? 'aria-current="true"' : ''} title="${esc(m.titulo)}">${anel(fracao(m))}<b>${String(m.n).padStart(2,'0')}</b>${esc(curto(m.titulo))}</button>`;
+  }
+  $('#mods').innerHTML = h;
+  $('#mods').querySelectorAll('button').forEach(b => b.onclick = () => irPara(b.dataset.m, estado.v === 'mapa' ? 'teoria' : (estado.v === 'desafios' && !DESAFIOS[b.dataset.m] ? 'teoria' : estado.v)));
+  const at = $('#mods [aria-current="true"]'); if (at) at.scrollIntoView({block:'nearest', inline:'center'});
+  const geral = MODS.reduce((s,m)=>s+fracao(m),0) / MODS.length;
+  $('#progTxt').textContent = Math.round(geral*100) + '%';
+  $('#progBar').style.width = (geral*100) + '%';
+  document.querySelectorAll('.modo button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === estado.v));
+  $('.modo [data-v="desafios"]').hidden = !(estado.v !== 'mapa' && DESAFIOS[estado.m]);
+}
+function irPara(id, v, s){
+  if (id !== estado.m) estado.s = 0;
+  estado.m = id; estado.v = v; if (s !== undefined) estado.s = s;
+  document.body.classList.remove('foco','vizfull');
+  render(); window.scrollTo({top:0});
+}
+document.querySelectorAll('.modo button').forEach(b => b.onclick = () => { estado.v = b.dataset.v; document.body.classList.remove('foco','vizfull'); render(); window.scrollTo({top:0}); });
+$('#home').onclick = () => { estado.v = 'mapa'; render(); };
+
+function topoModulo(m){
+  const i = MODS.indexOf(m), ant = MODS[i-1], prox = MODS[i+1];
+  return `<div class="modTop"><div><div class="kick">Era ${ERAS[m.era].n} · ${esc(ERAS[m.era].t)} · módulo ${m.n} de ${MODS.length}</div><h2>${esc(m.titulo)}</h2><div class="small">${esc(m.sub)}</div></div>
+  <div class="acoes">${ant?`<button class="btn sm" data-ir="${ant.id}">← ${esc(curto(ant.titulo))}</button>`:''}${prox?`<button class="btn sm" data-ir="${prox.id}">${esc(curto(prox.titulo))} →</button>`:''}</div></div>`;
+}
+function ligarTopo(raiz){ raiz.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => irPara(b.dataset.ir, estado.v === 'desafios' && !DESAFIOS[b.dataset.ir] ? 'teoria' : estado.v)); }
+
+/* ---------- Mapa ---------- */
+function vMapa(){
+  let h = `<div class="mapa"><div class="hero"><div class="kick">profjon · trilha de 22 módulos em 7 eras</div>
+  <h1>Das variáveis aos grafos: a Oficina de Estruturas de Dados</h1>
+  <p>Cada módulo tem três partes. Comece pela teoria, mexa no visualizador e termine resolvendo os exercícios. Todo código aparece em C e em Python, lado a lado.</p>
+  <div class="como"><div><b>Teoria</b>Slides com conceito, analogia, implementação comentada e tabela de custos. Tem modo apresentação para projetar em aula.</div>
+  <div><b>Prática</b>O visualizador interativo da estrutura, com um roteiro de tarefas e o que observar em cada uma.</div>
+  <div><b>Exercícios</b>Questões com correção na hora e problemas de programação com dica e solução em C e Python.</div>
+  <div><b>Desafios</b>Um jogo no mundo da Masmorra em cada módulo, para treinar a operação central da estrutura contra o relógio.</div></div></div>`;
+  ERAS.forEach((e, ei) => {
+    h += `<section class="eraBox"><h2><span>ERA ${e.n}</span>${esc(e.t)}</h2><p>${esc(e.s)}</p><div class="gradeMods">`;
+    for (const m of MODS.filter(m => m.era === ei)) {
+      const fr = fracao(m);
+      h += `<button class="cardMod" data-m="${m.id}"><span class="n"><span>${String(m.n).padStart(2,'0')} ${DESAFIOS[m.id] ? '<span class="tagJogo">desafios</span>' : ''}</span><span>${Math.round(fr*100)}%</span></span><span class="t">${esc(m.titulo)}</span><span class="s">${esc(m.sub)}</span><span class="barra"><i style="width:${fr*100}%"></i></span></button>`;
+    }
+    h += `</div></section>`;
+  });
+  h += `<div style="margin-top:24px;display:flex;justify-content:flex-end;gap:8px;align-items:center;flex-wrap:wrap" id="zerarBox"><button class="btn sm" id="zerar">Apagar meu progresso</button></div></div>`;
+  $('#app').innerHTML = h;
+  $('#app').querySelectorAll('.cardMod').forEach(b => b.onclick = () => irPara(b.dataset.m, 'teoria', 0));
+  $('#zerar').onclick = () => {
+    $('#zerarBox').innerHTML = '<span class="small">Apagar todo o progresso salvo neste navegador?</span><button class="btn sm" id="zNao">Cancelar</button><button class="btn sm" id="zSim" style="background:var(--bad);border-color:var(--bad);color:#fff">Apagar</button>';
+    $('#zNao').onclick = () => render();
+    $('#zSim').onclick = () => { P = {}; salvar(); render(); };
+  };
+}
+
+/* ---------- Teoria ---------- */
+function slidesDe(m){
+  const lista = m.slides.map(s => ({t:s.t, h:s.h}));
+  lista.push({t:'Implementação em C e Python', cod:true, h:`<p>${esc(m.codigo.nota)}</p>`});
+  lista.push({t:'Custo das operações', h:`<table class="cmp custo"><tr><th>Operação</th><th>Custo</th><th>Observação</th></tr>${m.custo.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]||''}</td></tr>`).join('')}</table>`});
+  lista.push({t:'Agora é com você', h:`<div class="resumo"><b>Resumo</b><ul>${m.slides.map(s=>`<li>${esc(s.t)}</li>`).join('')}</ul></div>
+  <p>Na <b>Prática</b>, você vai fazer ${m.pratica.length} tarefas no visualizador. Nos <b>Exercícios</b>, ${m.quiz.length} questões com correção na hora e ${m.prog.length} problemas de programação.${DESAFIOS[m.id] ? ` Nos <b>Desafios</b>, ${DESAFIOS[m.id].length === 1 ? 'um jogo' : DESAFIOS[m.id].length + ' jogos'} da Masmorra das Árvores.` : ''}</p>
+  <div class="irpratica"><button class="btn pri" data-v="pratica">Ir para a Prática</button><button class="btn" data-v="exercicios">Ir para os Exercícios</button>${DESAFIOS[m.id] ? '<button class="btn" data-v="desafios">Ir para os Desafios</button>' : ''}</div>`});
+  return lista;
+}
+function vTeoria(m){
+  const sl = slidesDe(m);
+  estado.s = Math.min(estado.s, sl.length - 1);
+  const p = pm(m.id);
+  if (estado.s + 1 > (p.slides||0)) { p.slides = estado.s + 1; salvar(); }
+  const s = sl[estado.s];
+  $('#app').innerHTML = topoModulo(m) + `<div class="deck">
+    <div class="trilho">${sl.map((x,i)=>`<button aria-label="Slide ${i+1}: ${esc(x.t)}" title="${esc(x.t)}" class="${i===estado.s?'atual':(i<(p.slides||0)?'feito':'')}" data-s="${i}"></button>`).join('')}</div>
+    <article class="slide"><div class="etq">${estado.s+1} / ${sl.length}</div><h2>${esc(s.t)}</h2>${s.h}${s.cod ? blocoCodigo(m.codigo.c, m.codigo.py) : ''}</article>
+    <div class="deck-nav"><button class="btn" id="ant" ${estado.s===0?'disabled':''}>← Anterior</button>
+    <button class="btn sm" id="foco">${document.body.classList.contains('foco')?'Sair da apresentação':'Modo apresentação'}</button>
+    <button class="btn ${estado.s===sl.length-1?'':'pri'}" id="prox">${estado.s===sl.length-1?'Prática →':'Próximo →'}</button></div></div>`;
+  const app = $('#app'); ligarTopo(app);
+  if (s.cod) ligarCodigo(app, m.codigo.c, m.codigo.py);
+  app.querySelectorAll('.trilho button').forEach(b => b.onclick = () => { estado.s = +b.dataset.s; render(); });
+  app.querySelectorAll('.irpratica [data-v]').forEach(b => b.onclick = () => irPara(m.id, b.dataset.v));
+  $('#ant').onclick = () => { estado.s--; render(); };
+  $('#prox').onclick = () => { if (estado.s === sl.length-1) irPara(m.id, 'pratica'); else { estado.s++; render(); } };
+  $('#foco').onclick = () => { document.body.classList.toggle('foco'); render(); };
+}
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,select')) return;
+  if (estado.v === 'teoria') {
+    if (e.key === 'ArrowRight' || (e.key === ' ' && document.body.classList.contains('foco'))) { const b = $('#prox'); if (b && estado.s < slidesDe(porId[estado.m]).length-1) { e.preventDefault(); b.click(); } }
+    if (e.key === 'ArrowLeft') { const b = $('#ant'); if (b && !b.disabled) { e.preventDefault(); b.click(); } }
+  }
+  if (e.key === 'Escape') { if (document.body.classList.contains('foco') || document.body.classList.contains('vizfull')) { document.body.classList.remove('foco','vizfull'); render(); } }
+});
+
+/* ---------- Prática ---------- */
+function vPratica(m){
+  const p = pm(m.id);
+  const feitas = m.pratica.filter((_,i)=>p.tarefas[i]).length;
+  $('#app').innerHTML = topoModulo(m) + `<div class="pratica">
+    <aside class="ex"><h3>Roteiro da prática</h3><div class="small">${feitas} de ${m.pratica.length} tarefas feitas. Marque cada uma quando terminar.</div>
+    <ol class="tarefas">${m.pratica.map((t,i)=>`<li class="tarefa ${p.tarefas[i]?'ok':''}"><label><input type="checkbox" data-t="${i}" ${p.tarefas[i]?'checked':''}>${i+1}. ${esc(t.t)}</label><div class="d">${t.d}</div><div class="obs">${t.obs}</div></li>`).join('')}</ol>
+    <button class="btn" id="irEx" style="width:100%">Ir para os Exercícios →</button></aside>
+    <section class="vizbox"><div class="vizbar"><span>Visualizador: <b>${esc(m.titulo)}</b></span><button class="btn sm" id="tela">${document.body.classList.contains('vizfull')?'Sair da tela cheia':'Tela cheia'}</button></div>
+    <iframe id="viz" title="Visualizador interativo: ${esc(m.titulo)}" src="${m.viz}"></iframe></section></div>`;
+  const app = $('#app'); ligarTopo(app);
+  const f = $('#viz'); f.addEventListener('load', () => temaNoIframe(f));
+  app.querySelectorAll('[data-t]').forEach(cb => cb.onchange = () => {
+    p.tarefas[+cb.dataset.t] = cb.checked; salvar();
+    cb.closest('.tarefa').classList.toggle('ok', cb.checked);
+    app.querySelector('.ex .small').textContent = `${m.pratica.filter((_,i)=>p.tarefas[i]).length} de ${m.pratica.length} tarefas feitas. Marque cada uma quando terminar.`;
+    desenharNav();
+  });
+  $('#irEx').onclick = () => irPara(m.id, 'exercicios');
+  $('#tela').onclick = () => { document.body.classList.toggle('vizfull'); $('#tela').textContent = document.body.classList.contains('vizfull') ? 'Sair da tela cheia' : 'Tela cheia'; };
+}
+
+/* ---------- Exercícios ---------- */
+function vExercicios(m){
+  const p = pm(m.id);
+  const certas = () => m.quiz.filter((q,i)=>p.quiz[i]===q.ok).length;
+  const resp = () => Object.keys(p.quiz).length;
+  let h = topoModulo(m) + `<div class="exercicios"><section class="secao"><h3>Questões <span class="placar" id="placar"></span></h3><div class="small">Clique numa alternativa. A correção e a explicação aparecem na hora.</div>`;
+  m.quiz.forEach((q,i) => {
+    const r = p.quiz[i];
+    h += `<div class="q" data-q="${i}"><div class="enun"><b class="num">${i+1}.</b>${q.q}</div><div class="ops">${q.ops.map((o,j)=>{
+      let cls = ''; if (r !== undefined) { if (j===q.ok) cls='certo'; else if (j===r) cls='errado'; }
+      return `<button data-o="${j}" class="${cls}" ${r!==undefined?'disabled':''}><span class="l">${LETRAS[j]}</span><span>${o}</span></button>`;}).join('')}</div>
+      ${r!==undefined ? `<div class="fb ${r===q.ok?'':'nao'}"><b>${r===q.ok?'Correto.':'Não foi dessa vez.'}</b> ${q.exp}</div>` : ''}</div>`;
+  });
+  h += `<div style="margin-top:12px"><button class="btn sm" id="refazer">Refazer as questões</button></div></section>
+  <section class="secao"><h3>Programação <span class="placar" id="placarP"></span></h3><div class="small">Tente resolver no seu editor antes de abrir a dica e a solução. Marque como feito quando seu código funcionar.</div>`;
+  m.prog.forEach((g,i) => {
+    h += `<div class="progx" data-g="${i}"><h4>${esc(g.t)} ${p.prog[i]?'<span class="feita">✓ feito</span>':''}</h4><div class="enun">${g.enun}</div>
+    <div class="bts"><button class="btn sm" data-a="dica">Mostrar dica</button><button class="btn sm" data-a="sol">Ver solução</button><button class="btn sm ${p.prog[i]?'':'pri'}" data-a="feito">${p.prog[i]?'Desmarcar':'Marcar como feito'}</button></div>
+    <div class="dica" hidden>${g.dica}</div><div class="sol" hidden></div></div>`;
+  });
+  h += `</section><div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">${DESAFIOS[m.id] ? '<button class="btn" id="irDes">Desafios: jogos da Masmorra</button>' : ''}${MODS[MODS.indexOf(m)+1] ? `<button class="btn pri" id="proxMod">Próximo módulo: ${esc(MODS[MODS.indexOf(m)+1].titulo)} →</button>` : `<button class="btn pri" id="proxMod">Voltar ao mapa</button>`}</div></div>`;
+  $('#app').innerHTML = h;
+  const app = $('#app'); ligarTopo(app);
+  const placar = () => {
+    $('#placar').textContent = `${certas()} de ${m.quiz.length} certas` + (resp() < m.quiz.length ? ` · ${m.quiz.length-resp()} sem resposta` : '');
+    $('#placarP').textContent = `${p.prog.filter(Boolean).length} de ${m.prog.length} feitos`;
+  };
+  placar();
+  app.querySelectorAll('.q').forEach(qd => {
+    const i = +qd.dataset.q, q = m.quiz[i];
+    qd.querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+      const j = +b.dataset.o; p.quiz[i] = j; salvar();
+      qd.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; const k=+x.dataset.o; if (k===q.ok) x.classList.add('certo'); else if (k===j) x.classList.add('errado'); });
+      qd.insertAdjacentHTML('beforeend', `<div class="fb ${j===q.ok?'':'nao'}"><b>${j===q.ok?'Correto.':'Não foi dessa vez.'}</b> ${q.exp}</div>`);
+      placar(); desenharNav();
+    });
+  });
+  $('#refazer').onclick = () => { p.quiz = {}; salvar(); render(); };
+  app.querySelectorAll('.progx').forEach(gd => {
+    const i = +gd.dataset.g, g = m.prog[i];
+    gd.querySelector('[data-a="dica"]').onclick = e => { const d = gd.querySelector('.dica'); d.hidden = !d.hidden; e.target.textContent = d.hidden ? 'Mostrar dica' : 'Esconder dica'; };
+    gd.querySelector('[data-a="sol"]').onclick = e => {
+      const s = gd.querySelector('.sol');
+      if (!s.innerHTML) { s.innerHTML = blocoCodigo(g.c, g.py, ['Solução em C','Solução em Python']); ligarCodigo(s, g.c, g.py); }
+      s.hidden = !s.hidden; e.target.textContent = s.hidden ? 'Ver solução' : 'Esconder solução';
+    };
+    gd.querySelector('[data-a="feito"]').onclick = () => { p.prog[i] = !p.prog[i]; salvar(); render(); };
+  });
+  if ($('#irDes')) $('#irDes').onclick = () => irPara(m.id, 'desafios');
+  $('#proxMod').onclick = () => { const nx = MODS[MODS.indexOf(m)+1]; if (nx) irPara(nx.id, 'teoria', 0); else { estado.v='mapa'; render(); } };
+}
+
+/* ---------- Desafios ---------- */
+let jogoAtual = {};
+function vDesafios(m){
+  const lista = DESAFIOS[m.id];
+  if (!jogoAtual[m.id]) jogoAtual[m.id] = lista[0][0];
+  const sel = jogoAtual[m.id], J = JOGOS[sel], dica = lista.find(x => x[0] === sel)[1];
+  $('#app').innerHTML = topoModulo(m) + `<div class="desafios">
+    <aside class="ex"><h3>Desafios da Masmorra</h3><div class="small">${lista.length > 1 ? `Jogos para treinar ${esc(m.titulo)}. Escolha um e clique` : 'Clique'} dentro do jogo antes de usar o teclado.</div>
+    <div class="jogoLista">${lista.map(([id, foco]) => `<button data-j="${id}" ${id===sel?'aria-current="true"':''}><span class="jt">${esc(JOGOS[id].t)}</span><span class="jf">${esc(JOGOS[id].f)}</span><span class="jd">${esc(JOGOS[id].d)}</span></button>`).join('')}</div>
+    <div class="foco-jogo">${esc(dica)}</div>
+    <div class="aviso">${lista.some(([id]) => !JOGOS[id].novo) ? (NA_VERCEL ? 'Os jogos da Masmorra registram os pontos nos rankings online da turma.' : `Aqui, os recordes ficam guardados neste aparelho. Para entrar nos rankings online da turma, jogue os jogos da Masmorra pelo site: <a href="${SITE_MASMORRA}" target="_blank" rel="noopener">masmorra-das-arvores.vercel.app</a>`) : 'O recorde fica guardado neste aparelho. Cada partida sorteia desafios novos, então dá para jogar várias vezes.'}</div></aside>
+    <section class="vizbox"><div class="vizbar"><span>Jogo: <b>${esc(J.t)}</b></span><button class="btn sm" id="tela">${document.body.classList.contains('vizfull')?'Sair da tela cheia':'Tela cheia'}</button></div>
+    <iframe id="jogo" title="Jogo: ${esc(J.t)}" src="${J.arq}" allow="autoplay; fullscreen"></iframe></section></div>`;
+  const app = $('#app'); ligarTopo(app);
+  app.querySelectorAll('[data-j]').forEach(b => b.onclick = () => { jogoAtual[m.id] = b.dataset.j; render(); });
+  $('#tela').onclick = () => { document.body.classList.toggle('vizfull'); $('#tela').textContent = document.body.classList.contains('vizfull') ? 'Sair da tela cheia' : 'Tela cheia'; };
+  const f = $('#jogo'); f.addEventListener('load', () => { try { f.contentWindow.focus(); } catch(e) {} });
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const m = porId[estado.m];
+  if (estado.v === 'mapa') vMapa();
+  else if (estado.v === 'teoria') vTeoria(m);
+  else if (estado.v === 'pratica') vPratica(m);
+  else if (estado.v === 'desafios' && DESAFIOS[m.id]) vDesafios(m);
+  else { estado.v = estado.v === 'desafios' ? 'teoria' : estado.v; if (estado.v === 'teoria') vTeoria(m); else vExercicios(m); }
+  desenharNav(); escreverHash();
+  document.title = estado.v === 'mapa' ? 'Oficina de Estruturas de Dados' : `${m.titulo} · Oficina de Estruturas de Dados`;
+}
+lerHash();
+if (!location.hash) { const ult = MODS.find(m => P[m.id]); if (ult) { estado.m = ult.id; } }
+aplicarTema();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!tema) aplicarTema(); });
+window.addEventListener('hashchange', () => { lerHash(); render(); });
+render();
+})();
+</script>
+</body>
+</html>

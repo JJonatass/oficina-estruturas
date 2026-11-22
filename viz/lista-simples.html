@@ -1,0 +1,958 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lista Encadeada (Simples)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:66ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="traverse"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="traverse"] .dot{background:var(--accent);}
+  .op-pill[data-op="reverse"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="reverse"] .dot{background:var(--violet);}
+  .op-pill[data-op="bad"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .ll-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .ll-svg, .ll-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .ll-node-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: x .35s ease, y .35s ease, stroke .2s ease; }
+  .ll-divider{ stroke:var(--line-strong); stroke-width:1.2; transition: x1 .35s ease, x2 .35s ease; }
+  .ll-dot{ fill:var(--ink-faint); transition: cx .35s ease; }
+  .ll-value{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); transition: x .35s ease; }
+  .ll-node[data-state="cursor"] .ll-node-rect{ stroke:var(--accent); stroke-width:2.6; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .ll-node[data-state="new"] .ll-node-rect{ stroke:var(--gold); stroke-width:2.6; }
+  .ll-node[data-state="bad"] .ll-node-rect{ stroke:var(--rust); stroke-width:2.2; }
+
+  .ll-arrow{ fill:none; stroke-width:1.8; transition: d .35s ease, stroke .2s ease; }
+  .ll-arrow.forward{ stroke:var(--line-strong); }
+  .ll-arrow.backward{ stroke:var(--gold); }
+  .ll-null-box{ fill:none; stroke:var(--line-strong); stroke-width:1.4; stroke-dasharray:4 3; }
+  .ll-null-text{ font-size:11px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+
+  .ll-tag-pill{ font-size:10px; font-weight:700; text-anchor:middle; dominant-baseline:central; fill:#fff; }
+  .ll-tag-bg{ fill:var(--ink-soft); }
+  .ll-tag-bg.head{ fill:var(--accent); }
+  .ll-tag-bg.tail{ fill:var(--violet); }
+  .ll-tag-line{ stroke:var(--line-strong); stroke-width:1.2; }
+
+  .ll-ptr-pill-bg{ fill:var(--card); stroke-width:1.4; }
+  .ll-ptr-pill-bg.prev{ stroke:var(--ink-faint); }
+  .ll-ptr-pill-bg.curr{ stroke:var(--accent); }
+  .ll-ptr-pill-bg.next{ stroke:var(--gold); }
+  .ll-ptr-pill-text{ font-size:9.5px; font-weight:700; text-anchor:middle; dominant-baseline:central; }
+  .ll-ptr-pill-text.prev{ fill:var(--ink-faint); }
+  .ll-ptr-pill-text.curr{ fill:var(--accent-ink); }
+  .ll-ptr-pill-text.next{ fill:var(--gold); }
+  .ll-ptr-line{ stroke-width:1.2; stroke-dasharray:2 2; }
+  .ll-ptr-line.prev{ stroke:var(--ink-faint); }
+  .ll-ptr-line.curr{ stroke:var(--accent); }
+  .ll-ptr-line.next{ stroke:var(--gold); }
+
+  .ll-empty-text{ font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); font-family:'IBM Plex Mono', monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.new{border-color:var(--gold);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.head{background:var(--accent); border-color:transparent;}
+  .legend .swatch.tail{background:var(--violet); border-color:transparent;}
+  .legend .swline{width:16px; height:2px; background:var(--gold); display:inline-block;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Estrutura linear · ponteiros encadeados</span>
+    <h1>Lista Encadeada (Simples)</h1>
+    <p class="prose">Uma lista encadeada é uma sequência de nós espalhados pela memória, cada um guardando um valor e um <strong>ponteiro</strong> para o próximo — não existe posição fixa nem acesso direto por índice como num array: para chegar ao décimo nó é preciso passar pelos nove anteriores. Em troca, inserir ou remover no início custa apenas trocar um ponteiro, O(1), não importa o tamanho da lista. Repare também numa pegadinha clássica: como cada nó só aponta para <em>frente</em>, remover do <strong>fim</strong> ainda exige percorrer tudo para achar o penúltimo nó — o preço de não ter uma lista duplamente encadeada.</p>
+  </header>
+
+  <section class="struct-block" aria-label="Declaração da struct em C">
+    <span class="tag">Como isso é declarado em C</span>
+    <pre class="code"><code><span class="kw">typedef struct</span> <span class="ty">No</span> {
+    <span class="ty">int</span> valor;        <span class="cm">/* o dado guardado no nó */</span>
+    <span class="kw">struct</span> <span class="ty">No</span> *next;  <span class="cm">/* endereço do próximo nó (NULL = fim da lista) */</span>
+} No;
+
+<span class="ty">No</span> *head = <span class="nm">NULL</span>;      <span class="cm">/* lista vazia: head não aponta para nada */</span></code></pre>
+    <p class="struct-note">Cada nó guarda um <code>valor</code> e um ponteiro <code>next</code> para o nó seguinte; o último aponta para <code>NULL</code>. A lista toda é só o ponteiro <code>head</code> — quem perde o <code>head</code> perde a lista. Cada nó novo vem de um <code>malloc(sizeof(No))</code>.</p>
+  </section>
+
+
+  <section class="card" aria-label="Visualizador da lista encadeada">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="ll-svg" id="llSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch head"></span>head</span>
+      <span class="item"><span class="swatch tail"></span>tail</span>
+      <span class="item"><span class="swatch cursor"></span>nó atual</span>
+      <span class="item"><span class="swatch new"></span>novo</span>
+      <span class="item"><span class="swatch bad"></span>não encontrado</span>
+      <span class="item"><span class="swline"></span>ponteiro revertido</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsertTail">+ Inserir no fim</button>
+        <button id="btnInsertHead">+ Inserir no início</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button class="danger" id="btnRemoveValue">− Remover valor</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Posição
+          <input type="number" id="indexInput" placeholder="ex: 2" min="0">
+        </label>
+        <button id="btnInsertAt">Inserir na posição</button>
+        <button class="danger" id="btnRemoveAt">Remover posição</button>
+        <button class="danger" id="btnRemoveHead">Remover início</button>
+        <button class="danger" id="btnRemoveTail">Remover fim</button>
+      </div>
+      <div class="controls-row">
+        <button class="violet" id="btnReverse">⇄ Reverter lista</button>
+        <label class="small">Tamanho
+          <input type="range" class="mini" id="sizeSlider" min="1" max="10" value="5" step="1">
+          <span class="mono" id="sizeLabel">5</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova lista aleatória</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Como funciona a reversão</h2>
+    <p class="prose">Reverter uma lista encadeada é o exercício clássico de ponteiros: três variáveis — <code>prev</code>, <code>atual</code> e <code>próximo</code> — caminham juntas pela lista, uma posição atrás da outra.</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Guardar o próximo</span><span class="prose">Antes de tocar no ponteiro de <code>atual</code>, salvamos para onde ele aponta — senão perdemos o resto da lista.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Apontar para trás</span><span class="prose"><code>atual.próximo</code> passa a apontar para <code>prev</code> — a seta se inverte.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Avançar os três</span><span class="prose"><code>prev</code> vira <code>atual</code>, e <code>atual</code> vira o <code>próximo</code> que guardamos no passo 1. Repete até <code>atual</code> chegar a null — <code>prev</code> é a nova cabeça.</span></div></div>
+    </div>
+  </section>
+
+  <section class="compare-grid">
+    <div class="compare-card">
+      <span class="tag">Lista encadeada</span>
+      <p class="prose">Nós espalhados pela memória, ligados por ponteiros. Inserir ou remover no início é <code>O(1)</code> — só muda um ponteiro. Acessar a posição <code>i</code> é <code>O(n)</code> — não existe atalho, é preciso caminhar nó a nó.</p>
+    </div>
+    <div class="compare-card">
+      <span class="tag">Array</span>
+      <p class="prose">Posições contíguas na memória. Acessar a posição <code>i</code> é <code>O(1)</code> — cálculo direto do endereço. Em compensação, inserir ou remover no início é <code>O(n)</code> — todo o resto precisa deslocar uma casa.</p>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Início da lista</span>
+      <h3>O(1)</h3>
+      <p class="prose">Inserir ou remover a cabeça só exige trocar um ponteiro — a lista nem precisa saber o próprio tamanho.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Fim da lista (nesta variante)</span>
+      <h3>Inserir O(1) · remover O(n)</h3>
+      <p class="prose">Mantemos um ponteiro de cauda, então inserir no fim é rápido. Mas remover o último nó exige achar o <em>penúltimo</em> — e, sem ponteiro para trás, isso só se descobre percorrendo a lista inteira.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma lista encadeada simples (singly linked list), estrutura que remonta ao processamento de listas no fim dos anos 1950 — linguagens como IPL e Lisp. Complexidade O(1) para inserir/remover no início, O(n) para busca, acesso por posição e remoção no fim.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Singly linked list engine (records one step per mutation/comparison) =================
+  function createLinkedListEngine() {
+    var nextId = 1;
+    var nodes = {};
+    var headId = null;
+    var tailId = null;
+    var steps = [];
+
+    function cloneNodes() {
+      var out = {};
+      for (var id in nodes) { if (nodes.hasOwnProperty(id)) out[id] = { id: nodes[id].id, value: nodes[id].value, next: nodes[id].next }; }
+      return out;
+    }
+
+    function chainOrder(nodesSnapshot, startId) {
+      var out = [];
+      var seen = {};
+      var cur = startId;
+      while (cur != null) {
+        if (seen[cur]) return null;
+        seen[cur] = true;
+        out.push(cur);
+        cur = nodesSnapshot[cur].next;
+      }
+      return out;
+    }
+
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({
+        message: message,
+        nodes: cloneNodes(),
+        headId: headId, tailId: tailId,
+        op: opts.op || "info",
+        cursorId: opts.cursorId != null ? opts.cursorId : null,
+        highlightIds: opts.highlightIds || [],
+        pointers: opts.pointers || null,
+        slotOrder: opts.slotOrder || null
+      });
+    }
+
+    function length() {
+      var order = chainOrder(nodes, headId);
+      return order ? order.length : -1;
+    }
+
+    function insertAtHead(value) {
+      var node = { id: nextId++, value: value, next: headId };
+      nodes[node.id] = node;
+      var wasEmpty = headId === null;
+      headId = node.id;
+      if (wasEmpty) tailId = node.id;
+      snapshot((wasEmpty ? "Lista estava vazia. " : "") + value + " inserido como nova cabeça (head).",
+        { op: "insert", cursorId: node.id, highlightIds: [node.id] });
+      return node.id;
+    }
+
+    function insertAtTail(value) {
+      var node = { id: nextId++, value: value, next: null };
+      nodes[node.id] = node;
+      if (tailId === null) {
+        headId = node.id; tailId = node.id;
+        snapshot("Lista estava vazia. " + value + " inserido como único nó.", { op: "insert", cursorId: node.id, highlightIds: [node.id] });
+        return node.id;
+      }
+      snapshot("Seguindo o ponteiro da antiga cauda (" + nodes[tailId].value + ") até o fim da lista.", { op: "traverse", cursorId: tailId, highlightIds: [tailId] });
+      nodes[tailId].next = node.id;
+      tailId = node.id;
+      snapshot(value + " inserido no final — a antiga cauda agora aponta para ele.", { op: "insert", cursorId: node.id, highlightIds: [node.id] });
+      return node.id;
+    }
+
+    function insertAt(index, value) {
+      var n = length();
+      if (index < 0 || index > n) { snapshot("Índice " + index + " fora do intervalo [0, " + n + "] — nada inserido.", { op: "bad" }); return null; }
+      if (index === 0) return insertAtHead(value);
+      if (index === n) return insertAtTail(value);
+
+      var order = chainOrder(nodes, headId);
+      var prevId = order[index - 1];
+      snapshot("Percorrendo até a posição " + (index - 1) + " (\"" + nodes[prevId].value + "\") para inserir depois dela.", { op: "traverse", cursorId: prevId, highlightIds: [prevId] });
+      var node = { id: nextId++, value: value, next: nodes[prevId].next };
+      nodes[node.id] = node;
+      nodes[prevId].next = node.id;
+      snapshot(value + " inserido na posição " + index + ", entre \"" + nodes[prevId].value + "\" e o nó seguinte.", { op: "insert", cursorId: node.id, highlightIds: [prevId, node.id] });
+      return node.id;
+    }
+
+    function removeHead() {
+      if (headId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      var removedId = headId;
+      var removedValue = nodes[removedId].value;
+      snapshot("Removendo a cabeça (\"" + removedValue + "\") — a lista passa a começar no próximo nó.", { op: "remove", highlightIds: [removedId] });
+      headId = nodes[removedId].next;
+      if (headId === null) tailId = null;
+      delete nodes[removedId];
+      snapshot("\"" + removedValue + "\" removido.", { op: "remove", highlightIds: [] });
+      return true;
+    }
+
+    function removeTail() {
+      if (tailId === null) { snapshot("Lista já está vazia — nada a remover.", { op: "bad" }); return false; }
+      if (headId === tailId) return removeHead();
+      var cur = headId;
+      while (nodes[cur].next !== tailId) {
+        snapshot("Procurando o penúltimo nó: \"" + nodes[cur].value + "\" não é — avançando (sem ponteiro para trás, é preciso percorrer tudo).", { op: "traverse", cursorId: cur, highlightIds: [cur] });
+        cur = nodes[cur].next;
+      }
+      var removedValue = nodes[tailId].value;
+      snapshot("Encontrado: \"" + nodes[cur].value + "\" aponta para a cauda — ele será o novo fim.", { op: "traverse", cursorId: cur, highlightIds: [cur, tailId] });
+      nodes[cur].next = null;
+      delete nodes[tailId];
+      tailId = cur;
+      snapshot("\"" + removedValue + "\" removido do final.", { op: "remove", highlightIds: [] });
+      return true;
+    }
+
+    function removeValue(value) {
+      if (headId === null) { snapshot("Lista está vazia — nada a remover.", { op: "bad" }); return false; }
+      if (nodes[headId].value === value) return removeHead();
+      var prev = headId;
+      var cur = nodes[headId].next;
+      while (cur !== null) {
+        snapshot("Comparando \"" + value + "\" com \"" + nodes[cur].value + "\".", { op: "traverse", cursorId: cur, highlightIds: [cur] });
+        if (nodes[cur].value === value) {
+          if (cur === tailId) return removeTailKnownPredecessor(prev);
+          nodes[prev].next = nodes[cur].next;
+          delete nodes[cur];
+          snapshot("\"" + value + "\" removido — \"" + nodes[prev].value + "\" agora aponta para o nó seguinte.", { op: "remove", highlightIds: [prev] });
+          return true;
+        }
+        prev = cur;
+        cur = nodes[cur].next;
+      }
+      snapshot("\"" + value + "\" não está na lista — chegamos ao fim sem encontrá-lo.", { op: "bad", highlightIds: [] });
+      return false;
+    }
+
+    function removeTailKnownPredecessor(prev) {
+      var removedValue = nodes[tailId].value;
+      nodes[prev].next = null;
+      delete nodes[tailId];
+      tailId = prev;
+      snapshot("\"" + removedValue + "\" removido do final — \"" + nodes[prev].value + "\" é a nova cauda.", { op: "remove", highlightIds: [] });
+      return true;
+    }
+
+    function removeAt(index) {
+      var n = length();
+      if (index < 0 || index >= n) { snapshot("Índice " + index + " fora do intervalo [0, " + (n - 1) + "] — nada removido.", { op: "bad" }); return false; }
+      if (index === 0) return removeHead();
+      var order = chainOrder(nodes, headId);
+      if (index === n - 1) return removeTail();
+      var prevId = order[index - 1];
+      var targetId = order[index];
+      snapshot("Percorrendo até a posição " + (index - 1) + " (\"" + nodes[prevId].value + "\") para remover o nó seguinte.", { op: "traverse", cursorId: prevId, highlightIds: [prevId] });
+      var removedValue = nodes[targetId].value;
+      nodes[prevId].next = nodes[targetId].next;
+      delete nodes[targetId];
+      snapshot("\"" + removedValue + "\" removido da posição " + index + ".", { op: "remove", highlightIds: [prevId] });
+      return true;
+    }
+
+    function search(value) {
+      var cur = headId;
+      var index = 0;
+      if (cur === null) { snapshot("Lista está vazia.", { op: "bad" }); return -1; }
+      while (cur !== null) {
+        var found = nodes[cur].value === value;
+        snapshot("Comparando \"" + value + "\" com \"" + nodes[cur].value + "\" (posição " + index + ").", { op: "search", cursorId: cur, highlightIds: [cur] });
+        if (found) { snapshot("\"" + value + "\" encontrado na posição " + index + ".", { op: "search", cursorId: cur, highlightIds: [cur] }); return index; }
+        cur = nodes[cur].next;
+        index++;
+      }
+      snapshot("\"" + value + "\" não está na lista — chegamos ao fim (null) sem encontrá-lo.", { op: "bad", highlightIds: [] });
+      return -1;
+    }
+
+    function reverse() {
+      var order = chainOrder(nodes, headId);
+      if (!order || order.length < 2) {
+        snapshot("Lista com " + (order ? order.length : 0) + " nó" + (order && order.length === 1 ? "" : "s") + " — reverter não muda nada.", { op: "info", slotOrder: order || [] });
+        return;
+      }
+      var slotOrder = order.slice();
+      var prevId = null;
+      var currId = headId;
+      snapshot("Começando a reverter: prev = null, atual = cabeça (\"" + nodes[currId].value + "\").",
+        { op: "reverse", pointers: { prevId: null, currId: currId, nextId: nodes[currId].next }, slotOrder: slotOrder, highlightIds: [currId] });
+
+      while (currId !== null) {
+        var nextId = nodes[currId].next;
+        snapshot("Guardando o próximo nó (" + (nextId != null ? "\"" + nodes[nextId].value + "\"" : "null") + ") antes de sobrescrever o ponteiro de \"" + nodes[currId].value + "\".",
+          { op: "reverse", pointers: { prevId: prevId, currId: currId, nextId: nextId }, slotOrder: slotOrder, highlightIds: [currId] });
+        nodes[currId].next = prevId;
+        snapshot("\"" + nodes[currId].value + "\" agora aponta para " + (prevId != null ? "\"" + nodes[prevId].value + "\"" : "null") + " em vez do nó seguinte.",
+          { op: "reverse", pointers: { prevId: prevId, currId: currId, nextId: nextId }, slotOrder: slotOrder, highlightIds: [currId] });
+        prevId = currId;
+        currId = nextId;
+        if (currId !== null) {
+          snapshot("Avançando: prev = \"" + nodes[prevId].value + "\", atual = \"" + nodes[currId].value + "\".",
+            { op: "reverse", pointers: { prevId: prevId, currId: currId, nextId: nodes[currId].next }, slotOrder: slotOrder, highlightIds: [currId] });
+        }
+      }
+      var oldHeadId = headId;
+      var oldTailId = tailId;
+      headId = prevId;
+      tailId = oldHeadId;
+      snapshot("Fim da lista alcançado. A cabeça passa a ser \"" + nodes[headId].value + "\" (antiga cauda) e a cauda é \"" + nodes[tailId].value + "\" (antiga cabeça).",
+        { op: "reverse", pointers: { prevId: prevId, currId: null, nextId: null }, slotOrder: slotOrder, highlightIds: [headId, oldTailId] });
+    }
+
+    function toArray() {
+      var order = chainOrder(nodes, headId);
+      if (!order) return null;
+      return order.map(function (id) { return nodes[id].value; });
+    }
+
+    snapshot("Lista vazia.", { op: "info" });
+
+    return {
+      insertAtHead: insertAtHead, insertAtTail: insertAtTail, insertAt: insertAt,
+      removeHead: removeHead, removeTail: removeTail, removeValue: removeValue, removeAt: removeAt,
+      search: search, reverse: reverse, length: length, toArray: toArray,
+      getHeadId: function () { return headId; }, getTailId: function () { return tailId; },
+      getNodes: function () { return nodes; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= app state =================
+  var els = {
+    llSvg: document.getElementById("llSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    indexInput: document.getElementById("indexInput"),
+    btnInsertTail: document.getElementById("btnInsertTail"),
+    btnInsertHead: document.getElementById("btnInsertHead"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnRemoveValue: document.getElementById("btnRemoveValue"),
+    btnInsertAt: document.getElementById("btnInsertAt"),
+    btnRemoveAt: document.getElementById("btnRemoveAt"),
+    btnRemoveHead: document.getElementById("btnRemoveHead"),
+    btnRemoveTail: document.getElementById("btnRemoveTail"),
+    btnReverse: document.getElementById("btnReverse"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var NS = "http://www.w3.org/2000/svg";
+  var NODE_W = 92, NODE_H = 52, PTR_W = 28, CELL_W = 136, TOP_PAD = 46, ROW_Y = 86, BOTTOM_PAD = 40, SIDE_PAD = 24;
+
+  var engine = createLinkedListEngine();
+  var state = { stepIndex: 0, playing: false, timer: null };
+  var nodeEls = {}, arrowEls = {}, headTag = null, tailTag = null, nullBoxEl = null, nullTextEl = null, emptyTextEl = null;
+  var ptrEls = { prev: null, curr: null, next: null };
+
+  function buildStatics() {
+    els.llSvg.innerHTML = "";
+    nodeEls = {}; arrowEls = {};
+
+    var defs = document.createElementNS(NS, "defs");
+    [["arrowHeadNormal", "var(--line-strong)"], ["arrowHeadGold", "var(--gold)"]].forEach(function (pair) {
+      var marker = document.createElementNS(NS, "marker");
+      marker.setAttribute("id", pair[0]); marker.setAttribute("viewBox", "0 0 10 10");
+      marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+      marker.setAttribute("markerWidth", "7"); marker.setAttribute("markerHeight", "7"); marker.setAttribute("orient", "auto-start-reverse");
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z"); path.setAttribute("fill", pair[1]);
+      marker.appendChild(path); defs.appendChild(marker);
+    });
+    els.llSvg.appendChild(defs);
+
+    var arrowLayer = document.createElementNS(NS, "g"); arrowLayer.setAttribute("id", "arrowLayer");
+    var nodeLayer = document.createElementNS(NS, "g"); nodeLayer.setAttribute("id", "nodeLayer");
+    var tagLayer = document.createElementNS(NS, "g"); tagLayer.setAttribute("id", "tagLayer");
+    var ptrLayer = document.createElementNS(NS, "g"); ptrLayer.setAttribute("id", "ptrLayer");
+    els.llSvg.appendChild(arrowLayer); els.llSvg.appendChild(nodeLayer); els.llSvg.appendChild(tagLayer); els.llSvg.appendChild(ptrLayer);
+
+    nullBoxEl = document.createElementNS(NS, "rect"); nullBoxEl.setAttribute("class", "ll-null-box");
+    nullBoxEl.setAttribute("width", 56); nullBoxEl.setAttribute("height", NODE_H); nullBoxEl.setAttribute("rx", 8);
+    nullTextEl = document.createElementNS(NS, "text"); nullTextEl.setAttribute("class", "ll-null-text"); nullTextEl.textContent = "null";
+    nodeLayer.appendChild(nullBoxEl); nodeLayer.appendChild(nullTextEl);
+
+    emptyTextEl = document.createElementNS(NS, "text"); emptyTextEl.setAttribute("class", "ll-empty-text"); emptyTextEl.textContent = "lista vazia";
+    nodeLayer.appendChild(emptyTextEl);
+
+    function makeTag(cls) {
+      var g = document.createElementNS(NS, "g");
+      var line = document.createElementNS(NS, "line"); line.setAttribute("class", "ll-tag-line");
+      var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "ll-tag-bg " + cls); bg.setAttribute("rx", 8); bg.setAttribute("width", 40); bg.setAttribute("height", 18);
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "ll-tag-pill"); text.textContent = cls;
+      g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+      tagLayer.appendChild(g);
+      return { g: g, line: line, bg: bg, text: text };
+    }
+    headTag = makeTag("head");
+    tailTag = makeTag("tail");
+
+    function makePtr(kind) {
+      var g = document.createElementNS(NS, "g");
+      var line = document.createElementNS(NS, "line"); line.setAttribute("class", "ll-ptr-line " + kind);
+      var bg = document.createElementNS(NS, "rect"); bg.setAttribute("class", "ll-ptr-pill-bg " + kind); bg.setAttribute("rx", 8); bg.setAttribute("width", 40); bg.setAttribute("height", 16); bg.setAttribute("fill", "var(--card)");
+      var text = document.createElementNS(NS, "text"); text.setAttribute("class", "ll-ptr-pill-text " + kind); text.textContent = kind;
+      g.appendChild(line); g.appendChild(bg); g.appendChild(text);
+      ptrLayer.appendChild(g);
+      return { g: g, line: line, bg: bg, text: text };
+    }
+    ptrEls.prev = makePtr("prev"); ptrEls.curr = makePtr("curr"); ptrEls.next = makePtr("next");
+  }
+
+  function xFor(i) { return SIDE_PAD + i * CELL_W + NODE_W / 2; }
+  var CY = TOP_PAD + NODE_H / 2;
+
+  function arcPath(x1, y1, x2, y2, bow) {
+    var midX = (x1 + x2) / 2;
+    var midY = (y1 + y2) / 2 + bow;
+    return "M " + x1 + " " + y1 + " Q " + midX + " " + midY + " " + x2 + " " + y2;
+  }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = { insert: "Inserindo", remove: "Removendo", search: "Buscando", traverse: "Percorrendo", reverse: "Revertendo", bad: "Não encontrado", info: "Início" };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var order = step.slotOrder ? step.slotOrder : (function () {
+      var out = []; var seen = {}; var cur = step.headId;
+      while (cur != null && !seen[cur]) { seen[cur] = true; out.push(cur); cur = step.nodes[cur].next; }
+      return out;
+    })();
+    var isReverseLayout = !!step.slotOrder;
+    var slotIndex = {};
+    order.forEach(function (id, i) { slotIndex[id] = i; });
+
+    var width = SIDE_PAD * 2 + Math.max(0, order.length) * CELL_W + (isReverseLayout ? 0 : 56);
+    width = Math.max(width, 260);
+    var height = TOP_PAD + NODE_H + BOTTOM_PAD;
+    els.llSvg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    els.llSvg.setAttribute("width", width);
+    els.llSvg.setAttribute("height", height);
+
+    if (order.length === 0) {
+      emptyTextEl.setAttribute("x", width / 2); emptyTextEl.setAttribute("y", CY);
+      emptyTextEl.style.display = "";
+    } else {
+      emptyTextEl.style.display = "none";
+    }
+
+    var presentIds = {};
+    order.forEach(function (id) {
+      presentIds[id] = true;
+      var n = step.nodes[id];
+      var cx = xFor(slotIndex[id]);
+      var rec = nodeEls[id];
+      if (!rec) {
+        var g = document.createElementNS(NS, "g"); g.setAttribute("class", "ll-node");
+        var rect = document.createElementNS(NS, "rect"); rect.setAttribute("class", "ll-node-rect");
+        rect.setAttribute("width", NODE_W); rect.setAttribute("height", NODE_H); rect.setAttribute("rx", 10);
+        var divider = document.createElementNS(NS, "line"); divider.setAttribute("class", "ll-divider");
+        var dot = document.createElementNS(NS, "circle"); dot.setAttribute("class", "ll-dot"); dot.setAttribute("r", 3.5);
+        var text = document.createElementNS(NS, "text"); text.setAttribute("class", "ll-value");
+        g.appendChild(rect); g.appendChild(divider); g.appendChild(dot); g.appendChild(text);
+        document.getElementById("nodeLayer").appendChild(g);
+        rec = { g: g, rect: rect, divider: divider, dot: dot, text: text };
+        nodeEls[id] = rec;
+      }
+      var left = cx - NODE_W / 2, top = CY - NODE_H / 2;
+      rec.rect.setAttribute("x", left); rec.rect.setAttribute("y", top);
+      var dividerX = left + NODE_W - PTR_W;
+      rec.divider.setAttribute("x1", dividerX); rec.divider.setAttribute("x2", dividerX);
+      rec.divider.setAttribute("y1", top); rec.divider.setAttribute("y2", top + NODE_H);
+      rec.dot.setAttribute("cx", dividerX + PTR_W / 2); rec.dot.setAttribute("cy", CY);
+      rec.text.setAttribute("x", left + (NODE_W - PTR_W) / 2); rec.text.setAttribute("y", CY + 0.5);
+      rec.text.textContent = n.value;
+
+      var st = null;
+      if ((step.highlightIds || []).indexOf(id) !== -1) {
+        if (step.op === "bad") st = "bad";
+        else if (step.op === "insert" && id === step.cursorId) st = "new";
+        else st = "cursor";
+      }
+      if (step.cursorId === id && !st) st = "cursor";
+      if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+    });
+    Object.keys(nodeEls).forEach(function (idStr) { var id = Number(idStr); if (!presentIds[id]) { nodeEls[id].g.remove(); delete nodeEls[id]; } });
+
+    var presentArrowIds = {};
+    order.forEach(function (id) {
+      var n = step.nodes[id];
+      if (n.next == null) return;
+      if (!presentIds[n.next] && !isReverseLayout) return;
+      presentArrowIds[id] = true;
+      var path = arrowEls[id];
+      if (!path) { path = document.createElementNS(NS, "path"); path.setAttribute("class", "ll-arrow"); document.getElementById("arrowLayer").appendChild(path); arrowEls[id] = path; }
+      var fromSlot = slotIndex[id];
+      var toSlot = slotIndex[n.next];
+      var fromX = xFor(fromSlot) + (NODE_W - PTR_W) / 2 + 0; // dot x computed below precisely
+      var dotX = xFor(fromSlot) - NODE_W / 2 + (NODE_W - PTR_W) + PTR_W / 2;
+      var fromY = CY;
+      var toX = xFor(toSlot) - NODE_W / 2;
+      var toY = CY;
+      var forward = toSlot > fromSlot;
+      var bow = forward ? 16 : -40;
+      path.setAttribute("class", "ll-arrow " + (forward ? "forward" : "backward"));
+      path.setAttribute("marker-end", "url(#" + (forward ? "arrowHeadNormal" : "arrowHeadGold") + ")");
+      path.setAttribute("d", arcPath(dotX, fromY, toX, toY, bow));
+    });
+    Object.keys(arrowEls).forEach(function (idStr) {
+      if (idStr === "null") return; // the null-terminator arrow is managed separately below, never by numeric id
+      var id = Number(idStr);
+      if (!presentArrowIds[id]) { arrowEls[id].remove(); delete arrowEls[id]; }
+    });
+
+    // null terminator: only in normal (chain-order) layout, right after the tail
+    var tailInOrder = order.length && !isReverseLayout ? order[order.length - 1] : null;
+    if (tailInOrder != null && step.nodes[tailInOrder].next == null) {
+      var nx = xFor(order.length) - NODE_W / 2 + 18;
+      nullBoxEl.setAttribute("x", nx); nullBoxEl.setAttribute("y", CY - NODE_H / 2);
+      nullTextEl.setAttribute("x", nx + 28); nullTextEl.setAttribute("y", CY);
+      nullBoxEl.style.display = ""; nullTextEl.style.display = "";
+      var dotX2 = xFor(order.length - 1) - NODE_W / 2 + (NODE_W - PTR_W) + PTR_W / 2;
+      var nullArrow = arrowEls["null"];
+      if (!nullArrow) { nullArrow = document.createElementNS(NS, "path"); nullArrow.setAttribute("class", "ll-arrow forward"); nullArrow.setAttribute("marker-end", "url(#arrowHeadNormal)"); document.getElementById("arrowLayer").appendChild(nullArrow); arrowEls["null"] = nullArrow; }
+      nullArrow.setAttribute("d", arcPath(dotX2, CY, nx, CY, 16));
+      nullArrow.style.display = "";
+    } else {
+      nullBoxEl.style.display = "none"; nullTextEl.style.display = "none";
+      if (arrowEls["null"]) arrowEls["null"].style.display = "none";
+    }
+
+    // head / tail tags
+    function placeTag(tag, id, labelOffset) {
+      if (id == null || !presentIds[id]) { tag.g.style.display = "none"; return; }
+      tag.g.style.display = "";
+      var cx = xFor(slotIndex[id]) - NODE_W / 2 + (NODE_W - PTR_W) / 2 + labelOffset;
+      var top = CY - NODE_H / 2;
+      tag.bg.setAttribute("x", cx - 20); tag.bg.setAttribute("y", top - 30);
+      tag.text.setAttribute("x", cx); tag.text.setAttribute("y", top - 21);
+      tag.line.setAttribute("x1", cx); tag.line.setAttribute("x2", cx);
+      tag.line.setAttribute("y1", top - 12); tag.line.setAttribute("y2", top);
+    }
+    var headNodeId = order.length ? (isReverseLayout ? (step.headId != null && presentIds[step.headId] ? step.headId : null) : order[0]) : null;
+    var tailNodeId = order.length ? (isReverseLayout ? (step.tailId != null && presentIds[step.tailId] ? step.tailId : null) : order[order.length - 1]) : null;
+    if (headNodeId != null && headNodeId === tailNodeId) {
+      placeTag(headTag, headNodeId, -16);
+      placeTag(tailTag, tailNodeId, 16);
+    } else {
+      placeTag(headTag, headNodeId, 0);
+      placeTag(tailTag, tailNodeId, 0);
+    }
+
+    // prev/curr/next pointer pills (reverse steps only)
+    function placePtr(tag, id, rowOffset) {
+      if (id == null || !presentIds[id]) { tag.g.style.display = "none"; return; }
+      tag.g.style.display = "";
+      var cx = xFor(slotIndex[id]);
+      var bottom = CY + NODE_H / 2;
+      var y = bottom + 14 + rowOffset;
+      tag.bg.setAttribute("x", cx - 20); tag.bg.setAttribute("y", y);
+      tag.text.setAttribute("x", cx); tag.text.setAttribute("y", y + 8);
+      tag.line.setAttribute("x1", cx); tag.line.setAttribute("x2", cx);
+      tag.line.setAttribute("y1", bottom); tag.line.setAttribute("y2", y);
+    }
+    if (step.pointers) {
+      placePtr(ptrEls.prev, step.pointers.prevId, 0);
+      placePtr(ptrEls.curr, step.pointers.currId, step.pointers.prevId === step.pointers.currId ? 0 : 0);
+      placePtr(ptrEls.next, step.pointers.nextId, 0);
+    } else {
+      ptrEls.prev.g.style.display = "none"; ptrEls.curr.g.style.display = "none"; ptrEls.next.g.style.display = "none";
+    }
+  }
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  // ================= playback controls =================
+  function goTo(i) {
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length - 1, i));
+    render();
+  }
+  function stepBy(delta) { goTo(state.stepIndex + delta); }
+  function stopPlaying() {
+    state.playing = false;
+    els.btnPlay.textContent = "▶ Reproduzir";
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  }
+  function togglePlay() {
+    if (state.playing) { stopPlaying(); return; }
+    var steps = engine.getSteps();
+    if (state.stepIndex >= steps.length - 1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      if (state.stepIndex >= steps.length - 1) { stopPlaying(); return; }
+      state.stepIndex++; render();
+    }, Number(els.speed.value));
+  }
+
+  els.btnReset.addEventListener("click", function () { goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stepBy(-1); });
+  els.btnNext.addEventListener("click", function () { stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function () { goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) { togglePlay(); togglePlay(); } });
+
+  function showError(msg) { els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError() { els.errorText.hidden = true; }
+
+  function parseValueInput() {
+    var raw = els.valueInput.value.trim();
+    if (raw === "") { showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v)) { showError('"' + raw + '" não é um número inteiro válido.'); return null; }
+    if (v < -999 || v > 999) { showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+  function parseIndexInput() {
+    var raw = els.indexInput.value.trim();
+    if (raw === "") { showError("Digite uma posição."); return null; }
+    var v = Number(raw);
+    if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) { showError('"' + raw + '" não é uma posição válida.'); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsertTail.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insertAtTail(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnInsertHead.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.insertAtHead(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnRemoveValue.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    engine.removeValue(v); jumpToLiveEnd(); els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnInsertAt.addEventListener("click", function () {
+    var v = parseValueInput(); if (v === null) return;
+    var idx = parseIndexInput(); if (idx === null) return;
+    engine.insertAt(idx, v); jumpToLiveEnd();
+  });
+  els.btnRemoveAt.addEventListener("click", function () {
+    var idx = parseIndexInput(); if (idx === null) return;
+    engine.removeAt(idx); jumpToLiveEnd();
+  });
+  els.btnRemoveHead.addEventListener("click", function () { hideError(); engine.removeHead(); jumpToLiveEnd(); });
+  els.btnRemoveTail.addEventListener("click", function () { hideError(); engine.removeTail(); jumpToLiveEnd(); });
+  els.btnReverse.addEventListener("click", function () { hideError(); engine.reverse(); jumpToLiveEnd(); });
+
+  els.sizeSlider.addEventListener("input", function () { els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function () {
+    hideError();
+    engine = createLinkedListEngine();
+    buildStatics();
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insertAtTail(v);
+    }
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") { stepBy(1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft") { stepBy(-1); e.preventDefault(); }
+    else if (e.key === " ") { togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= boot =================
+  buildStatics();
+  (function boot() {
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for (var i = 0; i < n; i++) {
+      var v; do { v = 1 + Math.floor(Math.random() * 98); } while (used[v]);
+      used[v] = true;
+      engine.insertAtTail(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

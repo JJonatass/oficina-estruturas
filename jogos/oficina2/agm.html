@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Rede de Pontes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 30% 30%,#1f3a4a,transparent 60%),radial-gradient(ellipse at 70% 70%,#1b3344,transparent 60%),#132733;padding:12px;min-height:360px}
+.palco{display:grid;grid-template-columns:1fr 230px;gap:12px}
+svg.mapa{display:block;width:100%;height:auto}
+.ponte line{stroke:#6d6a85;stroke-width:6;stroke-dasharray:2 10;stroke-linecap:round}
+.ponte line.hit{stroke:transparent;stroke-width:26;stroke-dasharray:none}
+.ponte circle{fill:#1d1b27;stroke:#6d6a85;stroke-width:2}
+.ponte text{fill:var(--ouro);font:700 14px var(--mono);text-anchor:middle;pointer-events:none}
+.ponte.pick{cursor:pointer}.ponte.pick:hover line:not(.hit){stroke:var(--ouro)}.ponte.pick:hover circle{stroke:var(--ouro)}
+.ponte.feita line:not(.hit){stroke:#c9a46a;stroke-width:10;stroke-dasharray:none}
+.ponte.feita circle{stroke:#c9a46a}
+.ponte.rejeitada{opacity:.25}
+.ponte.atual line:not(.hit){stroke:var(--ouro);stroke-dasharray:none;stroke-width:8}
+.ponte.k-dica line:not(.hit){stroke:var(--ouro);stroke-width:10}
+.ponte.errou line:not(.hit){stroke:var(--verm);stroke-width:10}
+.vila circle{fill:#4a6a3a;stroke:#1d1408;stroke-width:3}
+.vila.dentro circle{fill:#7FD8A4}
+.vila text{fill:#121119;font:800 18px var(--sans);text-anchor:middle}
+.vila .cor{stroke-width:4;fill:none}
+.lado{display:grid;gap:10px;align-content:start}
+.bolsa{background:#0f0e14;border:1px solid var(--borda);border-radius:12px;padding:10px;font-family:var(--mono)}
+.bolsa b{color:var(--ouro);font-size:20px}
+.mercado{display:grid;gap:6px}
+.mercado .card{display:flex;justify-content:space-between;align-items:center;background:var(--chip);border:1px solid var(--borda);border-radius:10px;padding:6px 10px;font-family:var(--mono);opacity:.5}
+.mercado .card:first-child{opacity:1;border-color:var(--ouro);font-size:18px}
+.mercado .card b{color:var(--ouro)}
+@media (max-width:760px){.palco{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div class="palco"><svg class="mapa" id="mapa" viewBox="0 0 640 400"></svg>
+    <div class="lado"><div class="bolsa">ouro gasto <b id="gasto">0</b><br><span class="nota" id="pontesN"></span></div><div class="mercado" id="mercado"></div></div></div></section>
+  <div class="ordem"><span id="ordem">…</span><span class="escolhas" id="esc"></span></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const CORES = ['#F2C14E','#7FB8FF','#FF7A6B','#C9A3FF','#F2A93B','#e58fc0','#9be3e0','#b5e37a','#d9c9a8','#ffffff'];
+let G = null;
+function novoMapa(n){
+  const slots = [[80,80],[220,60],[360,90],[520,70],[70,210],[210,200],[350,230],[500,205],[120,330],[280,335],[440,330],[580,310]];
+  for (let t = 0; t < 300; t++) {
+    const idx = K.shuffle(slots.map((_,i)=>i)).slice(0,n).sort((a,b)=>a-b);
+    const vs = idx.map((si,i)=>({id:'ABCDEFGHIJK'[i], x:slots[si][0]+K.rnd(-10,10), y:slots[si][1]+K.rnd(-8,8)}));
+    const d = (a,b)=>Math.hypot(a.x-b.x,a.y-b.y), cand = [];
+    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++) if (d(vs[i],vs[j]) < 200) cand.push([i,j,d(vs[i],vs[j])]);
+    const pai = vs.map((_,i)=>i), f = x => pai[x]===x?x:(pai[x]=f(pai[x])), es = [];
+    for (const [i,j] of K.shuffle(cand)) if (f(i)!==f(j)) { pai[f(i)]=f(j); es.push([i,j]); }
+    if (es.length < n-1) continue;
+    for (const [i,j] of K.shuffle(cand.filter(([i,j])=>!es.some(e=>e[0]===i&&e[1]===j))).sort((a,b)=>a[2]-b[2]).slice(0, Math.ceil(n*0.7))) es.push([i,j]);
+    const cruza=(p1,p2,p3,p4)=>{const o=(a,b,c)=>(c.y-a.y)*(b.x-a.x)-(b.y-a.y)*(c.x-a.x); if([p1,p2].includes(p3)||[p1,p2].includes(p4)) return false; return (o(p1,p2,p3)>0)!==(o(p1,p2,p4)>0)&&(o(p3,p4,p1)>0)!==(o(p3,p4,p2)>0);};
+    const fin = []; for (const e of es) if (!fin.some(g=>cruza(vs[e[0]],vs[e[1]],vs[g[0]],vs[g[1]]))) fin.push(e);
+    const p2 = vs.map((_,i)=>i), f2 = x => p2[x]===x?x:(p2[x]=f2(p2[x])); fin.forEach(([i,j])=>p2[f2(i)]=f2(j));
+    if (new Set(vs.map((_,i)=>f2(i))).size > 1) continue;
+    const pesos = K.shuffle([...Array(30).keys()].map(x=>x+1));
+    return {vs, es: fin.map(([i,j],k)=>({a:vs[i].id, b:vs[j].id, id:vs[i].id+vs[j].id, w:pesos[k]}))};
+  }
+}
+function reino(){
+  G.kruskal = G.rodada % 2 === 0;
+  G.g = novoMapa(Math.min(9, 6 + Math.floor(G.nivel / 2)));
+  G.feitas = new Set(); G.rej = new Set(); G.gasto = 0;
+  G.pai = Object.fromEntries(G.g.vs.map(v=>[v.id, v.id]));
+  G.dentro = new Set(['A']);
+  G.fila = G.g.es.slice().sort((a,b)=>a.w-b.w);
+  K.banner(G.kruskal ? 'Kruskal<small>a ponte mais barata que não fecha ciclo</small>' : 'Prim<small>crescendo a partir de A</small>');
+  setTimeout(proxima, 800);
+}
+const f = x => G.pai[x] === x ? x : (G.pai[x] = f(G.pai[x]));
+function desenhar(hl = {}){
+  const P = Object.fromEntries(G.g.vs.map(v=>[v.id,v]));
+  const atual = G.kruskal ? G.fila[0] : null;
+  const picks = G.kruskal ? [] : G.g.es.filter(e => G.dentro.has(e.a) !== G.dentro.has(e.b)).map(e=>e.id);
+  let s = '';
+  for (const e of G.g.es) {
+    const a = P[e.a], b = P[e.b], mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    const cls = ['ponte', G.feitas.has(e.id) ? 'feita' : '', G.rej.has(e.id) ? 'rejeitada' : '', atual === e ? 'atual' : '', picks.includes(e.id) ? 'pick' : '', hl[e.id] || ''].join(' ');
+    s += `<g class="${cls}" data-e="${e.id}"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><line class="hit" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><circle cx="${mx}" cy="${my}" r="15"/><text x="${mx}" y="${my+5}">${e.w}</text></g>`;
+  }
+  for (const v of G.g.vs) {
+    const grupo = f(v.id), cor = CORES['ABCDEFGHIJK'.indexOf(grupo)];
+    s += `<g class="vila ${!G.kruskal && G.dentro.has(v.id) ? 'dentro' : ''}"><circle cx="${v.x}" cy="${v.y}" r="22"/>${G.kruskal ? `<circle class="cor" cx="${v.x}" cy="${v.y}" r="28" stroke="${cor}"/>` : ''}<text x="${v.x}" y="${v.y+6}">${v.id}</text></g>`;
+  }
+  $('#mapa').innerHTML = s;
+  $('#mapa').querySelectorAll('.ponte.pick').forEach(g => g.onclick = () => escolherPrim(g.dataset.e, g));
+  $('#gasto').textContent = G.gasto;
+  $('#pontesN').textContent = `${G.feitas.size} de ${G.g.vs.length - 1} pontes`;
+  $('#mercado').innerHTML = G.kruskal ? '<span class="nota">Pontes à venda, da mais barata:</span>' + G.fila.slice(0,5).map(e=>`<div class="card"><span>${e.a}–${e.b}</span><b>${e.w}</b></div>`).join('') : `<span class="nota">Vilas conectadas: ${[...G.dentro].join(', ')}</span>`;
+}
+function proxima(){
+  if (G.feitas.size === G.g.vs.length - 1) return fimReino();
+  desenhar();
+  const tempo = Math.max(4, 10 - G.nivel);
+  if (G.kruskal) {
+    const e = G.fila[0];
+    $('#ordem').innerHTML = `A ponte mais barata à venda é <b>${e.a}–${e.b}</b> (custo ${e.w}). Construir ou descartar?`;
+    $('#esc').innerHTML = `<button data-a="c"><kbd>1</kbd> Construir</button><button data-a="d"><kbd>2</kbd> Descartar (fecharia ciclo)</button>`;
+    $('#esc').querySelectorAll('button').forEach(b => b.onclick = () => decidir(b.dataset.a, b));
+    K.turno(tempo, () => falhou(null, true), () => [`As cores em volta das vilas mostram os grupos já ligados. ${e.a} e ${e.b} estão no mesmo grupo?`, f(e.a) === f(e.b) ? 'Mesmo grupo: descarte.' : 'Grupos diferentes: construa.']);
+  } else {
+    $('#esc').innerHTML = '';
+    $('#ordem').innerHTML = 'Clique na ponte mais barata que liga uma vila <b>verde</b> (conectada) a uma ainda isolada.';
+    K.turno(tempo + 2, () => falhou(null, true), () => { const c = candPrim(); return ['Só contam pontes com uma ponta verde e a outra não.', `A mais barata é ${c[0].a}–${c[0].b} (${c[0].w}).`]; });
+  }
+}
+const candPrim = () => G.g.es.filter(e => G.dentro.has(e.a) !== G.dentro.has(e.b)).sort((a,b)=>a.w-b.w);
+function decidir(a, el){
+  if (!K.s.rodando || K.s.ocupado || !G.kruskal || G.feitas.size === G.g.vs.length - 1) return;
+  const e = G.fila[0], ciclo = f(e.a) === f(e.b);
+  if ((a === 'c') === ciclo) return falhou(el);
+  G.fila.shift();
+  if (a === 'c') { G.pai[f(e.a)] = f(e.b); G.feitas.add(e.id); G.gasto += e.w; K.acerto(el, 90); K.SFX.whoosh(); }
+  else { G.rej.add(e.id); K.acerto(el, 110); K.flutua('ciclo evitado!', el, 'var(--verde)'); }
+  proxima();
+}
+function escolherPrim(id, el){
+  if (!K.s.rodando || K.s.ocupado || G.kruskal || G.feitas.size === G.g.vs.length - 1) return;
+  const c = candPrim();
+  if (id !== c[0].id) return falhou(el);
+  const e = c[0]; G.feitas.add(e.id); G.gasto += e.w; G.dentro.add(G.dentro.has(e.a) ? e.b : e.a);
+  G.g.es.forEach(x => { if (!G.feitas.has(x.id) && G.dentro.has(x.a) && G.dentro.has(x.b)) G.rej.add(x.id); });
+  K.acerto(el, 100); K.SFX.whoosh(); proxima();
+}
+function fimReino(){
+  K.timer.parar(); $('#esc').innerHTML = '';
+  desenhar();
+  $('#ordem').innerHTML = `Todas as vilas ligadas com <b>${G.gasto}</b> de ouro: é a árvore geradora mínima (${G.g.vs.length - 1} pontes, sem ciclos).`;
+  K.bonus(250, $('#mapa'), 'Reino conectado +250');
+  G.rodada++;
+  setTimeout(() => { if (G.rodada % 2 === 0) { G.nivel++; K.subirNivel(G.nivel, 'Reinos maiores'); setTimeout(reino, 1000); } else reino(); }, 1300);
+}
+function falhou(el, tempo){
+  if (el) K.anima(el, el.classList && el.classList.contains('ponte') ? 'errou' : 'treme');
+  let html;
+  if (G.kruskal) { const e = G.fila[0], ciclo = f(e.a) === f(e.b); html = ciclo ? `<p>${e.a} e ${e.b} já estavam ligadas por outras pontes (mesmo grupo de cor). Construir ${e.a}–${e.b} fecharia um <b>ciclo</b>: a ponte não acrescenta nada e custaria ${e.w} de ouro.</p>` : `<p>${e.a} e ${e.b} estavam em grupos diferentes. Como ela é a ponte mais barata que sobrou, o Kruskal a <b>constrói</b>: nenhuma outra ligaria esses grupos por menos.</p>`; html += '<p class="nota">O Kruskal usa um Union-Find para responder "mesmo grupo?" quase em O(1).</p>'; }
+  else { const c = candPrim(); html = `<p>No Prim, só contam as pontes com uma ponta na parte conectada (verde) e a outra fora: ${c.map(x=>`${x.a}–${x.b} (${x.w})`).join(', ')}. A mais barata é <b>${c[0].a}–${c[0].b}</b>.</p>`; }
+  K.erro(html, () => {
+    if (G.kruskal) { const e = G.fila.shift(); if (f(e.a) !== f(e.b)) { G.pai[f(e.a)] = f(e.b); G.feitas.add(e.id); G.gasto += e.w; } else G.rej.add(e.id); }
+    else { const e = candPrim()[0]; G.feitas.add(e.id); G.gasto += e.w; G.dentro.add(G.dentro.has(e.a) ? e.b : e.a); G.g.es.forEach(x => { if (!G.feitas.has(x.id) && G.dentro.has(x.a) && G.dentro.has(x.b)) G.rej.add(x.id); }); }
+    proxima();
+  }, {kicker: tempo ? 'O tempo acabou' : 'Ouro desperdiçado'});
+}
+
+K.init({
+  id:'agm', titulo:'A Rede de Pontes', kicker:'Masmorra · Árvore geradora mínima', vidas:3, comecar:'Abrir o mercado de pontes',
+  ajuda:`<p>O rei quer ligar todas as vilas com pontes gastando o mínimo de ouro e sem pontes inúteis: uma <b>árvore geradora mínima</b>.</p>
+  <ol><li><b>Kruskal:</b> as pontes chegam do mercado em ordem de preço. Para cada uma, decida: <b>construir</b> (liga dois grupos diferentes) ou <b>descartar</b> (fecharia um ciclo). As cores em volta das vilas mostram os grupos já ligados.</li>
+  <li><b>Prim:</b> o reino cresce a partir de A. Clique na ponte mais barata que liga uma vila verde a uma ainda isolada.</li></ol>
+  <p class="nota">Os reinos alternam entre Kruskal e Prim.</p>`,
+  tecla(e){ if (G && G.kruskal) { const a = {'1':'c','2':'d'}[e.key]; if (a) decidir(a, document.querySelector(`#esc [data-a="${a}"]`)); } },
+  iniciar(){ G = {nivel:1, rodada:0}; reino(); },
+  auto(){
+    if (!G.g || G.feitas.size === G.g.vs.length - 1) return;
+    if (G.kruskal) { const e = G.fila[0], a = f(e.a) === f(e.b) ? 'd' : 'c'; decidir(a, document.querySelector(`#esc [data-a="${a}"]`)); return true; }
+    const c = candPrim()[0]; escolherPrim(c.id, document.querySelector(`.ponte[data-e="${c.id}"]`)); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

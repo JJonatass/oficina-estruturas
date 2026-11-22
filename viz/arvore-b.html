@@ -1,0 +1,802 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Árvore B Visual</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    --node-fill:#3C4A44;
+    --node-text:#F7FAF8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      --node-fill:#96A69D; --node-text:#12160F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    --node-fill:#96A69D; --node-text:#12160F;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:64ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove"] .dot{background:var(--rust);}
+  .op-pill[data-op="search"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search"] .dot{background:var(--accent);}
+  .op-pill[data-op="split"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="split"] .dot{background:var(--violet);}
+  .op-pill[data-op="merge"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="merge"] .dot{background:var(--violet);}
+  .op-pill[data-op="rotate"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="rotate"] .dot{background:var(--violet);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; padding-block:8px;}
+  .tree-svg{display:block; margin:0 auto; transition:height .25s ease, width .25s ease;}
+  @media (prefers-reduced-motion: reduce){ .tree-svg, .tree-svg *{ transition:none !important; } }
+
+  svg text{font-family:'IBM Plex Mono', monospace;}
+  .node-halo{ fill:none; stroke:transparent; stroke-width:3; transition: x .35s ease, y .35s ease, width .35s ease, stroke .25s ease; }
+  .node-box{ fill:var(--node-fill); stroke:var(--paper); stroke-width:2.5; transition: x .35s ease, y .35s ease, width .35s ease; }
+  .node-divider{ stroke:var(--paper); stroke-width:1.6; transition: x1 .35s ease, x2 .35s ease, y1 .35s ease, y2 .35s ease; }
+  .node-value{ font-weight:600; font-size:12px; text-anchor:middle; dominant-baseline:central; fill:var(--node-text); transition: x .35s ease, y .35s ease; pointer-events:none; }
+  .edge-line{ stroke:var(--line-strong); stroke-width:1.8; transition: x1 .35s ease, y1 .35s ease, x2 .35s ease, y2 .35s ease; }
+
+  .node[data-state="compare"] .node-halo{ stroke:var(--accent); }
+  .node[data-state="new"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="end"] .node-halo{ stroke:var(--gold); }
+  .node[data-state="rotate"] .node-halo{ stroke:var(--violet); }
+  .node[data-state="successor"] .node-halo{ stroke:var(--accent); stroke-dasharray:3 3; }
+  .node[data-state="bad"] .node-halo{ stroke:var(--rust); }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:16px;height:12px;border-radius:3px;border:2px solid transparent; background:var(--node-fill);}
+  .legend .swatch.compare{background:var(--card); border-color:var(--accent);}
+  .legend .swatch.new{background:var(--card); border-color:var(--gold);}
+  .legend .swatch.rotate{background:var(--card); border-color:var(--violet);}
+  .legend .swatch.succ{background:var(--card); border-color:var(--accent); border-style:dashed;}
+  .legend .swatch.bad{background:var(--card); border-color:var(--rust);}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:100px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .example-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:18px 20px; display:flex; flex-direction:column; gap:12px;}
+  .example-diagram{display:flex; justify-content:center; align-items:center; gap:14px; overflow-x:auto; padding-block:4px;}
+  .example-arrow{font-size:1.3rem; color:var(--ink-faint); flex:0 0 auto;}
+
+  .delete-cases{display:flex; flex-direction:column; gap:10px;}
+  .delete-case{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:13px 16px; display:flex; gap:12px; align-items:flex-start;}
+  .delete-case .badge{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.82rem;
+    background:var(--violet-soft); color:var(--violet);
+  }
+  .delete-case .body{display:flex; flex-direction:column; gap:2px;}
+  .delete-case .title{font-weight:600;}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Árvore de múltiplas chaves por nó · Bayer &amp; McCreight, 1972</span>
+    <h1>Árvore B Visual</h1>
+    <p class="prose">Uma árvore B quebra a regra que toda árvore binária segue: cada nó pode guardar <strong>várias chaves</strong> e ter <strong>vários filhos</strong>, não só dois. Nesta página, o grau mínimo é <code>t = 2</code> — cada nó (menos a raiz) guarda entre 1 e 3 chaves e tem entre 2 e 4 filhos. Ao inserir, um nó cheio se divide antes de precisar; ao remover, um nó no mínimo pede emprestado a um irmão ou se funde com ele antes de perder uma chave. O resultado: todas as folhas ficam sempre na mesma profundidade, sem uma única rotação.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador da árvore B">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="tree-svg" id="treeSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch"></span>nó</span>
+      <span class="item"><span class="swatch compare"></span>comparando</span>
+      <span class="item"><span class="swatch new"></span>nova / encontrada</span>
+      <span class="item"><span class="swatch rotate"></span>dividindo, pedindo emprestado ou fundindo</span>
+      <span class="item"><span class="swatch succ"></span>predecessor / sucessor</span>
+      <span class="item"><span class="swatch bad"></span>removida / não encontrada</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Valor
+          <input type="number" id="valueInput" placeholder="ex: 42">
+        </label>
+        <button class="primary" id="btnInsert">+ Inserir</button>
+        <button id="btnSearch">🔍 Buscar</button>
+        <button class="danger" id="btnRemove">− Remover</button>
+        <button id="btnRandomInsert">🎲 Inserir aleatório</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Tamanho inicial
+          <input type="range" class="mini" id="sizeSlider" min="1" max="30" value="14" step="1">
+          <span class="mono" id="sizeLabel">14</span>
+        </label>
+        <button id="btnNewRandom">↺ Nova árvore aleatória</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Por que dividir pelo meio</h2>
+    <p class="prose">Um nó com <code>t = 2</code> aguenta no máximo 3 chaves. Ao tentar inserir numa árvore que já colocaria uma quarta chave num nó, ele se divide antes disso acontecer: a chave do meio sobe para o pai, e as chaves menores e maiores viram dois nós separados — sem precisar reorganizar nada mais abaixo.</p>
+    <div class="example-card">
+      <div class="example-diagram" id="splitDiagram"></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Removendo: pedir emprestado ou fundir</h2>
+    <p class="prose">Remover uma chave nunca pode deixar um nó abaixo do mínimo de 1 chave — a árvore B evita isso <em>antes</em> de descer, corrigindo qualquer filho fraco no caminho:</p>
+    <div class="delete-cases">
+      <div class="delete-case"><span class="badge">1</span><div class="body"><span class="title">Chave está num nó interno</span><span class="prose">Se a chave a remover está no meio da árvore, ela é trocada pelo seu predecessor (maior valor à esquerda) ou sucessor (menor valor à direita) — e removemos essa outra chave, que está garantidamente numa folha ou perto dela.</span></div></div>
+      <div class="delete-case"><span class="badge">2</span><div class="body"><span class="title">Filho no caminho tem só 1 chave</span><span class="prose">Antes de descer para um filho fraco, verificamos se um irmão vizinho tem chave sobrando (mais de 1). Se tiver, uma chave passa do irmão pelo pai até o filho — um empréstimo que mantém todo mundo dentro do mínimo.</span></div></div>
+      <div class="delete-case"><span class="badge">3</span><div class="body"><span class="title">Nenhum irmão tem chave sobrando</span><span class="prose">Fundimos o filho fraco com um irmão e a chave separadora do pai, formando um único nó cheio (3 chaves) — e continuamos a remoção a partir dele.</span></div></div>
+      <div class="delete-case"><span class="badge">4</span><div class="body"><span class="title">A raiz pode encolher</span><span class="prose">Se a fusão envolve os dois únicos filhos da raiz, a raiz fica sem chaves — seu único filho restante vira a nova raiz, e a árvore perde um nível de altura.</span></div></div>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Qualquer operação</span>
+      <h3>O(log n), com altura sempre uniforme</h3>
+      <p class="prose">Como toda divisão e toda fusão mantêm as folhas na mesma profundidade, a altura da árvore cresce de forma controlada — busca, inserção e remoção custam O(log n) no pior caso, sem exceção.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Por que bancos de dados usam</span>
+      <h3>Poucos nós, muitas chaves cada</h3>
+      <p class="prose">Na prática, o grau mínimo é escolhido para que um nó caiba exatamente num bloco de disco (às vezes centenas de chaves). Poucos nós = poucas leituras de disco para qualquer busca — é por isso que índices de bancos de dados e sistemas de arquivos usam árvores B, não árvores binárias.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de uma árvore B com grau mínimo t = 2, seguindo o algoritmo clássico descrito por Bayer e McCreight (1972) e popularizado por Cormen, Leiserson, Rivest e Stein (CLRS). Complexidade: O(log n) garantido para busca, inserção e remoção.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= B-tree engine (records one step per operation) =================
+  function createBTreeEngine() {
+    var nextId = 1;
+    var T = 2;
+    var MAX_KEYS = 2 * T - 1;
+    var MIN_KEYS = T - 1;
+    var root = newNode(true);
+    var steps = [];
+
+    function newNode(leaf) { return { id: nextId++, leaf: leaf, keys: [], children: [] }; }
+    function cloneTree(node) { if (!node) return null; return { id: node.id, leaf: node.leaf, keys: node.keys.slice(), children: node.children.map(cloneTree) }; }
+    function snapshot(message, opts) {
+      opts = opts || {};
+      steps.push({ root: cloneTree(root), message: message, op: opts.op || "info", highlight: opts.highlight || { ids: [], kind: "" } });
+    }
+
+    function splitChild(parent, i) {
+      var child = parent.children[i];
+      var mid = T - 1;
+      var promoted = child.keys[mid];
+      var right = newNode(child.leaf);
+      right.keys = child.keys.slice(mid + 1);
+      child.keys = child.keys.slice(0, mid);
+      if (!child.leaf) { right.children = child.children.slice(mid + 1); child.children = child.children.slice(0, mid + 1); }
+      parent.keys.splice(i, 0, promoted);
+      parent.children.splice(i + 1, 0, right);
+      snapshot("Nó cheio (3 chaves): a chave do meio (" + promoted + ") sobe para o pai, e o nó se divide em dois.",
+        { op: "split", highlight: { ids: [parent.id, child.id, right.id], kind: "rotate" } });
+    }
+
+    function insertNonFull(node, key) {
+      if (node.leaf) {
+        for (var j = 0; j < node.keys.length; j++) if (node.keys[j] === key) { snapshot(key + " já está na árvore — nada a inserir.", { op: "insert", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+        var pos = 0; while (pos < node.keys.length && node.keys[pos] < key) pos++;
+        node.keys.splice(pos, 0, key);
+        snapshot(key + " inserida em um nó-folha, na posição ordenada correta.", { op: "insert", highlight: { ids: [node.id], kind: "new" } });
+        return true;
+      }
+      var i = 0; while (i < node.keys.length && key > node.keys[i]) i++;
+      if (i < node.keys.length && node.keys[i] === key) { snapshot(key + " já está na árvore — nada a inserir.", { op: "insert", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+      snapshot(key + " não está neste nó — descemos para o filho apropriado.", { op: "insert", highlight: { ids: [node.id, node.children[i].id], kind: "compare" } });
+      if (node.children[i].keys.length === MAX_KEYS) {
+        splitChild(node, i);
+        if (key > node.keys[i]) i++;
+        else if (key === node.keys[i]) { snapshot(key + " já está na árvore (era a chave promovida pela divisão) — nada a inserir.", { op: "insert", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+      }
+      return insertNonFull(node.children[i], key);
+    }
+
+    function insert(key) {
+      if (root.keys.length === MAX_KEYS) {
+        var oldRoot = root;
+        var newRoot = newNode(false);
+        newRoot.children.push(oldRoot);
+        root = newRoot;
+        snapshot("A raiz está cheia: criamos uma nova raiz vazia acima dela antes de continuar.", { op: "split", highlight: { ids: [newRoot.id], kind: "new" } });
+        splitChild(newRoot, 0);
+      }
+      return insertNonFull(root, key);
+    }
+
+    function search(key) {
+      var node = root;
+      while (true) {
+        var i = 0; while (i < node.keys.length && key > node.keys[i]) i++;
+        snapshot("Comparando " + key + " com as chaves do nó.", { op: "search", highlight: { ids: [node.id], kind: "compare" } });
+        if (i < node.keys.length && node.keys[i] === key) { snapshot(key + " encontrada neste nó.", { op: "search", highlight: { ids: [node.id], kind: "end" } }); return true; }
+        if (node.leaf) { snapshot("Chegamos a uma folha sem encontrar " + key + " — a chave não está na árvore.", { op: "search", highlight: { ids: [node.id], kind: "bad" } }); return false; }
+        node = node.children[i];
+      }
+    }
+
+    function mergeAt(node, i) {
+      var left = node.children[i], right = node.children[i + 1];
+      left.keys.push(node.keys[i]);
+      left.keys = left.keys.concat(right.keys);
+      if (!left.leaf) left.children = left.children.concat(right.children);
+      node.keys.splice(i, 1);
+      node.children.splice(i + 1, 1);
+      return left;
+    }
+
+    function fixChild(node, pos) {
+      var leftSib = pos > 0 ? node.children[pos - 1] : null;
+      var rightSib = pos < node.children.length - 1 ? node.children[pos + 1] : null;
+      var child = node.children[pos];
+      if (leftSib && leftSib.keys.length > MIN_KEYS) {
+        if (!child.leaf) child.children.unshift(leftSib.children.pop());
+        child.keys.unshift(node.keys[pos - 1]);
+        node.keys[pos - 1] = leftSib.keys.pop();
+        snapshot("O filho tem só " + MIN_KEYS + " chave — pedimos emprestada uma chave do irmão esquerdo, passando pelo pai.",
+          { op: "rotate", highlight: { ids: [leftSib.id, node.id, child.id], kind: "rotate" } });
+        return child;
+      }
+      if (rightSib && rightSib.keys.length > MIN_KEYS) {
+        if (!child.leaf) child.children.push(rightSib.children.shift());
+        child.keys.push(node.keys[pos]);
+        node.keys[pos] = rightSib.keys.shift();
+        snapshot("O filho tem só " + MIN_KEYS + " chave — pedimos emprestada uma chave do irmão direito, passando pelo pai.",
+          { op: "rotate", highlight: { ids: [rightSib.id, node.id, child.id], kind: "rotate" } });
+        return child;
+      }
+      if (leftSib) {
+        snapshot("Nem o irmão esquerdo nem o direito têm chave sobrando — fundimos o filho com o irmão esquerdo, puxando a chave separadora do pai.",
+          { op: "merge", highlight: { ids: [node.id, leftSib.id, child.id], kind: "rotate" } });
+        return mergeAt(node, pos - 1);
+      }
+      snapshot("Nem o irmão esquerdo nem o direito têm chave sobrando — fundimos o filho com o irmão direito, puxando a chave separadora do pai.",
+        { op: "merge", highlight: { ids: [node.id, child.id, rightSib.id], kind: "rotate" } });
+      return mergeAt(node, pos);
+    }
+
+    function deleteKey(node, key) {
+      var pos = 0; while (pos < node.keys.length && key > node.keys[pos]) pos++;
+      var found = pos < node.keys.length && node.keys[pos] === key;
+
+      if (node.leaf) {
+        if (found) { node.keys.splice(pos, 1); snapshot(key + " removida diretamente de um nó-folha.", { op: "remove", highlight: { ids: [node.id], kind: "bad" } }); return true; }
+        snapshot(key + " não está na árvore — chegamos a uma folha sem encontrá-la.", { op: "remove", highlight: { ids: [node.id], kind: "bad" } });
+        return false;
+      }
+
+      if (found) {
+        var leftChild = node.children[pos], rightChild = node.children[pos + 1];
+        if (leftChild.keys.length > MIN_KEYS) {
+          var predNode = leftChild; while (!predNode.leaf) predNode = predNode.children[predNode.children.length - 1];
+          var predKey = predNode.keys[predNode.keys.length - 1];
+          snapshot(key + " está num nó interno — substituímos pelo predecessor (" + predKey + ", o maior valor à esquerda) e removemos o predecessor de lá.",
+            { op: "remove", highlight: { ids: [node.id, predNode.id], kind: "successor" } });
+          node.keys[pos] = predKey;
+          return deleteKey(leftChild, predKey);
+        }
+        if (rightChild.keys.length > MIN_KEYS) {
+          var succNode = rightChild; while (!succNode.leaf) succNode = succNode.children[0];
+          var succKey = succNode.keys[0];
+          snapshot(key + " está num nó interno — substituímos pelo sucessor (" + succKey + ", o menor valor à direita) e removemos o sucessor de lá.",
+            { op: "remove", highlight: { ids: [node.id, succNode.id], kind: "successor" } });
+          node.keys[pos] = succKey;
+          return deleteKey(rightChild, succKey);
+        }
+        snapshot(key + " está num nó interno, mas os dois filhos ao redor têm só " + MIN_KEYS + " chave cada — fundimos os dois filhos com " + key + " no meio.",
+          { op: "merge", highlight: { ids: [node.id, leftChild.id, rightChild.id], kind: "rotate" } });
+        var merged = mergeAt(node, pos);
+        return deleteKey(merged, key);
+      }
+
+      var child = node.children[pos];
+      if (child.keys.length === MIN_KEYS) { child = fixChild(node, pos); }
+      else { snapshot(key + " não está neste nó — descemos para o filho apropriado.", { op: "remove", highlight: { ids: [node.id, child.id], kind: "compare" } }); }
+      return deleteKey(child, key);
+    }
+
+    function removeValue(key) {
+      var result = deleteKey(root, key);
+      if (!result) return false;
+      if (root.keys.length === 0 && !root.leaf) {
+        root = root.children[0];
+        snapshot("A raiz ficou sem chaves; seu único filho vira a nova raiz — a árvore diminui uma altura.", { op: "merge", highlight: { ids: [root.id], kind: "new" } });
+      }
+      return true;
+    }
+
+    function allKeys() {
+      var out = [];
+      (function walk(node) {
+        for (var i = 0; i < node.keys.length; i++) { if (!node.leaf) walk(node.children[i]); out.push(node.keys[i]); }
+        if (!node.leaf) walk(node.children[node.children.length - 1]);
+      })(root);
+      return out;
+    }
+
+    return { insert: insert, search: search, remove: removeValue, keys: allKeys, getRoot: function () { return root; }, getSteps: function () { return steps; }, minDegree: T };
+  }
+
+  // ================= layout: leaves packed by real pixel width, internal = midpoint of children =================
+  var KEY_W = 40, NODE_H = 34;
+  function nodeWidth(node){ return Math.max(node.keys.length, 1) * KEY_W; }
+
+  function computeLayout(root, gap){
+    var positions = {};
+    var cursorX = 0;
+    function layout(node, depth){
+      var x;
+      if(node.children.length === 0){
+        x = cursorX + nodeWidth(node)/2;
+        cursorX += nodeWidth(node) + gap;
+      } else {
+        var centers = node.children.map(function(c){ return layout(c, depth+1); });
+        x = (centers[0] + centers[centers.length-1]) / 2;
+      }
+      positions[node.id] = { x:x, depth:depth, keys:node.keys.slice(), width: nodeWidth(node), childIds: node.children.map(function(c){ return c.id; }) };
+      return x;
+    }
+    layout(root, 0);
+    return { positions: positions, totalWidth: Math.max(cursorX - gap, nodeWidth(root)) };
+  }
+
+  // ================= app state & rendering =================
+  var els = {
+    treeSvg: document.getElementById("treeSvg"),
+    message: document.getElementById("message"),
+    opPill: document.getElementById("opPill"),
+    opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"),
+    scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"),
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    btnPlay: document.getElementById("btnPlay"),
+    speed: document.getElementById("speed"),
+    valueInput: document.getElementById("valueInput"),
+    btnInsert: document.getElementById("btnInsert"),
+    btnSearch: document.getElementById("btnSearch"),
+    btnRemove: document.getElementById("btnRemove"),
+    btnRandomInsert: document.getElementById("btnRandomInsert"),
+    sizeSlider: document.getElementById("sizeSlider"),
+    sizeLabel: document.getElementById("sizeLabel"),
+    btnNewRandom: document.getElementById("btnNewRandom"),
+    errorText: document.getElementById("errorText")
+  };
+
+  var ROW_H = 74, TOP_PAD = 20, SIDE_PAD = 26, GAP = 22;
+  var NS = "http://www.w3.org/2000/svg";
+
+  var engine = createBTreeEngine();
+  var state = { stepIndex: 0, playing:false, timer:null, usedValues:{} };
+  var nodeEls = {}, edgeEls = {};
+
+  function rebuildUsedValues(){
+    state.usedValues = {};
+    engine.keys().forEach(function(v){ state.usedValues[v] = true; });
+  }
+  function jumpToLiveEnd(){
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length-1));
+    state.stepIndex = engine.getSteps().length-1;
+    rebuildUsedValues();
+    stopPlaying();
+    render();
+  }
+
+  var OP_LABELS = { insert:"Inserindo", remove:"Removendo", search:"Buscando", split:"Dividindo", merge:"Fundindo", rotate:"Emprestando chave", info:"Início" };
+
+  function render(){
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if(!step){
+      els.treeSvg.innerHTML = "";
+      els.message.textContent = "Insira valores para começar, ou gere uma árvore aleatória.";
+      els.stepCounter.textContent = "Passo 0 / 0";
+      return;
+    }
+    els.opPill.dataset.op = step.op;
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length-1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    if(step.root.keys.length === 0 && step.root.children.length === 0){
+      els.treeSvg.setAttribute("viewBox", "0 0 200 60");
+      els.treeSvg.setAttribute("width", 200); els.treeSvg.setAttribute("height", 60);
+      els.treeSvg.innerHTML = "";
+      var emptyText = document.createElementNS(NS, "text");
+      emptyText.setAttribute("x", 100); emptyText.setAttribute("y", 30);
+      emptyText.setAttribute("text-anchor", "middle"); emptyText.setAttribute("dominant-baseline", "central");
+      emptyText.setAttribute("fill", "var(--ink-faint)"); emptyText.setAttribute("font-family", "IBM Plex Mono, monospace"); emptyText.setAttribute("font-size", "13px");
+      emptyText.textContent = "árvore vazia";
+      els.treeSvg.appendChild(emptyText);
+      nodeEls = {}; edgeEls = {};
+      return;
+    }
+
+    var highlightMap = {};
+    (step.highlight.ids || []).forEach(function(id){ highlightMap[id] = step.highlight.kind; });
+
+    var layout = computeLayout(step.root, GAP);
+    var maxDepth = 0;
+    Object.keys(layout.positions).forEach(function(id){ if(layout.positions[id].depth > maxDepth) maxDepth = layout.positions[id].depth; });
+
+    var width = SIDE_PAD*2 + layout.totalWidth;
+    var heightPx = TOP_PAD + (maxDepth+1)*ROW_H;
+    els.treeSvg.setAttribute("viewBox", "0 0 " + width + " " + heightPx);
+    els.treeSvg.setAttribute("width", width);
+    els.treeSvg.setAttribute("height", heightPx);
+
+    function xFor(ix){ return SIDE_PAD + ix; }
+    function yFor(depth){ return TOP_PAD + depth*ROW_H + NODE_H/2; }
+
+    var presentIds = {};
+    var presentEdgeChildIds = {};
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      presentIds[id] = true;
+      var p = layout.positions[id];
+      var cx = xFor(p.x), cy = yFor(p.depth);
+      var left = cx - p.width/2;
+      var kind = highlightMap[id] || "";
+
+      var rec = nodeEls[id];
+      if(!rec){
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("class", "node");
+        var halo = document.createElementNS(NS, "rect");
+        halo.setAttribute("class", "node-halo");
+        halo.setAttribute("rx", 9); halo.setAttribute("height", NODE_H+8);
+        var box = document.createElementNS(NS, "rect");
+        box.setAttribute("class", "node-box");
+        box.setAttribute("rx", 7); box.setAttribute("height", NODE_H);
+        g.appendChild(halo); g.appendChild(box);
+        rec = { g:g, halo:halo, box:box, dividers:[], texts:[] };
+        nodeEls[id] = rec;
+      }
+      if(kind) rec.g.setAttribute("data-state", kind); else rec.g.removeAttribute("data-state");
+
+      rec.halo.setAttribute("x", left-4); rec.halo.setAttribute("y", cy-NODE_H/2-4); rec.halo.setAttribute("width", p.width+8);
+      rec.box.setAttribute("x", left); rec.box.setAttribute("y", cy-NODE_H/2); rec.box.setAttribute("width", p.width);
+
+      while(rec.dividers.length < p.keys.length-1){ var d = document.createElementNS(NS,"line"); d.setAttribute("class","node-divider"); rec.g.appendChild(d); rec.dividers.push(d); }
+      while(rec.dividers.length > Math.max(0,p.keys.length-1)){ rec.dividers.pop().remove(); }
+      for(var di=0; di<p.keys.length-1; di++){
+        var dx = left + (di+1)*KEY_W;
+        rec.dividers[di].setAttribute("x1", dx); rec.dividers[di].setAttribute("x2", dx);
+        rec.dividers[di].setAttribute("y1", cy-NODE_H/2); rec.dividers[di].setAttribute("y2", cy+NODE_H/2);
+      }
+
+      while(rec.texts.length < p.keys.length){ var t = document.createElementNS(NS,"text"); t.setAttribute("class","node-value"); rec.g.appendChild(t); rec.texts.push(t); }
+      while(rec.texts.length > p.keys.length){ rec.texts.pop().remove(); }
+      for(var ki=0; ki<p.keys.length; ki++){
+        var kx = left + ki*KEY_W + KEY_W/2;
+        rec.texts[ki].setAttribute("x", kx); rec.texts[ki].setAttribute("y", cy+0.5);
+        rec.texts[ki].textContent = p.keys[ki];
+      }
+    });
+
+    Object.keys(layout.positions).forEach(function(idStr){
+      var id = Number(idStr);
+      var p = layout.positions[id];
+      var left = xFor(p.x) - p.width/2;
+      p.childIds.forEach(function(childId, ci){
+        presentEdgeChildIds[childId] = true;
+        var child = layout.positions[childId];
+        var line = edgeEls[childId];
+        if(!line){ line = document.createElementNS(NS, "line"); line.setAttribute("class","edge-line"); edgeEls[childId] = line; }
+        var anchorX = left + ci*KEY_W;
+        line.setAttribute("x1", anchorX); line.setAttribute("y1", yFor(p.depth)+NODE_H/2);
+        line.setAttribute("x2", xFor(child.x)); line.setAttribute("y2", yFor(child.depth)-NODE_H/2);
+      });
+    });
+
+    Object.keys(nodeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentIds[id]){ nodeEls[id].g.remove(); delete nodeEls[id]; }
+    });
+    Object.keys(edgeEls).forEach(function(idStr){
+      var id = Number(idStr);
+      if(!presentEdgeChildIds[id]){ edgeEls[id].remove(); delete edgeEls[id]; }
+    });
+
+    els.treeSvg.innerHTML = "";
+    Object.keys(edgeEls).forEach(function(id){ els.treeSvg.appendChild(edgeEls[id]); });
+    Object.keys(nodeEls).forEach(function(id){ els.treeSvg.appendChild(nodeEls[id].g); });
+  }
+
+  // ================= playback controls =================
+  function stopPlaying(){
+    state.playing = false;
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+  function goTo(i){
+    stopPlaying();
+    var steps = engine.getSteps();
+    state.stepIndex = Math.max(0, Math.min(steps.length-1, i));
+    render();
+  }
+  function stepBy(delta){ goTo(state.stepIndex + delta); }
+  function togglePlay(){
+    var steps = engine.getSteps();
+    if(state.playing){ stopPlaying(); return; }
+    if(steps.length === 0) return;
+    if(state.stepIndex >= steps.length-1) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    var delay = Number(els.speed.value);
+    state.timer = setInterval(function(){
+      var s = engine.getSteps();
+      if(state.stepIndex >= s.length-1){ stopPlaying(); return; }
+      state.stepIndex += 1;
+      render();
+    }, delay);
+  }
+
+  els.btnReset.addEventListener("click", function(){ goTo(0); });
+  els.btnPrev.addEventListener("click", function(){ stepBy(-1); });
+  els.btnNext.addEventListener("click", function(){ stepBy(1); });
+  els.btnPlay.addEventListener("click", togglePlay);
+  els.scrubber.addEventListener("input", function(){ goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function(){ if(state.playing){ togglePlay(); togglePlay(); } });
+
+  function showError(msg){ els.errorText.textContent = msg; els.errorText.hidden = false; }
+  function hideError(){ els.errorText.hidden = true; }
+
+  function parseValueInput(){
+    var raw = els.valueInput.value.trim();
+    if(raw === ""){ showError("Digite um valor inteiro."); return null; }
+    var v = Number(raw);
+    if(!Number.isFinite(v) || !Number.isInteger(v)){ showError('"'+raw+'" não é um número inteiro válido.'); return null; }
+    if(v < -999 || v > 999){ showError("Use valores entre -999 e 999."); return null; }
+    hideError();
+    return v;
+  }
+
+  els.btnInsert.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    engine.insert(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnSearch.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    engine.search(v); jumpToLiveEnd();
+  });
+  els.btnRemove.addEventListener("click", function(){
+    var v = parseValueInput(); if(v === null) return;
+    engine.remove(v); jumpToLiveEnd();
+    els.valueInput.value = ""; els.valueInput.focus();
+  });
+  els.btnRandomInsert.addEventListener("click", function(){
+    hideError();
+    if(Object.keys(state.usedValues).length >= 98){ showError("A árvore já cobre quase todos os valores de 1 a 98."); return; }
+    var v; do { v = 1 + Math.floor(Math.random()*98); } while(state.usedValues[v]);
+    engine.insert(v); jumpToLiveEnd();
+  });
+  els.sizeSlider.addEventListener("input", function(){ els.sizeLabel.textContent = els.sizeSlider.value; });
+  els.btnNewRandom.addEventListener("click", function(){
+    hideError();
+    engine = createBTreeEngine();
+    nodeEls = {}; edgeEls = {};
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for(var i=0;i<n;i++){
+      var v; do { v = 1 + Math.floor(Math.random()*98); } while(used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  });
+
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if(tag === "INPUT" || tag === "TEXTAREA") return;
+    if(e.key === "ArrowRight"){ stepBy(1); e.preventDefault(); }
+    else if(e.key === "ArrowLeft"){ stepBy(-1); e.preventDefault(); }
+    else if(e.key === " "){ togglePlay(); e.preventDefault(); }
+  });
+
+  // ================= static reference: the split diagram =================
+  function drawStaticNode(container, cx, cy, keys, highlighted){
+    var w = Math.max(keys.length,1) * KEY_W;
+    var left = cx - w/2;
+    var g = document.createElementNS(NS, "g");
+    if(highlighted){
+      var halo = document.createElementNS(NS,"rect");
+      halo.setAttribute("x", left-4); halo.setAttribute("y", cy-NODE_H/2-4); halo.setAttribute("width", w+8); halo.setAttribute("height", NODE_H+8);
+      halo.setAttribute("rx", 9); halo.setAttribute("fill","none"); halo.setAttribute("stroke","var(--gold)"); halo.setAttribute("stroke-width","2.5");
+      g.appendChild(halo);
+    }
+    var box = document.createElementNS(NS, "rect");
+    box.setAttribute("x", left); box.setAttribute("y", cy-NODE_H/2); box.setAttribute("width", w); box.setAttribute("height", NODE_H); box.setAttribute("rx",7);
+    box.setAttribute("fill","var(--node-fill)"); box.setAttribute("stroke","var(--paper)"); box.setAttribute("stroke-width","2.5");
+    g.appendChild(box);
+    for(var i=1;i<keys.length;i++){
+      var dx = left + i*KEY_W;
+      var line = document.createElementNS(NS,"line");
+      line.setAttribute("x1",dx); line.setAttribute("x2",dx); line.setAttribute("y1", cy-NODE_H/2); line.setAttribute("y2", cy+NODE_H/2);
+      line.setAttribute("stroke","var(--paper)"); line.setAttribute("stroke-width","1.6");
+      g.appendChild(line);
+    }
+    keys.forEach(function(k,i){
+      var text = document.createElementNS(NS,"text");
+      text.setAttribute("x", left+i*KEY_W+KEY_W/2); text.setAttribute("y", cy+0.5);
+      text.setAttribute("text-anchor","middle"); text.setAttribute("dominant-baseline","central");
+      text.setAttribute("font-size","12px"); text.setAttribute("font-weight","600"); text.setAttribute("fill","var(--node-text)");
+      text.textContent = k;
+      g.appendChild(text);
+    });
+    container.appendChild(g);
+    return w;
+  }
+
+  (function renderSplitDiagram(){
+    var container = document.getElementById("splitDiagram");
+    var w1 = 3*KEY_W + 16, h1 = NODE_H + 16;
+    var svgBefore = document.createElementNS(NS,"svg");
+    svgBefore.setAttribute("viewBox","0 0 "+w1+" "+h1); svgBefore.setAttribute("width",w1); svgBefore.setAttribute("height",h1);
+    drawStaticNode(svgBefore, w1/2, h1/2, [20,30,40], true);
+    var arrow = document.createElement("span"); arrow.className="example-arrow"; arrow.textContent="→";
+    var w2 = 3*KEY_W + 3*GAP, h2 = ROW_H + NODE_H/2 + 10;
+    var svgAfter = document.createElementNS(NS,"svg");
+    svgAfter.setAttribute("viewBox","0 0 "+w2+" "+h2); svgAfter.setAttribute("width",w2); svgAfter.setAttribute("height",h2);
+    var topY = NODE_H/2+6, botY = topY + ROW_H;
+    drawStaticNode(svgAfter, w2/2, topY, [30], true);
+    drawStaticNode(svgAfter, w2/2 - KEY_W - GAP/2, botY, [20], false);
+    drawStaticNode(svgAfter, w2/2 + KEY_W + GAP/2, botY, [40], false);
+    var l1 = document.createElementNS(NS,"line"); l1.setAttribute("x1", w2/2 - 8); l1.setAttribute("x2", w2/2 - KEY_W - GAP/2); l1.setAttribute("y1", topY+NODE_H/2); l1.setAttribute("y2", botY-NODE_H/2); l1.setAttribute("stroke","var(--line-strong)"); l1.setAttribute("stroke-width","1.8");
+    var l2 = document.createElementNS(NS,"line"); l2.setAttribute("x1", w2/2 + 8); l2.setAttribute("x2", w2/2 + KEY_W + GAP/2); l2.setAttribute("y1", topY+NODE_H/2); l2.setAttribute("y2", botY-NODE_H/2); l2.setAttribute("stroke","var(--line-strong)"); l2.setAttribute("stroke-width","1.8");
+    svgAfter.insertBefore(l2, svgAfter.firstChild); svgAfter.insertBefore(l1, svgAfter.firstChild);
+    container.appendChild(svgBefore); container.appendChild(arrow); container.appendChild(svgAfter);
+  })();
+
+  // ================= boot =================
+  (function boot(){
+    var n = Number(els.sizeSlider.value);
+    var used = {};
+    for(var i=0;i<n;i++){
+      var v; do { v = 1 + Math.floor(Math.random()*98); } while(used[v]);
+      used[v] = true;
+      engine.insert(v);
+    }
+    jumpToLiveEnd();
+  })();
+})();
+</script>
+
+</body></html>

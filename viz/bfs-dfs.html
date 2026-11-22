@@ -1,0 +1,661 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Grafo: BFS e DFS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236;
+      --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236;
+    --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="discover"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="discover"] .dot{background:var(--gold);}
+  .op-pill[data-op="visit"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="visit"] .dot{background:var(--accent);}
+  .op-pill[data-op="backtrack"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="backtrack"] .dot{background:var(--violet);}
+  .op-pill[data-op="done"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="done"] .dot{background:var(--success);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stat-row{display:flex; flex-wrap:wrap; gap:18px; font-size:0.82rem; color:var(--ink-soft);}
+  .stat-row .stat b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .gr-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .gr-svg, .gr-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .gr-node-circle{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: fill .25s ease, stroke .25s ease; }
+  .gr-node-label{ font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .gr-node[data-state="visited"] .gr-node-circle{ fill:var(--accent-soft); stroke:var(--accent); }
+  .gr-node[data-state="frontier"] .gr-node-circle{ fill:var(--violet-soft); stroke:var(--violet); stroke-dasharray:3.5 3; }
+  .gr-node[data-state="current"] .gr-node-circle{ fill:var(--gold-soft); stroke:var(--gold); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+
+  .gr-edge-bg{ fill:none; stroke:var(--line-strong); stroke-width:1.5; }
+  .gr-edge-tree{ fill:none; stroke:var(--accent); stroke-width:2.1; }
+  .gr-edge-active{ fill:none; stroke:var(--gold); stroke-width:2.6; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:50%;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.visited{border-color:var(--accent); background:var(--accent-soft);}
+  .legend .swatch.frontier{border-color:var(--violet); background:var(--violet-soft); border-style:dashed;}
+  .legend .swatch.current{border-color:var(--gold); background:var(--gold-soft); border-width:3px;}
+  .legend .line{width:16px;height:2px;border-radius:2px;background:var(--line-strong);}
+  .legend .line.tree{background:var(--accent);}
+  .legend .line.active{background:var(--gold); height:3px;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .frontier-panel{display:flex; flex-direction:column; gap:8px;}
+  .frontier-label{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .frontier-strip{display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-height:38px;}
+  .frontier-chip{
+    display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding-inline:6px;
+    border-radius:7px; border:1.5px solid var(--line-strong); background:var(--card); font-family:'IBM Plex Mono',monospace;
+    font-size:0.84rem; font-weight:600; color:var(--ink-soft);
+  }
+  .frontier-chip.current{border-color:var(--gold); color:var(--gold); background:var(--gold-soft);}
+  .frontier-empty{font-size:0.8rem; color:var(--ink-faint); font-style:italic;}
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.gold{color:var(--gold);} button.gold:hover{border-color:var(--gold); color:var(--gold);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:64px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Travessia de grafos · BFS &amp; DFS</span>
+    <h1>Grafo: Busca em Largura e Profundidade</h1>
+    <p class="prose">Um grafo é uma coleção de nós (vértices) ligados por arestas — aqui, sem peso e sem direção. As duas formas clássicas de visitar todos os nós alcançáveis a partir de um ponto de partida são a <strong>busca em largura</strong> (BFS, por camadas, usando uma fila) e a <strong>busca em profundidade</strong> (DFS, indo fundo antes de voltar, usando a própria pilha de chamadas). Ambas custam <code>O(V + E)</code> e formam, no caminho, uma árvore de descoberta sobre o grafo original.</p>
+  </header>
+
+  <section class="card" aria-label="Visualizador de BFS/DFS em grafo">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat">Nós: <b id="statN">–</b></span>
+      <span class="stat">Arestas: <b id="statM">–</b></span>
+      <span class="stat">Componentes: <b id="statComp">–</b></span>
+    </div>
+
+    <div class="stage-scroll">
+      <svg class="gr-svg" id="grSvg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch current"></span>atual</span>
+      <span class="item"><span class="swatch frontier"></span>na fila / pilha de chamada</span>
+      <span class="item"><span class="swatch visited"></span>visitado</span>
+      <span class="item"><span class="swatch"></span>não visitado</span>
+      <span class="item"><span class="line tree"></span>aresta da árvore</span>
+      <span class="item"><span class="line active"></span>aresta sendo percorrida agora</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="frontier-panel">
+      <span class="frontier-label" id="frontierLabel">Fila (BFS)</span>
+      <div class="frontier-strip" id="frontierStrip"></div>
+    </div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início do histórico">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Anterior</button>
+        <button class="primary" id="btnPlay">▶ Reproduzir</button>
+        <button id="btnNext" title="Próximo passo">Próximo ▶</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="120" max="1400" value="550" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <label class="small">Nó inicial <input type="number" id="startInput" min="0" value="0"></label>
+        <button class="primary" id="btnBfs">Executar BFS</button>
+        <button id="btnDfs">Executar DFS</button>
+      </div>
+      <div class="controls-row">
+        <label class="small">Nós
+          <input type="range" class="mini" id="nSlider" min="4" max="12" value="8" step="1">
+          <span class="mono" id="nLabel">8</span>
+        </label>
+        <button class="violet" id="btnNewGraph">🎲 Novo grafo aleatório</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Duas estratégias, duas estruturas de apoio</h2>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <span class="tag">Busca em largura · BFS</span>
+        <p class="prose">Usa uma <strong>fila</strong> (FIFO): visita o nó de partida, depois todos os seus vizinhos, depois os vizinhos dos vizinhos — camada por camada. Em um grafo sem peso, isso garante que o primeiro caminho encontrado até qualquer nó já é o mais curto possível (em número de arestas).</p>
+      </div>
+      <div class="compare-card">
+        <span class="tag">Busca em profundidade · DFS</span>
+        <p class="prose">Usa uma <strong>pilha</strong> — aqui, a própria pilha de chamadas da recursão: aprofunda em um vizinho até não haver mais para onde ir, depois retrocede (<em>backtrack</em>) e tenta o próximo ramo. Não garante caminhos mínimos, mas é a base de algoritmos como detecção de ciclos e ordenação topológica.</p>
+      </div>
+    </div>
+    <p class="prose">As duas visitam exatamente os mesmos nós (todo o componente conexo do ponto de partida) e, no caminho, constroem uma <strong>árvore de descoberta</strong> diferente — por isso a ordem de visita e o formato da árvore mudam, mas o conjunto alcançado é sempre o mesmo.</p>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada busca</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Operação</th><th>Tempo</th><th>Espaço</th><th>Por quê</th></tr></thead>
+        <tbody>
+          <tr><td class="op">BFS</td><td class="mono">O(V + E)</td><td class="mono">O(V)</td><td>Cada vértice entra na fila uma vez; cada aresta é examinada no máximo duas vezes.</td></tr>
+          <tr><td class="op">DFS</td><td class="mono">O(V + E)</td><td class="mono">O(V)</td><td>Mesma conta, mas o espaço é a profundidade da recursão (pilha de chamadas) em vez da fila.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Onde aparece de verdade</span>
+      <h3>Camadas e caminhos mínimos</h3>
+      <p class="prose">BFS encontra graus de separação em redes sociais e caminhos mínimos em labirintos e mapas sem peso. DFS detecta ciclos, gera ordenações topológicas (tarefas com dependência) e encontra componentes fortemente conexos.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">O que não dá pra fazer</span>
+      <h3>Sem pesos nas arestas</h3>
+      <p class="prose">BFS só encontra o caminho mais curto quando todas as arestas custam o mesmo. Assim que as arestas têm pesos diferentes (tempo, distância, custo), é preciso um algoritmo que leve o peso em conta — como o de Dijkstra.</p>
+    </div>
+  </section>
+
+  <footer>Implementação didática de busca em largura (BFS) e busca em profundidade (DFS) sobre um grafo não direcionado e não ponderado, com complexidade O(V + E).</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= Graph traversal engine (records one step per visit/discovery/backtrack) =================
+  function buildAdjacency(n, edgeList) {
+    var adj = new Array(n);
+    for (var i = 0; i < n; i++) adj[i] = [];
+    var seen = {};
+    (edgeList || []).forEach(function (e) {
+      var u = e[0], v = e[1];
+      if (u === v) return;
+      if (!(u >= 0 && u < n) || !(v >= 0 && v < n)) throw new Error("edge endpoint out of range: " + u + "-" + v);
+      var key = Math.min(u, v) + "," + Math.max(u, v);
+      if (seen[key]) return;
+      seen[key] = true;
+      adj[u].push(v);
+      adj[v].push(u);
+    });
+    for (var j = 0; j < n; j++) adj[j].sort(function (a, b) { return a - b; });
+    return adj;
+  }
+
+  function createGraphEngine(n, edgeList) {
+    if (!(n >= 1)) throw new Error("n must be >= 1");
+    var adj = buildAdjacency(n, edgeList);
+    var steps = [];
+
+    function snapshot(message, data, op) {
+      steps.push({ message: message, n: n, kind: data.kind, visited: data.visited.slice(), current: data.current, frontier: data.frontier.slice(), activeEdge: data.activeEdge, treeEdges: data.treeEdges.slice(), order: data.order.slice(), op: op });
+    }
+
+    function validateStart(start) { if (!(start >= 0 && start < n)) throw new Error("start must be in [0, " + (n - 1) + "]"); }
+
+    function bfs(start) {
+      validateStart(start);
+      var visited = new Array(n).fill(false);
+      var order = [];
+      var treeEdges = [];
+      var queue = [start];
+      visited[start] = true;
+      snapshot(n === 1 ? ("Único nó: " + start + " adicionado à fila.") : ("Nó " + start + " adicionado à fila (início)."),
+        { kind: "bfs", visited: visited, current: null, frontier: queue, activeEdge: null, treeEdges: treeEdges, order: order }, "info");
+      while (queue.length > 0) {
+        var u = queue.shift();
+        order.push(u);
+        snapshot("Visitando " + u + " (retirado da fila).",
+          { kind: "bfs", visited: visited, current: u, frontier: queue, activeEdge: null, treeEdges: treeEdges, order: order }, "visit");
+        for (var i = 0; i < adj[u].length; i++) {
+          var v = adj[u][i];
+          if (!visited[v]) {
+            visited[v] = true;
+            queue.push(v);
+            treeEdges.push([u, v]);
+            snapshot("Aresta " + u + "–" + v + ": " + v + " descoberto e adicionado à fila.",
+              { kind: "bfs", visited: visited, current: u, frontier: queue, activeEdge: [u, v], treeEdges: treeEdges, order: order }, "discover");
+          }
+        }
+      }
+      snapshot("BFS a partir de " + start + " concluída: " + order.length + " de " + n + " nó(s) alcançado(s).",
+        { kind: "bfs", visited: visited, current: null, frontier: [], activeEdge: null, treeEdges: treeEdges, order: order }, "done");
+      return order.slice();
+    }
+
+    function dfs(start) {
+      validateStart(start);
+      var visited = new Array(n).fill(false);
+      var order = [];
+      var treeEdges = [];
+      var stack = [];
+      snapshot(n === 1 ? ("Único nó: pronto para visitar " + start + ".") : ("Pronto para iniciar DFS em " + start + "."),
+        { kind: "dfs", visited: visited, current: null, frontier: stack, activeEdge: null, treeEdges: treeEdges, order: order }, "info");
+      function visit(u) {
+        visited[u] = true;
+        order.push(u);
+        stack.push(u);
+        snapshot("Visitando " + u + ".",
+          { kind: "dfs", visited: visited, current: u, frontier: stack, activeEdge: null, treeEdges: treeEdges, order: order }, "visit");
+        for (var i = 0; i < adj[u].length; i++) {
+          var v = adj[u][i];
+          if (!visited[v]) {
+            treeEdges.push([u, v]);
+            snapshot("Aresta " + u + "–" + v + ": descendo para " + v + ".",
+              { kind: "dfs", visited: visited, current: u, frontier: stack, activeEdge: [u, v], treeEdges: treeEdges, order: order }, "discover");
+            visit(v);
+          }
+        }
+        stack.pop();
+        snapshot(stack.length > 0 ? ("Retrocedendo de " + u + " para " + stack[stack.length - 1] + ".") : ("Retrocedendo de " + u + " (fim do ramo)."),
+          { kind: "dfs", visited: visited, current: stack.length > 0 ? stack[stack.length - 1] : null, frontier: stack, activeEdge: null, treeEdges: treeEdges, order: order }, "backtrack");
+      }
+      visit(start);
+      snapshot("DFS a partir de " + start + " concluída: " + order.length + " de " + n + " nó(s) alcançado(s).",
+        { kind: "dfs", visited: visited, current: null, frontier: [], activeEdge: null, treeEdges: treeEdges, order: order }, "done");
+      return order.slice();
+    }
+
+    function countComponents() {
+      var seen = new Array(n).fill(false);
+      var count = 0;
+      for (var i = 0; i < n; i++) {
+        if (seen[i]) continue;
+        count++;
+        var stack = [i]; seen[i] = true;
+        while (stack.length > 0) {
+          var u = stack.pop();
+          for (var j = 0; j < adj[u].length; j++) { var v = adj[u][j]; if (!seen[v]) { seen[v] = true; stack.push(v); } }
+        }
+      }
+      return count;
+    }
+
+    function getEdgeList() {
+      var out = [];
+      for (var u = 0; u < n; u++) for (var i = 0; i < adj[u].length; i++) { var v = adj[u][i]; if (v > u) out.push([u, v]); }
+      return out;
+    }
+
+    return {
+      bfs: bfs, dfs: dfs, countComponents: countComponents,
+      degree: function (u) { return adj[u].length; },
+      getAdjacency: function () { return adj.map(function (row) { return row.slice(); }); },
+      getEdgeList: getEdgeList, getN: function () { return n; }, getSteps: function () { return steps; }
+    };
+  }
+
+  // ================= Renderer =================
+  var NS = "http://www.w3.org/2000/svg";
+  var els = {
+    opPill: document.getElementById("opPill"), opLabel: document.getElementById("opLabel"),
+    stepCounter: document.getElementById("stepCounter"), grSvg: document.getElementById("grSvg"),
+    message: document.getElementById("message"), scrubber: document.getElementById("scrubber"),
+    btnReset: document.getElementById("btnReset"), btnPrev: document.getElementById("btnPrev"),
+    btnPlay: document.getElementById("btnPlay"), btnNext: document.getElementById("btnNext"), speed: document.getElementById("speed"),
+    startInput: document.getElementById("startInput"), btnBfs: document.getElementById("btnBfs"), btnDfs: document.getElementById("btnDfs"),
+    nSlider: document.getElementById("nSlider"), nLabel: document.getElementById("nLabel"), btnNewGraph: document.getElementById("btnNewGraph"),
+    errorText: document.getElementById("errorText"), statN: document.getElementById("statN"), statM: document.getElementById("statM"), statComp: document.getElementById("statComp"),
+    frontierLabel: document.getElementById("frontierLabel"), frontierStrip: document.getElementById("frontierStrip")
+  };
+
+  var NODE_R = 20;
+  var engine, state = { stepIndex: 0, playing: false, timer: null };
+  var nodeEls = {}, dynamicLayer = null;
+
+  function layout(n) {
+    var margin = NODE_R + 26;
+    var radius = Math.max(92, (n * 52) / (2 * Math.PI));
+    var size = radius * 2 + margin * 2;
+    return { radius: radius, cx: size / 2, cy: size / 2, size: size };
+  }
+
+  function nodePos(i, n, L) {
+    var angle = -Math.PI / 2 + i * (2 * Math.PI / n);
+    return { x: L.cx + L.radius * Math.cos(angle), y: L.cy + L.radius * Math.sin(angle) };
+  }
+
+  function edgePath(p1, p2, r1, r2) {
+    var dx = p2.x - p1.x, dy = p2.y - p1.y;
+    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    var ux = dx / dist, uy = dy / dist;
+    var sx = p1.x + ux * r1, sy = p1.y + uy * r1;
+    var ex = p2.x - ux * r2, ey = p2.y - uy * r2;
+    return "M " + sx + " " + sy + " L " + ex + " " + ey;
+  }
+
+  function refreshGraphStats() {
+    els.statN.textContent = engine.getN();
+    els.statM.textContent = engine.getEdgeList().length;
+    els.statComp.textContent = engine.countComponents();
+  }
+
+  function buildStatics() {
+    var n = engine.getN();
+    var L = layout(n);
+    var positions = []; for (var i = 0; i < n; i++) positions.push(nodePos(i, n, L));
+    els.grSvg.innerHTML = "";
+    els.grSvg.setAttribute("viewBox", "0 0 " + L.size + " " + L.size);
+    els.grSvg.setAttribute("width", L.size);
+    els.grSvg.setAttribute("height", L.size);
+    els.grSvg._layout = L;
+    els.grSvg._positions = positions;
+
+    var defs = document.createElementNS(NS, "defs");
+    [["grArrowAccent", "var(--accent)"], ["grArrowGold", "var(--gold)"]].forEach(function (pair) {
+      var marker = document.createElementNS(NS, "marker");
+      marker.setAttribute("id", pair[0]); marker.setAttribute("markerWidth", "8"); marker.setAttribute("markerHeight", "8");
+      marker.setAttribute("refX", "6"); marker.setAttribute("refY", "3"); marker.setAttribute("orient", "auto"); marker.setAttribute("markerUnits", "userSpaceOnUse");
+      var mpath = document.createElementNS(NS, "path"); mpath.setAttribute("d", "M0,0 L0,6 L7,3 Z"); mpath.setAttribute("fill", pair[1]);
+      marker.appendChild(mpath); defs.appendChild(marker);
+    });
+    els.grSvg.appendChild(defs);
+
+    var bgLayer = document.createElementNS(NS, "g");
+    engine.getEdgeList().forEach(function (edge) {
+      var p1 = positions[edge[0]], p2 = positions[edge[1]];
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("class", "gr-edge-bg");
+      path.setAttribute("d", edgePath(p1, p2, NODE_R, NODE_R));
+      bgLayer.appendChild(path);
+    });
+    els.grSvg.appendChild(bgLayer);
+
+    dynamicLayer = document.createElementNS(NS, "g");
+    els.grSvg.appendChild(dynamicLayer);
+
+    var nodeLayer = document.createElementNS(NS, "g");
+    nodeEls = {};
+    for (var j = 0; j < n; j++) {
+      var p = positions[j];
+      var g = document.createElementNS(NS, "g"); g.setAttribute("class", "gr-node");
+      var circle = document.createElementNS(NS, "circle"); circle.setAttribute("class", "gr-node-circle");
+      circle.setAttribute("cx", p.x); circle.setAttribute("cy", p.y); circle.setAttribute("r", NODE_R);
+      var label = document.createElementNS(NS, "text"); label.setAttribute("class", "gr-node-label");
+      label.setAttribute("x", p.x); label.setAttribute("y", p.y + 0.5); label.textContent = String(j);
+      g.appendChild(circle); g.appendChild(label);
+      nodeLayer.appendChild(g);
+      nodeEls[j] = { g: g, circle: circle };
+    }
+    els.grSvg.appendChild(nodeLayer);
+  }
+
+  function edgeKey(u, v) { return u + "-" + v; }
+
+  function render() {
+    var steps = engine.getSteps();
+    var step = steps[state.stepIndex];
+    if (!step) return;
+
+    els.opPill.dataset.op = step.op;
+    var OP_LABELS = { info: "Início", visit: "Visitando", discover: "Descobrindo aresta", backtrack: "Retrocedendo", done: "Concluído" };
+    els.opLabel.textContent = OP_LABELS[step.op] || step.op;
+    els.stepCounter.textContent = "Passo " + state.stepIndex + " / " + (steps.length - 1);
+    els.scrubber.value = state.stepIndex;
+    els.message.textContent = step.message;
+
+    var L = els.grSvg._layout, positions = els.grSvg._positions;
+
+    // node states: current > frontier > visited > unvisited
+    var frontierSet = {}; (step.frontier || []).forEach(function (v) { frontierSet[v] = true; });
+    for (var i = 0; i < step.n; i++) {
+      var rec = nodeEls[i];
+      var st = null;
+      if (step.current === i) st = "current";
+      else if (frontierSet[i]) st = "frontier";
+      else if (step.visited[i]) st = "visited";
+      if (st) rec.g.setAttribute("data-state", st); else rec.g.removeAttribute("data-state");
+    }
+
+    // dynamic overlay: tree edges so far, with the active edge (if any) drawn gold on top
+    dynamicLayer.innerHTML = "";
+    var activeKey = step.activeEdge ? edgeKey(step.activeEdge[0], step.activeEdge[1]) : null;
+    (step.treeEdges || []).forEach(function (edge) {
+      var p1 = positions[edge[0]], p2 = positions[edge[1]];
+      var isActive = activeKey === edgeKey(edge[0], edge[1]);
+      var path = document.createElementNS(NS, "path");
+      path.setAttribute("class", isActive ? "gr-edge-active" : "gr-edge-tree");
+      path.setAttribute("marker-end", isActive ? "url(#grArrowGold)" : "url(#grArrowAccent)");
+      path.setAttribute("d", edgePath(p1, p2, NODE_R, NODE_R + 6));
+      dynamicLayer.appendChild(path);
+    });
+
+    // frontier strip
+    els.frontierLabel.textContent = step.kind === "dfs" ? "Pilha de chamada (DFS)" : "Fila (BFS)";
+    els.frontierStrip.innerHTML = "";
+    if (!step.frontier || step.frontier.length === 0) {
+      var empty = document.createElement("span");
+      empty.className = "frontier-empty";
+      empty.textContent = step.kind === "dfs" ? "pilha vazia" : "fila vazia";
+      els.frontierStrip.appendChild(empty);
+    } else {
+      step.frontier.forEach(function (v) {
+        var chip = document.createElement("span");
+        chip.className = "frontier-chip" + (v === step.current ? " current" : "");
+        chip.textContent = String(v);
+        els.frontierStrip.appendChild(chip);
+      });
+    }
+  }
+
+  function jumpToLiveEnd() {
+    els.scrubber.max = String(Math.max(0, engine.getSteps().length - 1));
+    state.stepIndex = engine.getSteps().length - 1;
+    stopPlaying();
+    render();
+  }
+
+  function stopPlaying() {
+    state.playing = false;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    els.btnPlay.textContent = "▶ Reproduzir";
+  }
+
+  function goTo(idx) {
+    var max = engine.getSteps().length - 1;
+    state.stepIndex = Math.max(0, Math.min(max, idx));
+    render();
+    if (state.stepIndex >= max) stopPlaying();
+  }
+
+  function showError(msg) {
+    if (!msg) { els.errorText.hidden = true; els.errorText.textContent = ""; return; }
+    els.errorText.hidden = false; els.errorText.textContent = msg;
+  }
+
+  function readStart() {
+    var x = parseInt(els.startInput.value, 10);
+    var n = engine.getN();
+    if (!(x >= 0 && x < n)) { showError("o nó inicial deve estar entre 0 e " + (n - 1) + "."); return null; }
+    showError(null);
+    return x;
+  }
+
+  function randomEdges(n) {
+    var p = Math.min(0.9, 2.3 / n);
+    var edges = [];
+    for (var u = 0; u < n; u++) for (var v = u + 1; v < n; v++) if (Math.random() < p) edges.push([u, v]);
+    return edges;
+  }
+
+  els.btnBfs.addEventListener("click", function () { var s = readStart(); if (s == null) return; engine.bfs(s); jumpToLiveEnd(); });
+  els.btnDfs.addEventListener("click", function () { var s = readStart(); if (s == null) return; engine.dfs(s); jumpToLiveEnd(); });
+
+  els.nSlider.addEventListener("input", function () { els.nLabel.textContent = els.nSlider.value; });
+  els.btnNewGraph.addEventListener("click", function () {
+    var n = Number(els.nSlider.value);
+    engine = createGraphEngine(n, randomEdges(n));
+    buildStatics();
+    refreshGraphStats();
+    var start = Math.min(Number(els.startInput.value) || 0, n - 1);
+    if (start < 0) start = 0;
+    els.startInput.value = start;
+    engine.bfs(start);
+    jumpToLiveEnd();
+  });
+
+  els.btnReset.addEventListener("click", function () { stopPlaying(); goTo(0); });
+  els.btnPrev.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex - 1); });
+  els.btnNext.addEventListener("click", function () { stopPlaying(); goTo(state.stepIndex + 1); });
+  els.btnPlay.addEventListener("click", function () {
+    if (state.playing) { stopPlaying(); return; }
+    var max = engine.getSteps().length - 1;
+    if (state.stepIndex >= max) state.stepIndex = 0;
+    state.playing = true;
+    els.btnPlay.textContent = "⏸ Pausar";
+    state.timer = setInterval(function () {
+      var m = engine.getSteps().length - 1;
+      if (state.stepIndex >= m) { stopPlaying(); return; }
+      state.stepIndex++;
+      render();
+      if (state.stepIndex >= m) stopPlaying();
+    }, Number(els.speed.value));
+  });
+  els.scrubber.addEventListener("input", function () { stopPlaying(); goTo(Number(els.scrubber.value)); });
+  els.speed.addEventListener("input", function () { if (state.playing) stopPlaying(); });
+
+  // ---- boot: a small fixed connected demo graph with BFS already run, so the page is meaningful at rest ----
+  engine = createGraphEngine(8, [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [5, 6], [6, 7]]);
+  buildStatics();
+  refreshGraphStats();
+  engine.bfs(0);
+  els.scrubber.max = String(engine.getSteps().length - 1);
+  state.stepIndex = engine.getSteps().length - 1;
+  render();
+})();
+</script>
+
+</body></html>
