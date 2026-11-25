@@ -1,6 +1,6 @@
 /* Era 04: Árvores multi-via */
 MODS.push({
-id:'arvore-b', n:12, era:3, titulo:'Árvore B', sub:'Nós largos e poucos níveis, feita para disco',
+id:'arvore-b', n:14, era:3, titulo:'Árvore B', sub:'Nós largos e poucos níveis, feita para disco',
 viz:'viz/arvore-b.html',
 slides:[
 {t:'Por que nós com muitas chaves', h:`
@@ -247,7 +247,7 @@ py:`def em_ordem(x, saida=None):
 });
 
 MODS.push({
-id:'arvore-bmais', n:13, era:3, titulo:'Árvore B+', sub:'Dados só nas folhas, folhas encadeadas',
+id:'arvore-bmais', n:15, era:3, titulo:'Árvore B+', sub:'Dados só nas folhas, folhas encadeadas',
 viz:'viz/arvore-bmais.html',
 slides:[
 {t:'O que muda em relação à B', h:`

@@ -1,6 +1,6 @@
 /* Era 03: Árvores de busca */
 MODS.push({
-id:'bst', n:8, era:2, titulo:'Árvore Binária de Busca', sub:'Cada nó divide o espaço de busca ao meio',
+id:'bst', n:10, era:2, titulo:'Árvore Binária de Busca', sub:'Cada nó divide o espaço de busca ao meio',
 viz:'viz/bst.html',
 slides:[
 {t:'A regra da ABB', h:`
@@ -197,7 +197,7 @@ py:`def eh_abb(r, minimo=float("-inf"), maximo=float("inf")):
 });
 
 MODS.push({
-id:'avl', n:9, era:2, titulo:'Árvore AVL', sub:'Rotações mantêm a altura em O(log n)',
+id:'avl', n:11, era:2, titulo:'Árvore AVL', sub:'Rotações mantêm a altura em O(log n)',
 viz:'viz/avl.html',
 slides:[
 {t:'Balanceamento estrito', h:`
@@ -420,7 +420,7 @@ rotacoes = 0
 });
 
 MODS.push({
-id:'rubro-negra', n:10, era:2, titulo:'Árvore Rubro-Negra', sub:'Equilíbrio por cores, com menos rotações',
+id:'rubro-negra', n:12, era:2, titulo:'Árvore Rubro-Negra', sub:'Equilíbrio por cores, com menos rotações',
 viz:'viz/rubro-negra.html',
 slides:[
 {t:'As cinco regras', h:`
@@ -679,7 +679,7 @@ py:`def vermelhos(n):
 });
 
 MODS.push({
-id:'splay', n:11, era:2, titulo:'Árvore Splay', sub:'O último acessado sobe para a raiz',
+id:'splay', n:13, era:2, titulo:'Árvore Splay', sub:'O último acessado sobe para a raiz',
 viz:'viz/splay.html',
 slides:[
 {t:'Auto-ajuste em vez de regras', h:`

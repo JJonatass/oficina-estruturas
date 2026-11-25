@@ -184,7 +184,274 @@ py:`def conta(inicio):
 });
 
 MODS.push({
-id:'vetor', n:2, era:0, titulo:'Lista Sequencial (Vetor)', sub:'Acesso direto por índice, inserção cara no meio',
+id:'struct', n:2, era:0, titulo:'Struct (Registros)', sub:'Vários campos de tipos diferentes num tipo só',
+viz:'viz/struct.html',
+slides:[
+{t:'Por que agrupar campos', h:`
+<p class="lead">Um aluno tem nome, matrícula e nota. Guardar isso em três variáveis soltas, ou em três vetores paralelos, funciona até o dia em que alguém ordena um vetor e esquece os outros dois. A <b>struct</b> junta os campos num único tipo, que anda inteiro pelo programa.</p>
+<div class="cards">
+<div class="card"><b>Vetores paralelos</b><code>nomes[i]</code>, <code>mats[i]</code> e <code>notas[i]</code> só ficam alinhados se você mexer nos três sempre juntos.</div>
+<div class="card"><b>Struct</b><code>turma[i]</code> é um aluno completo: trocar, copiar ou passar para uma função leva todos os campos.</div>
+</div>
+<div class="objetivos"><b>Ao final deste módulo você vai</b><ul>
+<li>declarar structs com <code>typedef</code> e acessar campos com <code>.</code> e <code>-&gt;</code>;</li>
+<li>saber quando uma atribuição copia os dados e quando só copia a referência;</li>
+<li>passar structs para funções por valor e por ponteiro;</li>
+<li>prever o <code>sizeof</code> de uma struct, com o preenchimento (<i>padding</i>).</li></ul></div>
+<div class="analogia"><b>Analogia</b>Uma ficha cadastral: cada linha é um campo com um tipo (texto, número, data), e a ficha inteira é guardada, copiada ou entregue de uma vez.</div>`},
+{t:'Declarar e usar', h:`
+<div class="duo"><pre data-l="c">typedef struct {
+    char  nome[40];
+    int   matricula;
+    float nota;
+} Aluno;
+
+Aluno a = {"Ana", 2024001, 8.5f};
+a.nota = 9.0f;                    // ponto: acessa um campo
+printf("%s tirou %.1f\\n", a.nome, a.nota);</pre><pre data-l="py">from dataclasses import dataclass
+
+@dataclass
+class Aluno:
+    nome: str
+    matricula: int
+    nota: float
+
+a = Aluno("Ana", 2024001, 8.5)
+a.nota = 9.0                      # ponto: acessa um campo
+print(f"{a.nome} tirou {a.nota:.1f}")</pre></div>
+<div class="cards">
+<div class="card"><b>Com ou sem typedef</b><code>struct Aluno { … };</code> obriga a escrever <code>struct Aluno a;</code>. O <code>typedef</code> cria o apelido <code>Aluno</code>.</div>
+<div class="card"><b>Em Python</b>Não há struct, mas uma <code>@dataclass</code> cumpre o mesmo papel: declara os campos e gera o construtor.</div>
+</div>`},
+{t:'Ponto, seta e cópia', h:`
+<p>Com a variável, use <b>ponto</b>. Com um ponteiro para a struct, use <b>seta</b>: <code>p-&gt;nota</code> é o mesmo que <code>(*p).nota</code>.</p>
+<div class="duo"><pre data-l="c">Aluno b = a;        // COPIA todos os campos (até o vetor nome)
+b.nota = 0;         // a.nota continua 9.0
+
+Aluno *p = &amp;a;
+p-&gt;nota = 10;       // muda a.nota: o mesmo que (*p).nota = 10</pre><pre data-l="py">b = a               # NÃO copia: b é outro nome para o mesmo objeto
+b.nota = 0          # a.nota também virou 0!
+
+from copy import copy
+c = copy(a)         # agora sim, um objeto independente
+c.nota = 5          # a.nota não muda</pre></div>
+<div class="alerta"><b>A grande diferença.</b> Em C, <code>b = a</code> com structs copia os bytes. Em Python, toda variável é uma referência, então <code>b = a</code> só cria outro nome para o mesmo objeto. Em Python, o ponteiro <code>p</code> do C se parece mais com o <code>b</code> do que com uma cópia.</div>
+<div class="free">Por que <code>*p.nota</code> não funciona? O ponto tem precedência maior que o asterisco: o compilador lê <code>*(p.nota)</code>. A seta existe para evitar os parênteses.</div>`},
+{t:'Structs e funções', h:`
+<div class="duo"><pre data-l="c">void zerar_copia(Aluno a)  { a.nota = 0; }    // recebe uma cópia
+void zerar(Aluno *a)       { a-&gt;nota = 0; }   // recebe o endereço
+float ler(const Aluno *a)  { return a-&gt;nota; } // const: só leitura
+
+zerar_copia(x);   // x.nota não muda
+zerar(&amp;x);        // x.nota vira 0</pre><pre data-l="py">def zerar(a):
+    a.nota = 0      # a função recebe a referência
+
+zerar(x)            # x.nota vira 0
+
+def zerar_copia(a):
+    a = copy(a)     # só com cópia explícita
+    a.nota = 0      # o original fica intacto</pre></div>
+<div class="cards">
+<div class="card"><b>Por valor</b>A função ganha uma cópia de <code>sizeof(Aluno)</code> bytes. Mudanças se perdem ao voltar.</div>
+<div class="card"><b>Por ponteiro</b>Só 8 bytes (o endereço) são copiados, e a função pode alterar o original. Com <code>const</code>, promete que não vai.</div>
+</div>
+<p>Na prática, structs grandes quase sempre são passadas por ponteiro, mesmo quando a função só lê.</p>`},
+{t:'Struct na memória: sizeof e padding', h:`
+<p>Os campos ficam em sequência, na ordem em que foram declarados. Mas cada tipo gosta de começar num endereço múltiplo do seu tamanho (<b>alinhamento</b>): <code>int</code> de 4 em 4, <code>double</code> e ponteiros de 8 em 8. Para isso, o compilador insere bytes vazios, o <b>padding</b>.</p>
+<pre>struct { char c; int i; char d; }      // 1 + 4 + 1 = 6 bytes de dados
+c . . . i i i i d . . .                // sizeof = 12 (6 de padding)
+
+struct { int i; char c; char d; }      // os mesmos campos, reordenados
+i i i i c d . .                        // sizeof = 8</pre>
+<div class="cards">
+<div class="card"><b>Padding interno</b>Antes de um campo, para ele começar alinhado.</div>
+<div class="card"><b>Padding final</b>No fim, para que num vetor de structs o próximo elemento também comece alinhado.</div>
+<div class="card"><b>Regra prática</b>Declare os campos do maior para o menor alinhamento e o desperdício cai.</div>
+</div>
+<div class="free">Os números valem para as plataformas de 64 bits mais comuns. Use sempre <code>sizeof</code> e <code>offsetof</code> (de <code>&lt;stddef.h&gt;</code>) em vez de somar na mão.</div>`},
+{t:'Vetores de structs e o nó das listas', h:`
+<div class="duo"><pre data-l="c">Aluno turma[30];
+turma[2].nota = 7.5f;           // índice primeiro, campo depois
+
+typedef struct No {             // o nome No já existe aqui dentro...
+    int valor;
+    struct No *prox;            // ...para o campo apontar outro No
+} No;</pre><pre data-l="py">turma = [Aluno("Ana", 1, 8.5), Aluno("Bia", 2, 6.0)]
+turma[1].nota = 7.5             # índice primeiro, campo depois
+
+@dataclass
+class No:
+    valor: int
+    prox: "No | None" = None    # referência para outro No</pre></div>
+<p>Uma struct pode conter outra struct, um vetor ou um ponteiro para o próprio tipo. Esse último caso, a struct <b>autorreferenciada</b>, é o tijolo de listas encadeadas, árvores e grafos: todos os próximos módulos usam um <code>struct No</code>.</p>
+<div class="alerta"><b>Erro comum.</b> <code>typedef struct { int valor; No *prox; } No;</code> não compila: dentro das chaves, o apelido <code>No</code> ainda não existe. Por isso a struct ganha o nome <code>struct No</code> antes das chaves.</div>`}
+],
+codigo:{nota:'Uma turma num vetor de structs: cópia, alteração por ponteiro, média e melhor aluno.',
+c:`#include <stdio.h>
+
+typedef struct {
+    char  nome[20];
+    int   matricula;
+    float nota;
+} Aluno;
+
+void bonificar(Aluno *a, float bonus) {     /* por ponteiro: altera o original */
+    a->nota += bonus;
+    if (a->nota > 10.0f) a->nota = 10.0f;
+}
+
+float media(const Aluno v[], int n) {       /* const: só lê */
+    float soma = 0;
+    for (int i = 0; i < n; i++) soma += v[i].nota;
+    return n ? soma / n : 0;
+}
+
+const Aluno *melhor(const Aluno v[], int n) {
+    const Aluno *m = &v[0];
+    for (int i = 1; i < n; i++)
+        if (v[i].nota > m->nota) m = &v[i];
+    return m;
+}
+
+int main(void) {
+    Aluno turma[] = {
+        {"Ana",   101, 8.5f},
+        {"Bruno", 102, 6.0f},
+        {"Carla", 103, 9.5f},
+    };
+    int n = sizeof turma / sizeof turma[0];
+
+    Aluno copia = turma[1];        /* cópia campo a campo */
+    copia.nota = 0;                /* turma[1] não muda */
+    bonificar(&turma[1], 1.5f);    /* turma[1] muda */
+
+    printf("Bruno: %.1f (cópia: %.1f)\\n", turma[1].nota, copia.nota);
+    printf("Média: %.2f\\n", media(turma, n));
+    printf("Melhor: %s\\n", melhor(turma, n)->nome);
+    printf("sizeof(Aluno) = %zu bytes\\n", sizeof(Aluno));
+    return 0;
+}`,
+py:`from copy import copy
+from dataclasses import dataclass
+
+
+@dataclass
+class Aluno:
+    nome: str
+    matricula: int
+    nota: float
+
+
+def bonificar(a, bonus):           # recebe a referência: altera o original
+    a.nota = min(10.0, a.nota + bonus)
+
+
+def media(turma):
+    return sum(a.nota for a in turma) / len(turma) if turma else 0.0
+
+
+def melhor(turma):
+    return max(turma, key=lambda a: a.nota)
+
+
+turma = [Aluno("Ana", 101, 8.5), Aluno("Bruno", 102, 6.0), Aluno("Carla", 103, 9.5)]
+
+c = copy(turma[1])                 # em Python, cópia só quando você pede
+c.nota = 0
+bonificar(turma[1], 1.5)
+
+print(f"Bruno: {turma[1].nota:.1f} (cópia: {c.nota:.1f})")
+print(f"Média: {media(turma):.2f}")
+print(f"Melhor: {melhor(turma).nome}")`},
+custo:[['Acessar um campo (a.x ou p->x)','O(1)','Endereço da struct + deslocamento fixo do campo'],['Copiar uma struct (b = a)','O(tamanho)','Copia todos os bytes, inclusive vetores internos'],['Passar por valor','O(tamanho)','A função recebe uma cópia'],['Passar por ponteiro','O(1)','Só o endereço é copiado'],['Buscar num vetor de structs','O(n)','Compara um campo de cada elemento']],
+pratica:[
+{t:'A struct Aluno na memória', d:'Escolha o modelo <b>Aluno</b> e clique em cada campo do quadro de bytes.', obs:'Qual é o deslocamento (<code>offsetof</code>) de cada campo? O <code>sizeof</code> é a soma dos tamanhos?'},
+{t:'Onde aparece o padding', d:'Escolha o modelo <b>char · int · char</b>.', obs:'Quantos bytes de preenchimento surgiram, e onde? Por que o <code>int</code> não começa no byte 1?'},
+{t:'Reordene os campos', d:'Clique em <b>Ordenar por alinhamento</b>.', obs:'Quanto o <code>sizeof</code> diminuiu? Os campos são os mesmos?'},
+{t:'Um nó de lista e um vetor de structs', d:'Escolha o modelo <b>No (lista)</b>, depois marque <b>Mostrar vetor[2]</b>.', obs:'Onde começa o campo <code>prox</code>? Por que o padding final importa quando há duas structs seguidas?'}
+],
+quiz:[
+{q:'<code>p</code> é um <code>Aluno *</code>. Como mudar a nota do aluno apontado?', ops:['<code>p.nota = 9;</code>','<code>p-&gt;nota = 9;</code>','<code>*p.nota = 9;</code>','<code>&amp;p.nota = 9;</code>'], ok:1, exp:'A seta acessa o campo pelo ponteiro. <code>*p.nota</code> é lido como <code>*(p.nota)</code>, porque o ponto tem precedência maior.'},
+{q:'Em C, depois de <code>Aluno b = a; b.nota = 0;</code>, o que acontece com <code>a.nota</code>?', ops:['Vira 0','Continua igual: b é uma cópia','Erro de compilação','Depende do compilador'], ok:1, exp:'Atribuir structs em C copia todos os bytes. <code>a</code> e <code>b</code> são independentes.'},
+{q:'Em Python, com uma dataclass, depois de <code>b = a; b.nota = 0</code>:', ops:['a.nota continua igual','a.nota também vira 0: é o mesmo objeto','dá erro','o Python cria uma cópia automaticamente'], ok:1, exp:'Em Python, <code>b = a</code> só cria outro nome para o mesmo objeto. Para copiar, use <code>copy(a)</code>.'},
+{q:'Numa plataforma de 64 bits típica, quanto vale <code>sizeof(struct { char c; int i; char d; })</code>?', ops:['6','8','12','16'], ok:2, exp:'c no byte 0, 3 bytes de padding, i nos bytes 4 a 7, d no 8, e mais 3 de padding final para o tamanho ser múltiplo de 4.'},
+{q:'Por que o nó de lista é declarado como <code>typedef struct No { int valor; struct No *prox; } No;</code>?', ops:['Só por estética','Dentro das chaves o apelido No ainda não existe, então prox precisa usar struct No','Para o malloc funcionar','Para os campos ficarem ordenados'], ok:1, exp:'O <code>typedef</code> só termina no ponto e vírgula. Dentro das chaves, o nome disponível é <code>struct No</code>.'}
+],
+prog:[
+{t:'Ponto médio e distância', enun:'Declare <code>Ponto</code> com <code>x</code> e <code>y</code> (<code>double</code>). Escreva <code>distancia(a, b)</code> e <code>medio(a, b)</code>, que devolve um <b>novo</b> Ponto.', dica:'Uma função pode devolver uma struct inteira: monte um <code>Ponto m</code>, preencha os campos e faça <code>return m;</code>. Use <code>sqrt</code> de <code>&lt;math.h&gt;</code>.',
+c:`#include <math.h>
+
+typedef struct { double x, y; } Ponto;
+
+double distancia(Ponto a, Ponto b) {
+    double dx = a.x - b.x, dy = a.y - b.y;
+    return sqrt(dx * dx + dy * dy);
+}
+
+Ponto medio(Ponto a, Ponto b) {
+    Ponto m = { (a.x + b.x) / 2, (a.y + b.y) / 2 };
+    return m;                       /* devolve uma cópia da struct */
+}`,
+py:`from dataclasses import dataclass
+from math import hypot
+
+
+@dataclass
+class Ponto:
+    x: float
+    y: float
+
+
+def distancia(a, b):
+    return hypot(a.x - b.x, a.y - b.y)
+
+
+def medio(a, b):
+    return Ponto((a.x + b.x) / 2, (a.y + b.y) / 2)`},
+{t:'Buscar por matrícula', enun:'Dado um vetor de <code>Aluno</code>, devolva um <b>ponteiro</b> para o aluno com a matrícula pedida, ou <code>NULL</code> se não existir. Em Python, devolva o objeto ou <code>None</code>.', dica:'É a busca sequencial do módulo anterior, comparando só o campo <code>matricula</code>. Devolva <code>&amp;v[i]</code>, não <code>v[i]</code>, para quem chamou poder alterar o aluno.',
+c:`#include <stddef.h>   /* NULL */
+
+typedef struct { char nome[20]; int matricula; float nota; } Aluno;
+
+Aluno *buscar_matricula(Aluno v[], int n, int mat) {
+    for (int i = 0; i < n; i++)
+        if (v[i].matricula == mat)
+            return &v[i];           /* endereço do aluno dentro do vetor */
+    return NULL;
+}`,
+py:`def buscar_matricula(turma, mat):
+    for a in turma:
+        if a.matricula == mat:
+            return a                # a própria referência: pode ser alterada
+    return None`},
+{t:'Ordenar a turma por nota', enun:'Ordene o vetor de alunos da <b>maior</b> para a <b>menor</b> nota usando inserção (insertion sort). Os alunos devem se mover inteiros.', dica:'Guarde <code>Aluno atual = v[i]</code>, desloque para a direita os alunos com nota menor e coloque <code>atual</code> no buraco. Atribuir struct copia todos os campos de uma vez.',
+c:`typedef struct { char nome[20]; int matricula; float nota; } Aluno;
+
+void ordenar_por_nota(Aluno v[], int n) {
+    for (int i = 1; i < n; i++) {
+        Aluno atual = v[i];             /* cópia da struct inteira */
+        int j = i - 1;
+        while (j >= 0 && v[j].nota < atual.nota) {
+            v[j + 1] = v[j];            /* move o aluno inteiro */
+            j--;
+        }
+        v[j + 1] = atual;
+    }
+}`,
+py:`def ordenar_por_nota(turma):
+    for i in range(1, len(turma)):
+        atual = turma[i]               # referência: nada é copiado
+        j = i - 1
+        while j >= 0 and turma[j].nota < atual.nota:
+            turma[j + 1] = turma[j]
+            j -= 1
+        turma[j + 1] = atual
+    # na prática: turma.sort(key=lambda a: a.nota, reverse=True)`}
+]
+});
+
+MODS.push({
+id:'vetor', n:3, era:0, titulo:'Lista Sequencial (Vetor)', sub:'Acesso direto por índice, inserção cara no meio',
 viz:'viz/lista-vetor.html',
 slides:[
 {t:'Uma sequência em memória contígua', h:`
@@ -351,7 +618,245 @@ py:`def inserir_ordenado(dados, tamanho, valor):
 });
 
 MODS.push({
-id:'estatica', n:3, era:0, titulo:'Lista Encadeada Estática', sub:'Ponteiros simulados por índices dentro de um vetor',
+id:'busca', n:4, era:0, titulo:'Busca Sequencial e Binária', sub:'Olhar um por um ou cortar pela metade',
+viz:'viz/busca.html',
+slides:[
+{t:'Achar um valor num vetor', h:`
+<p class="lead">Buscar é responder a pergunta mais comum da computação: <b>o valor x está no vetor? Em que posição?</b> Há dois jeitos clássicos de fazer isso, e a diferença entre eles cresce muito com o tamanho dos dados.</p>
+<div class="cards">
+<div class="card"><b>Busca sequencial</b>Olha as posições uma por uma, do início ao fim. Funciona em qualquer vetor.</div>
+<div class="card"><b>Busca binária</b>Compara com o elemento do meio e descarta metade a cada passo. Exige o vetor <b>ordenado</b>.</div>
+</div>
+<div class="objetivos"><b>Ao final deste módulo você vai</b><ul>
+<li>implementar as duas buscas e contar as comparações de cada uma;</li>
+<li>explicar por que a binária faz no máximo ⌊log₂ n⌋ + 1 comparações;</li>
+<li>decidir quando vale a pena ordenar para depois buscar.</li></ul></div>
+<div class="analogia"><b>Analogia</b>Procurar a prova de um aluno num monte desorganizado: você vira uma por uma. Procurar um nome na lista de chamada em ordem alfabética: você abre no meio, vê se o nome vem antes ou depois e ignora a outra metade.</div>`},
+{t:'Busca sequencial', h:`
+<p>Percorra o vetor da posição 0 até <code>n − 1</code>. Se achar, devolva a posição; se chegar ao fim, devolva −1.</p>
+<div class="duo"><pre data-l="c">int busca_seq(const int v[], int n, int x) {
+    for (int i = 0; i &lt; n; i++)
+        if (v[i] == x) return i;   // achou: devolve a posição
+    return -1;                     // olhou tudo: não está
+}</pre><pre data-l="py">def busca_seq(v, x):
+    for i in range(len(v)):
+        if v[i] == x:
+            return i   # achou: devolve a posição
+    return -1          # olhou tudo: não está</pre></div>
+<div class="cards">
+<div class="card"><b>Melhor caso: 1 comparação</b>O valor está na posição 0.</div>
+<div class="card"><b>Pior caso: n comparações</b>O valor está no fim ou não existe. É O(n).</div>
+<div class="card"><b>Caso médio: cerca de n/2</b>Se o valor existe e pode estar em qualquer posição.</div>
+</div>
+<div class="free">Se o vetor estiver ordenado, a sequencial pode parar mais cedo quando encontra um valor <b>maior</b> que x. Ajuda nas buscas sem sucesso, mas continua O(n).</div>`},
+{t:'Busca binária: a ideia', h:`
+<p>Com o vetor ordenado, guarde o intervalo que ainda pode conter x, de <code>ini</code> a <code>fim</code>. Compare x com o elemento do <b>meio</b>:</p>
+<div class="cards">
+<div class="card"><b>v[meio] == x</b>Achou.</div>
+<div class="card"><b>v[meio] &lt; x</b>x só pode estar à direita: <code>ini = meio + 1</code>.</div>
+<div class="card"><b>v[meio] &gt; x</b>x só pode estar à esquerda: <code>fim = meio − 1</code>.</div>
+</div>
+<h3>Exemplo: buscar 34</h3>
+<pre>v   =  3  8 12 17 21 26 30 34 40 45 51
+pos =  0  1  2  3  4  5  6  7  8  9 10
+
+ini=0 fim=10 meio=5  v[5]=26 &lt; 34  → ini=6
+ini=6 fim=10 meio=8  v[8]=40 &gt; 34  → fim=7
+ini=6 fim=7  meio=6  v[6]=30 &lt; 34  → ini=7
+ini=7 fim=7  meio=7  v[7]=34       → achou na posição 7</pre>
+<p>Foram <b>4 comparações</b>. A busca sequencial precisaria de 8. Quando <code>ini</code> passa de <code>fim</code>, o intervalo ficou vazio e o valor não está no vetor.</p>`},
+{t:'Busca binária: o código', h:`
+<div class="duo"><pre data-l="c">int busca_bin(const int v[], int n, int x) {
+    int ini = 0, fim = n - 1;
+    while (ini &lt;= fim) {
+        int meio = ini + (fim - ini) / 2;  // evita estouro de int
+        if (v[meio] == x) return meio;
+        if (v[meio] &lt; x) ini = meio + 1;   // descarta a metade esquerda
+        else             fim = meio - 1;   // descarta a metade direita
+    }
+    return -1;
+}</pre><pre data-l="py">def busca_bin(v, x):
+    ini, fim = 0, len(v) - 1
+    while ini &lt;= fim:
+        meio = (ini + fim) // 2    # em Python o int não estoura
+        if v[meio] == x:
+            return meio
+        if v[meio] &lt; x:
+            ini = meio + 1         # descarta a metade esquerda
+        else:
+            fim = meio - 1         # descarta a metade direita
+    return -1</pre></div>
+<div class="alerta"><b>Erros clássicos.</b> (1) <code>while (ini &lt; fim)</code> deixa de olhar o último candidato. (2) <code>ini = meio</code> em vez de <code>meio + 1</code> pode travar num laço infinito. (3) Rodar a binária num vetor <b>desordenado</b>: ela não dá erro, só devolve a resposta errada.</div>`},
+{t:'Por que log n', h:`
+<p>Cada comparação corta o intervalo pela metade: n → n/2 → n/4 → … → 1. O número de cortes até sobrar um elemento é log₂ n, então a binária faz no máximo <b>⌊log₂ n⌋ + 1</b> comparações.</p>
+<table class="cmp"><thead><tr><th>n</th><th>Sequencial (pior caso)</th><th>Binária (pior caso)</th></tr></thead><tbody>
+<tr><td>10</td><td>10</td><td>4</td></tr>
+<tr><td>1.000</td><td>1.000</td><td>10</td></tr>
+<tr><td>1.000.000</td><td>1.000.000</td><td>20</td></tr>
+<tr><td>1.000.000.000</td><td>1.000.000.000</td><td>30</td></tr></tbody></table>
+<p>Dobrar o tamanho do vetor custa só <b>uma</b> comparação a mais na binária. Na sequencial, dobra o trabalho.</p>
+<div class="alerta"><b>O preço é manter a ordem.</b> Ordenar custa O(n log n), e inserir mantendo a ordem custa O(n), porque desloca elementos. Se você vai buscar uma única vez, a sequencial sai mais barata. Se vai buscar muitas vezes, ordene uma vez e use a binária.</div>`},
+{t:'Quando usar cada uma', h:`
+<div class="cards">
+<div class="card"><b>Use a sequencial quando…</b>o vetor não está ordenado, tem poucos elementos, é buscado uma vez só, ou a estrutura é uma <b>lista encadeada</b> (sem acesso por índice, achar o meio já custa O(n)).</div>
+<div class="card"><b>Use a binária quando…</b>o vetor está ordenado, tem acesso <code>v[i]</code> em O(1) e vai ser consultado muitas vezes.</div>
+</div>
+<div class="free">Prontas para usar: em Python, o módulo <code>bisect</code> (<code>bisect_left</code> devolve a posição de inserção). Em C, a função <code>bsearch</code> da <code>&lt;stdlib.h&gt;</code>. A mesma ideia de descartar metade volta na <b>ABB</b>, na Era 03: cada nó faz o papel do meio.</div>`}
+],
+codigo:{nota:'As duas buscas no mesmo vetor ordenado, contando as comparações (cada visita a um elemento conta uma).',
+c:`#include <stdio.h>
+
+int busca_sequencial(const int v[], int n, int x, int *comp) {
+    *comp = 0;
+    for (int i = 0; i < n; i++) {
+        (*comp)++;
+        if (v[i] == x) return i;
+    }
+    return -1;
+}
+
+int busca_binaria(const int v[], int n, int x, int *comp) {
+    int ini = 0, fim = n - 1;
+    *comp = 0;
+    while (ini <= fim) {
+        int meio = ini + (fim - ini) / 2;
+        (*comp)++;
+        if (v[meio] == x) return meio;
+        if (v[meio] < x) ini = meio + 1;
+        else             fim = meio - 1;
+    }
+    return -1;
+}
+
+int main(void) {
+    int v[] = {3, 8, 12, 17, 21, 26, 30, 34, 40, 45, 51};
+    int n = sizeof v / sizeof v[0];
+    int alvos[] = {34, 3, 51, 20};
+    for (int k = 0; k < 4; k++) {
+        int cs, cb;
+        int ps = busca_sequencial(v, n, alvos[k], &cs);
+        int pb = busca_binaria(v, n, alvos[k], &cb);
+        printf("x=%2d  sequencial: pos %2d em %2d comp. | binária: pos %2d em %d comp.\\n",
+               alvos[k], ps, cs, pb, cb);
+    }
+    return 0;
+}`,
+py:`def busca_sequencial(v, x):
+    comp = 0
+    for i, valor in enumerate(v):
+        comp += 1
+        if valor == x:
+            return i, comp
+    return -1, comp
+
+
+def busca_binaria(v, x):
+    ini, fim = 0, len(v) - 1
+    comp = 0
+    while ini <= fim:
+        meio = (ini + fim) // 2      # em Python o int não estoura
+        comp += 1
+        if v[meio] == x:
+            return meio, comp
+        if v[meio] < x:
+            ini = meio + 1           # descarta a metade esquerda
+        else:
+            fim = meio - 1           # descarta a metade direita
+    return -1, comp
+
+
+v = [3, 8, 12, 17, 21, 26, 30, 34, 40, 45, 51]
+for x in (34, 3, 51, 20):
+    ps, cs = busca_sequencial(v, x)
+    pb, cb = busca_binaria(v, x)
+    print(f"x={x:2}  sequencial: pos {ps:2} em {cs:2} comp. | binária: pos {pb:2} em {cb} comp.")`},
+custo:[['Sequencial, melhor caso','O(1)','O valor está na primeira posição'],['Sequencial, pior caso','O(n)','Valor no fim ou ausente'],['Binária','O(log n)','No máximo ⌊log₂ n⌋ + 1 comparações'],['Ordenar antes de buscar','O(n log n)','Compensa quando há muitas buscas'],['Memória extra','O(1)','As duas versões iterativas']],
+pratica:[
+{t:'Busca sequencial passo a passo', d:'Deixe o modo em <b>Sequencial</b>, clique em <b>Alvo no fim</b> e avance com <b>Passo</b>.', obs:'Quantas comparações foram feitas até achar? E com <b>Alvo ausente</b>?'},
+{t:'Binária no mesmo vetor', d:'Troque para <b>Binária</b>, repita a busca e acompanhe as setas <b>ini</b>, <b>meio</b> e <b>fim</b>.', obs:'Que parte do vetor fica apagada a cada passo? Quantas comparações foram agora?'},
+{t:'Corrida com 63 elementos', d:'Escolha <b>63</b> elementos, o modo <b>Corrida</b> e um <b>Alvo ausente</b>. Clique em <b>Rodar</b>.', obs:'Compare os dois contadores. Quanto dá log₂ 64?'},
+{t:'Vetor desordenado', d:'Clique em <b>Embaralhar</b> e rode a <b>Binária</b> com um alvo que está no vetor.', obs:'Ela achou? Por que a sequencial continua funcionando sem ordem?'}
+],
+quiz:[
+{q:'Num vetor ordenado com 1.000 elementos, quantas comparações a busca binária faz no pior caso?', ops:['10','100','500','1.000'], ok:0, exp:'⌊log₂ 1000⌋ + 1 = 9 + 1 = 10.'},
+{q:'O que a busca binária exige do vetor?', ops:['Não ter valores repetidos','Estar ordenado e ter acesso por índice em O(1)','Ter tamanho potência de 2','Ter só valores positivos'], ok:1, exp:'Sem ordem, descartar metade não é seguro. Sem acesso por índice, achar o meio já custa O(n).'},
+{q:'Em v = [2, 5, 9, 14, 20, 27, 33], buscando 27 com meio = (ini + fim) / 2, quais posições são visitadas?', ops:['3 e 5','3, 5 e 4','3, 4 e 5','Só a 5'], ok:0, exp:'ini=0, fim=6: meio=3 (14 &lt; 27), então ini=4. Agora meio=5 e v[5] = 27: achou.'},
+{q:'Por que, em C, se escreve <code>meio = ini + (fim - ini) / 2</code>?', ops:['É mais rápido','Evita estouro de int quando ini + fim passa do limite','Arredonda para cima','Faz funcionar em vetor desordenado'], ok:1, exp:'Com vetores enormes, <code>ini + fim</code> pode passar de INT_MAX. A forma com a diferença nunca estoura.'},
+{q:'Buscar um valor numa <b>lista encadeada</b> ordenada custa:', ops:['O(log n), com binária','O(n), porque não há acesso direto ao meio','O(1)','O(n log n)'], ok:1, exp:'Para chegar ao meio de uma lista encadeada é preciso percorrê-la. A ordem ajuda a parar cedo, mas continua O(n).'}
+],
+prog:[
+{t:'Primeira ocorrência', enun:'O vetor está ordenado e pode ter valores <b>repetidos</b>. Devolva a posição da <b>primeira</b> ocorrência de <code>x</code> (ou −1), ainda em O(log n).', dica:'Quando achar x, guarde a posição como resposta e continue procurando à esquerda com <code>fim = meio - 1</code>.',
+c:`int primeira_ocorrencia(const int v[], int n, int x) {
+    int ini = 0, fim = n - 1, resp = -1;
+    while (ini <= fim) {
+        int meio = ini + (fim - ini) / 2;
+        if (v[meio] == x) {
+            resp = meio;          /* candidato; pode haver outro antes */
+            fim = meio - 1;
+        } else if (v[meio] < x) {
+            ini = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+    return resp;
+}`,
+py:`def primeira_ocorrencia(v, x):
+    ini, fim, resp = 0, len(v) - 1, -1
+    while ini <= fim:
+        meio = (ini + fim) // 2
+        if v[meio] == x:
+            resp = meio           # candidato; pode haver outro antes
+            fim = meio - 1
+        elif v[meio] < x:
+            ini = meio + 1
+        else:
+            fim = meio - 1
+    return resp`},
+{t:'Posição de inserção', enun:'Devolva a posição onde <code>x</code> deveria entrar para o vetor continuar ordenado (a primeira posição com valor ≥ x). Se x for maior que todos, a resposta é <code>n</code>.', dica:'Use o intervalo semiaberto [ini, fim) com <code>fim = n</code>. Se <code>v[meio] &lt; x</code>, faça <code>ini = meio + 1</code>; senão, <code>fim = meio</code>. Pare quando <code>ini == fim</code>.',
+c:`int posicao_insercao(const int v[], int n, int x) {
+    int ini = 0, fim = n;              /* intervalo [ini, fim) */
+    while (ini < fim) {
+        int meio = ini + (fim - ini) / 2;
+        if (v[meio] < x) ini = meio + 1;
+        else             fim = meio;
+    }
+    return ini;
+}`,
+py:`def posicao_insercao(v, x):
+    ini, fim = 0, len(v)               # intervalo [ini, fim)
+    while ini < fim:
+        meio = (ini + fim) // 2
+        if v[meio] < x:
+            ini = meio + 1
+        else:
+            fim = meio
+    return ini                         # igual a bisect.bisect_left(v, x)`},
+{t:'Busca binária recursiva', enun:'Reescreva a busca binária de forma <b>recursiva</b>, recebendo <code>ini</code> e <code>fim</code> como parâmetros.', dica:'O caso base é o intervalo vazio (<code>ini &gt; fim</code>): devolva −1. Senão, compare com o meio e chame a função só para a metade que sobra.',
+c:`int busca_rec(const int v[], int ini, int fim, int x) {
+    if (ini > fim) return -1;              /* intervalo vazio */
+    int meio = ini + (fim - ini) / 2;
+    if (v[meio] == x) return meio;
+    if (v[meio] < x) return busca_rec(v, meio + 1, fim, x);
+    return busca_rec(v, ini, meio - 1, x);
+}
+/* chamada: busca_rec(v, 0, n - 1, x) */`,
+py:`def busca_rec(v, x, ini=0, fim=None):
+    if fim is None:
+        fim = len(v) - 1
+    if ini > fim:
+        return -1                          # intervalo vazio
+    meio = (ini + fim) // 2
+    if v[meio] == x:
+        return meio
+    if v[meio] < x:
+        return busca_rec(v, x, meio + 1, fim)
+    return busca_rec(v, x, ini, meio - 1)`}
+]
+});
+
+MODS.push({
+id:'estatica', n:5, era:0, titulo:'Lista Encadeada Estática', sub:'Ponteiros simulados por índices dentro de um vetor',
 viz:'viz/lista-estatica.html',
 slides:[
 {t:'O meio-termo', h:`
@@ -544,7 +1049,7 @@ py:`def livres(l):
 });
 
 MODS.push({
-id:'simples', n:4, era:0, titulo:'Lista Encadeada (Simples)', sub:'Nós ligados por ponteiros, sem posição fixa',
+id:'simples', n:6, era:0, titulo:'Lista Encadeada (Simples)', sub:'Nós ligados por ponteiros, sem posição fixa',
 viz:'viz/lista-simples.html',
 slides:[
 {t:'Nós espalhados pela memória', h:`
@@ -749,7 +1254,7 @@ py:`def tem_ciclo(head):
 });
 
 MODS.push({
-id:'dupla', n:5, era:0, titulo:'Lista Duplamente Encadeada', sub:'Navegação nos dois sentidos',
+id:'dupla', n:7, era:0, titulo:'Lista Duplamente Encadeada', sub:'Navegação nos dois sentidos',
 viz:'viz/lista-dupla.html',
 slides:[
 {t:'Um ponteiro a mais', h:`
@@ -878,7 +1383,7 @@ l.remover_no(tres)
 print(l.de_tras_pra_frente())   # [4, 2, 1]`},
 custo:[['Inserir/remover no início ou fim','O(1)','Com head e tail'],['Remover nó conhecido','O(1)','Já tem o endereço'],['Buscar por valor','O(n)',''],['Percorrer ao contrário','O(n)','Seguindo prev'],['Memória por nó','2 ponteiros','O dobro da lista simples']],
 pratica:[
-{t:'Remova o fim e conte os passos', d:'Use <b>Remover fim · O(1)</b>.', obs:'Compare com o mesmo botão na lista simples (módulo 4). Qual ponteiro tornou isso possível?'},
+{t:'Remova o fim e conte os passos', d:'Use <b>Remover fim · O(1)</b>.', obs:'Compare com o mesmo botão na lista simples (módulo 6). Qual ponteiro tornou isso possível?'},
 {t:'Percorra de trás para frente', d:'Clique em <b>◀◀ Percorrer de trás pra frente</b>.', obs:'De qual ponteiro o percurso começa?'},
 {t:'Insira numa posição do meio', d:'Use <b>Inserir na posição</b> com um índice central.', obs:'Quantos ponteiros mudaram? Liste cada um.'},
 {t:'Reverta a lista dupla', d:'Use <b>⇄ Reverter lista</b>.', obs:'Reverter aqui é trocar <code>prev</code> e <code>prox</code> de cada nó. O que acontece com head e tail?'}

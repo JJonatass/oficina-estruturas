@@ -1,6 +1,6 @@
 /* Era 02: Estruturas lineares */
 MODS.push({
-id:'pilha-fila-deque', n:6, era:1, titulo:'Pilha, Fila e Deque', sub:'Três disciplinas de acesso sobre a mesma estrutura',
+id:'pilha-fila-deque', n:8, era:1, titulo:'Pilha, Fila e Deque', sub:'Três disciplinas de acesso sobre a mesma estrutura',
 viz:'viz/pilha-fila-deque.html',
 slides:[
 {t:'Regras de acesso, não estruturas novas', h:`
@@ -206,7 +206,7 @@ print(posfixa("23*5+"))   # 11`}
 });
 
 MODS.push({
-id:'fila-circular', n:7, era:1, titulo:'Fila Circular', sub:'Um buffer fixo que dá a volta',
+id:'fila-circular', n:9, era:1, titulo:'Fila Circular', sub:'Um buffer fixo que dá a volta',
 viz:'viz/fila-circular.html',
 slides:[
 {t:'O problema da fila no vetor', h:`

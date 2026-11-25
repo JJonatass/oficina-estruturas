@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Câmara dos Baús</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 50% 0%,rgba(242,169,59,.16),transparent 60%),linear-gradient(#1c1a26,#141219);padding:12px 16px 18px;min-height:320px}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.tochas{display:flex;gap:3px;flex-wrap:wrap;font-size:20px;min-height:26px}
+.tochas i{font-style:normal;transition:opacity .3s,filter .3s,transform .3s}
+.tochas i.apagada{opacity:.22;filter:grayscale(1);transform:scale(.8)}
+.placa{font-family:var(--mono);font-size:14px;color:var(--mudo);background:#0f0e14;border:1px solid var(--borda);border-radius:10px;padding:6px 12px}
+.placa b{color:var(--ouro)}
+.selo{font-weight:800;font-size:15px;border-radius:999px;padding:4px 12px;border:1px solid}
+.selo.ord{color:var(--verde);border-color:var(--verde);background:rgba(127,216,164,.08)}
+.selo.bag{color:var(--laranja);border-color:var(--laranja);background:rgba(242,169,59,.08)}
+svg.sala{width:100%;height:auto;display:block;margin:0 auto}
+.bau{cursor:pointer}
+.bau .corpo{fill:#5a3b22;stroke:#2a1a10;stroke-width:2.5}
+.bau .faixa{fill:#8a6a3a}
+.bau .tampa{fill:#6e4a2b;stroke:#2a1a10;stroke-width:2.5;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.bau .tranca{fill:var(--ouro)}
+.bau text.v{font:800 19px var(--sans);fill:var(--ouro);text-anchor:middle;opacity:0;transition:opacity .25s .1s}
+.bau text.i{font:600 11px var(--mono);fill:var(--mudo);text-anchor:middle}
+.bau:hover .corpo,.bau:focus .corpo{stroke:var(--ouro)}
+.bau.aberto .tampa{transform:translateY(-14px) rotate(-8deg)}
+.bau.aberto text.v{opacity:1}
+.bau.aberto .corpo{fill:#3b2716}
+.bau.fora{opacity:.22;filter:grayscale(.9);cursor:default}
+.bau.achou .corpo{fill:#2b5a3d;stroke:var(--verde);stroke-width:4}
+.bau.achou text.v{fill:#fff}
+.bau.k-dica .corpo{stroke:var(--ouro);stroke-width:5}
+.bau.errou .corpo{stroke:var(--verm);stroke-width:5}
+.bau.errou{animation:ktreme .4s}
+.mk text{font:700 13px var(--mono);text-anchor:middle}
+.mk.ini text{fill:var(--verde)}.mk.fim text{fill:var(--azul)}.mk.i text{fill:var(--ouro)}
+.mk path{stroke-width:2;fill:none}.mk.ini path{stroke:var(--verde)}.mk.fim path{stroke:var(--azul)}.mk.i path{stroke:var(--ouro)}
+.escolhas button.errou{animation:ktreme .4s;border-color:var(--verm)}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena">
+    <div class="topo"><div class="tochas" id="tochas" aria-label="Tochas"></div><span id="selo"></span><span class="placa" id="placa"></span></div>
+    <svg class="sala" id="sala" viewBox="0 0 900 200"></svg>
+  </section>
+  <div class="ordem"><span id="ordem">…</span><div class="escolhas" id="esc"></div></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+const RODADAS = 4;
+const log2p1 = n => Math.floor(Math.log2(n)) + 1;
+
+function geo(){
+  const n = G.v.length, cols = Math.min(n, 16), rows = Math.ceil(n / cols), cw = 900 / Math.max(cols, 8);
+  const w = Math.min(54, cw - 6), rowH = 112;
+  return {n, cols, rows, cw, w, rowH, off: (900 - cols * cw) / 2, H: rows * rowH + 6};
+}
+function pos(g, i){ const c = i % g.cols, r = Math.floor(i / g.cols); return {x: g.off + c * g.cw + g.cw / 2, y: r * g.rowH + 40}; }
+function desenhar(){
+  const g = geo(), sv = $('#sala');
+  sv.setAttribute('viewBox', `0 0 900 ${g.H}`);
+  let s = '';
+  for (let i = 0; i < g.n; i++) {
+    const p = pos(g, i), w = g.w, x = p.x - w / 2, y = p.y;
+    let cls = 'bau';
+    if (G.aberto.has(i)) cls += ' aberto';
+    if (G.achou === i) cls += ' achou';
+    if (G.modo === 'bin' && G.fase !== 'escolha' && (i < G.ini || i > G.fim) && G.achou !== i) cls += ' fora';
+    s += `<g class="${cls}" data-i="${i}" tabindex="0" role="button" aria-label="Baú ${i}${G.aberto.has(i) ? ' com ' + G.v[i] : ' fechado'}">
+      <rect class="corpo" x="${x}" y="${y + 14}" width="${w}" height="34" rx="5"/>
+      <rect class="faixa" x="${x}" y="${y + 30}" width="${w}" height="4"/>
+      <text class="v" x="${p.x}" y="${y + 38}">${G.aberto.has(i) ? G.v[i] : ''}</text>
+      <g class="tampa" style="transform-origin:${x}px ${y + 14}px"><rect x="${x - 2}" y="${y}" width="${w + 4}" height="16" rx="7"/><circle class="tranca" cx="${p.x}" cy="${y + 15}" r="3.5"/></g>
+      <text class="i" x="${p.x}" y="${y + 64}">${i}</text></g>`;
+  }
+  const mk = (i, nome, cls, dx = 0) => {
+    if (i < 0 || i >= g.n) return '';
+    const p = pos(g, i), x = p.x + dx;
+    return `<g class="mk ${cls}"><text x="${x}" y="${p.y - 18}">${nome}</text><path d="M${x} ${p.y - 14} L${x} ${p.y - 4} M${x - 4} ${p.y - 9} L${x} ${p.y - 4} L${x + 4} ${p.y - 9}"/></g>`;
+  };
+  if (G.fase === 'busca' && G.modo === 'bin') {
+    if (G.ini === G.fim) s += mk(G.ini, 'ini·fim', 'ini');
+    else s += mk(G.ini, 'ini', 'ini') + mk(G.fim, 'fim', 'fim');
+  }
+  if (G.fase === 'busca' && G.modo === 'seq') s += mk(G.i, 'i', 'i');
+  sv.innerHTML = s;
+  sv.querySelectorAll('.bau').forEach(b => {
+    b.onclick = () => bau(+b.dataset.i, b);
+    b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bau(+b.dataset.i, b); } };
+  });
+  $('#tochas').innerHTML = Array.from({length: G.maxT}, (_, k) => `<i class="${k >= G.tochas ? 'apagada' : ''}">🔥</i>`).join('');
+  $('#selo').innerHTML = G.ordenado ? '<span class="selo ord">⇡ em ordem crescente</span>' : '<span class="selo bag">🌀 o goblin bagunçou</span>';
+  $('#placa').innerHTML = G.modo === 'bin' && G.fase !== 'escolha' ? `ini <b>${G.ini}</b> · fim <b>${G.fim}</b>` : G.modo === 'seq' ? `i <b>${Math.min(G.i, g.n - 1)}</b>` : `<b>${g.n}</b> baús`;
+}
+function botoes(lista){
+  $('#esc').innerHTML = lista.map((b, k) => `<button data-k="${k}"><kbd>${k + 1}</kbd>${b.t}</button>`).join('');
+  $('#esc').querySelectorAll('button').forEach(el => el.onclick = () => lista[+el.dataset.k].f(el));
+  G.botoes = lista;
+}
+const tempo = () => Math.max(3, 8.5 - G.nivel * 0.9);
+
+/* ---------- rodadas ---------- */
+function novaRodada(){
+  if (G.rodada >= RODADAS) {
+    K.timer.parar();
+    G.nivel++; G.rodada = 0;
+    if (G.nivel % 2 === 1) K.vida();
+    K.subirNivel(G.nivel, G.nivel === 2 ? 'Agora você escolhe a busca' : G.nivel === 4 ? 'A câmara tem 31 baús' : 'As tochas queimam mais rápido');
+    return setTimeout(novaRodada, 1100);
+  }
+  G.rodada++;
+  const lv = G.nivel;
+  G.ordenado = lv === 1 ? true : Math.random() < 0.65;
+  let n = lv === 1 ? 7 : lv < 4 ? 15 : K.pick([15, 31]);
+  if (!G.ordenado) n = K.pick([6, 7, 8]);
+  const vals = K.distintos(n, 2, n * 4 + 8).sort((a, b) => a - b);
+  G.v = G.ordenado ? vals : K.shuffle(vals);
+  const ausente = Math.random() < (lv === 1 ? 0.2 : 0.33);
+  if (ausente) { const s = new Set(vals); let x; do { x = K.rnd(1, n * 4 + 10); } while (s.has(x)); G.alvo = x; }
+  else G.alvo = K.pick(vals);
+  G.aberto = new Set(); G.achou = -1; G.ini = 0; G.fim = n - 1; G.i = 0;
+  if (lv === 1) { G.modo = 'bin'; iniciarBusca(); }
+  else { G.modo = null; G.fase = 'escolha'; G.maxT = G.tochas = log2p1(n); desenhar(); escolha(); }
+}
+function escolha(){
+  $('#ordem').innerHTML = `Encontre a chave <b>${G.alvo}</b>. ${G.ordenado ? 'O ferreiro deixou os baús em ordem.' : 'O goblin bagunçou os baús.'} Qual busca você usa?`;
+  botoes([{t:'Busca sequencial', f: el => escolher('seq', el)}, {t:'Busca binária', f: el => escolher('bin', el)}]);
+  K.turno(tempo() + 2, () => escolhaErrada(null, true), () => ['Os baús estão em ordem?', G.ordenado ? 'Em ordem: a binária gasta bem menos tochas.' : 'Sem ordem, só a sequencial é confiável.']);
+}
+function escolher(m, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'escolha') return;
+  if (!G.ordenado && m === 'bin') return escolhaErrada(el);
+  K.acerto(el, 60);
+  if (G.ordenado && m === 'seq') K.flutua('funciona… se as tochas durarem', el, 'var(--laranja)');
+  G.modo = m; iniciarBusca();
+}
+function escolhaErrada(el, tempoEsgotado){
+  if (el) K.anima(el, 'errou');
+  const html = G.ordenado
+    ? `<p>Os baús estão em ordem: a <b>busca binária</b> abre o baú do meio e descarta metade a cada tocha. Com ${G.v.length} baús, bastam ${log2p1(G.v.length)} tochas.</p>`
+    : `<p>Os baús estão <b>fora de ordem</b>. A busca binária descarta uma metade supondo que os valores dela são todos menores (ou maiores) que o do meio, e isso só vale com o vetor ordenado. Aqui ela poderia jogar fora justamente o baú da chave. Use a <b>sequencial</b>.</p>`;
+  K.erro(html, () => { G.modo = G.ordenado ? 'bin' : 'seq'; iniciarBusca(); }, {kicker: tempoEsgotado ? 'O tempo acabou' : 'Busca errada'});
+}
+function iniciarBusca(){
+  const n = G.v.length;
+  G.fase = 'busca';
+  G.maxT = G.tochas = G.modo === 'bin' || G.ordenado ? log2p1(n) : n;
+  botoes([{t:'Não está aqui!', f: el => naoEsta(el)}]);
+  proximoPasso();
+}
+function esperado(){ return G.modo === 'bin' ? Math.floor((G.ini + G.fim) / 2) : G.i; }
+function proximoPasso(){
+  desenhar();
+  if (G.modo === 'bin') $('#ordem').innerHTML = `Chave <b>${G.alvo}</b>: abra o baú do <b>meio</b> do intervalo.`;
+  else $('#ordem').innerHTML = `Chave <b>${G.alvo}</b>: abra o próximo baú, da esquerda para a direita.`;
+  K.turno(tempo(), () => passoErrado(null, true), () => {
+    if (G.modo === 'bin') return G.ini > G.fim ? ['ini passou de fim.', 'Clique em "Não está aqui!".'] : [`meio = ⌊(ini + fim) / 2⌋ = ⌊(${G.ini} + ${G.fim}) / 2⌋`, `Baú ${esperado()}.`];
+    if (G.ordenado && G.i > 0 && G.v[G.i - 1] > G.alvo) return ['O último baú aberto já passou do valor.', 'Em ordem, a chave não pode estar mais à frente: "Não está aqui!".'];
+    return ['A sequencial abre os baús em ordem: 0, 1, 2…', `Baú ${G.i}.`];
+  });
+}
+function bau(i, el){
+  if (!K.s.rodando || K.s.ocupado || !G || G.fase !== 'busca' || G.achou >= 0) return;
+  if (G.aberto.has(i) || (G.modo === 'bin' && (i < G.ini || i > G.fim))) return;
+  if (i !== esperado() || (G.modo === 'bin' && G.ini > G.fim)) return passoErrado(el);
+  abrir(i, el, true);
+}
+function abrir(i, el, pontua){
+  G.aberto.add(i); G.tochas--; K.SFX.passo();
+  const val = G.v[i];
+  if (val === G.alvo) {
+    G.achou = i; G.fase = 'fim'; K.timer.parar();
+    if (pontua) K.acerto(el, 100);
+    desenhar();
+    const elb = document.querySelector(`.bau[data-i="${i}"]`);
+    K.bonus(G.tochas * 40, elb, G.tochas ? `tesouro! +${G.tochas * 40}` : 'tesouro!');
+    return setTimeout(novaRodada, 1000);
+  }
+  if (pontua) K.acerto(el, 60);
+  if (G.modo === 'bin') { if (val < G.alvo) G.ini = i + 1; else G.fim = i - 1; }
+  else G.i++;
+  const vazio = G.modo === 'bin' ? G.ini > G.fim : G.i >= G.v.length;
+  if (!vazio && G.tochas <= 0) { desenhar(); return semTochas(); }
+  proximoPasso();
+}
+function naoEsta(el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'busca') return;
+  const certo = G.modo === 'bin' ? G.ini > G.fim : (G.i >= G.v.length || (G.ordenado && G.i > 0 && G.v[G.i - 1] > G.alvo));
+  if (!certo) return passoErrado(el);
+  G.fase = 'fim'; K.timer.parar(); K.acerto(el, 120); K.flutua('nada por aqui', el, 'var(--verdeC)');
+  setTimeout(novaRodada, 800);
+}
+function semTochas(){
+  const n = G.v.length; G.fase = 'fim';
+  K.erro(`<p>As tochas acabaram antes da chave. Os baús estavam <b>em ordem</b>, então a <b>busca binária</b> resolveria com no máximo ⌊log₂ ${n}⌋ + 1 = ${log2p1(n)} aberturas. A sequencial pode precisar de até ${n}.</p>`,
+    () => setTimeout(novaRodada, 200), {kicker: 'Escuridão'});
+}
+function passoErrado(el, tempoEsgotado){
+  if (el) K.anima(el, 'errou');
+  let html, corrige;
+  if (G.modo === 'bin' && G.ini > G.fim) {
+    html = `<p>O intervalo ficou vazio: ini = ${G.ini} passou de fim = ${G.fim}. Não sobrou nenhum baú onde a chave ${G.alvo} possa estar, então a resposta é <b>"Não está aqui!"</b>.</p>`;
+    corrige = () => setTimeout(novaRodada, 200);
+  } else if (G.modo === 'bin') {
+    const m = esperado();
+    html = `<p>O baú do meio é <b>${m}</b>: meio = ⌊(${G.ini} + ${G.fim}) / 2⌋ = ${m}. ${el && el.matches && el.matches('button') ? 'Ainda há baús no intervalo, então não dá para desistir.' : ''}</p><p>Abrindo o ${m}: se o valor for menor que ${G.alvo}, ini = meio + 1; se for maior, fim = meio − 1.</p>`;
+    corrige = () => abrir(m, null, false);
+  } else if (G.ordenado && G.i > 0 && G.v[G.i - 1] > G.alvo) {
+    html = `<p>O baú ${G.i - 1} tinha ${G.v[G.i - 1]}, maior que ${G.alvo}. Como os baús estão em ordem, a chave não pode estar mais à frente: era hora de dizer <b>"Não está aqui!"</b>.</p>`;
+    corrige = () => setTimeout(novaRodada, 200);
+  } else if (G.i >= G.v.length) {
+    html = `<p>Todos os baús já foram abertos e a chave ${G.alvo} não apareceu: a resposta é <b>"Não está aqui!"</b>.</p>`;
+    corrige = () => setTimeout(novaRodada, 200);
+  } else {
+    html = `<p>A busca sequencial abre os baús <b>em ordem</b>, sem pular: o próximo é o <b>${G.i}</b>. ${G.ordenado ? '' : 'Como os baús estão bagunçados, a chave pode estar em qualquer um, inclusive no último.'}</p>`;
+    corrige = () => abrir(G.i, null, false);
+  }
+  K.erro(html, corrige, {kicker: tempoEsgotado ? 'A tocha apagou' : 'Jogada errada'});
+}
+
+K.init({
+  id:'busca', titulo:'A Câmara dos Baús', kicker:'Masmorra · Busca sequencial e binária', vidas:3, comecar:'Acender a primeira tocha',
+  ajuda:`<p>A câmara está cheia de baús trancados, cada um com uma chave numerada. Cada baú aberto gasta uma <b>tocha</b> 🔥.</p>
+  <ol><li><b>Baús em ordem:</b> use a <b>busca binária</b>. Abra sempre o baú do meio do intervalo (<code>⌊(ini + fim) / 2⌋</code>); as setas <code>ini</code> e <code>fim</code> mostram o que ainda está em jogo.</li>
+  <li><b>Baús bagunçados:</b> use a <b>sequencial</b> e abra da esquerda para a direita.</li>
+  <li>Se a chave não existir, clique em <b>Não está aqui!</b> no momento certo.</li>
+  <li>Tochas que sobram viram bônus. A partir do nível 2, você escolhe a busca.</li></ol>`,
+  tecla(e){ if (G && G.botoes && /^[1-9]$/.test(e.key)) { const b = G.botoes[+e.key - 1]; const el = $('#esc').querySelectorAll('button')[+e.key - 1]; if (b) b.f(el); } },
+  iniciar(){ G = {nivel:1, rodada:0}; novaRodada(); },
+  auto(){
+    if (!G) return;
+    const bts = $('#esc').querySelectorAll('button');
+    if (G.fase === 'escolha') { (G.ordenado ? G.botoes[1] : G.botoes[0]).f(bts[G.ordenado ? 1 : 0]); return true; }
+    if (G.fase !== 'busca') return;
+    const vazio = G.modo === 'bin' ? G.ini > G.fim : (G.i >= G.v.length || (G.ordenado && G.i > 0 && G.v[G.i - 1] > G.alvo));
+    if (vazio) { naoEsta(bts[0]); return true; }
+    const i = esperado(); bau(i, document.querySelector(`.bau[data-i="${i}"]`)); return true;
+  }
+});
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Oficina de Estruturas de Dados · profjon
 
-Material interativo de Estruturas de Dados com 22 módulos organizados em 7 eras, das variáveis aos grafos. Cada módulo tem quatro abas:
+Material interativo de Estruturas de Dados com 24 módulos organizados em 7 eras, das variáveis aos grafos. Cada módulo tem quatro abas:
 
 - **Teoria:** slides com conceito, analogia, implementação em C e Python (com botões para cada linguagem ou lado a lado), tabela de custos e modo apresentação.
 - **Prática:** o visualizador interativo da estrutura, com um roteiro de tarefas e o que observar em cada uma.
@@ -13,7 +13,7 @@ Material interativo de Estruturas de Dados com 22 módulos organizados em 7 eras
 
 | Era | Módulos |
 |---|---|
-| 01 · Fundamentos | Ponteiros em C, Lista sequencial (vetor), Lista encadeada estática, Lista encadeada simples, Lista duplamente encadeada |
+| 01 · Fundamentos | Ponteiros em C, Struct (registros), Lista sequencial (vetor), Busca sequencial e binária, Lista encadeada estática, Lista encadeada simples, Lista duplamente encadeada |
 | 02 · Estruturas lineares | Pilha, fila e deque, Fila circular |
 | 03 · Árvores de busca | Árvore binária de busca, AVL, Rubro-negra, Splay |
 | 04 · Árvores multi-via | Árvore B, Árvore B+ |
@@ -26,7 +26,9 @@ Material interativo de Estruturas de Dados com 22 módulos organizados em 7 eras
 | Módulo | Jogo |
 |---|---|
 | Ponteiros | O Cartógrafo |
+| Struct | A Forja das Arcas |
 | Lista sequencial | O Corredor das Estátuas |
+| Busca sequencial e binária | A Câmara dos Baús |
 | Lista estática | Os Armários do Alquimista |
 | Lista simples | A Corrente de Elos |
 | Lista dupla | A Ponte de Cordas |

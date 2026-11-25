@@ -264,7 +264,9 @@ const JOGOS = {
   forja:     {t:'A Forja de Huffman', f:'Contra o relógio', arq:'jogos/forja-de-huffman.html', d:'Forje a árvore de Huffman juntando sempre os dois menores pesos (é o heap em ação), codifique uma palavra em bits e decifre outra.'},
   perguntas: {t:'A Masmorra (andares)', f:'Desafios por andar', arq:'jogos/masmorra-perguntas.html', d:'Cinco andares de desafios curtos: ABB, AVL, rubro-negra, splay e o chefão.'},
   ponteiros:          {t:'O Cartógrafo', f:'Programa ao vivo', arq:'jogos/oficina2/ponteiros.html', d:'Execute um pergaminho em C linha por linha: mova as placas-mapa (ponteiros) e conte as moedas das casas que mudam.', novo:true},
+  struct:             {t:'A Forja das Arcas', f:'Forja e precisão', arq:'jogos/oficina2/struct.html', d:'Encaixe cada campo no compartimento alinhado da arca, meça o sizeof com o padding e acerte rodadas rápidas de ponto, seta e cópia.', novo:true},
   vetor:              {t:'O Corredor das Estátuas', f:'Contra o relógio', arq:'jogos/oficina2/vetor.html', d:'Arraste as estátuas na ordem certa para inserir, remover e buscar. No nível 3 o corredor enche e precisa dobrar.', novo:true},
+  busca:              {t:'A Câmara dos Baús', f:'Tochas contadas', arq:'jogos/oficina2/busca.html', d:'Encontre a chave abrindo baús: em ordem, abra sempre o do meio; bagunçados, um por um. Cada baú gasta uma tocha, e as que sobram viram bônus.', novo:true},
   estatica:           {t:'Os Armários do Alquimista', f:'Névoa e memória', arq:'jogos/oficina2/estatica.html', d:'Armários fechados: abra-os seguindo os bilhetes prox, guarde poções pela lista livre e descarte as que pedirem.', novo:true},
   simples:            {t:'A Corrente de Elos', f:'Ação e código', arq:'jogos/oficina2/simples.html', d:'Leve o goblin pela corrente sem passar do ponto para cortar ou encaixar elos; reverta a corrente montando o laço na ordem certa.', novo:true},
   dupla:              {t:'A Ponte de Cordas', f:'Contra a rajada', arq:'jogos/oficina2/dupla.html', d:'Amarre as cordas prev e prox certas antes da rajada de vento, tirando ou encaixando tábuas.', novo:true},
@@ -289,7 +291,7 @@ const DESAFIOS = {
   heap:         [['forja','A cada passo, saem do heap os dois menores pesos.']],
   trie:         [['biblioteca','Inserir, buscar, prefixo e autocompletar.']]
 };
-for (const id of ['ponteiros','vetor','estatica','simples','dupla','pilha-fila-deque','fila-circular','arvore-b','arvore-bmais','smoothsort','arvore-decisao','hash','union-find','bfs-dfs','dijkstra','agm'])
+for (const id of ['ponteiros','struct','vetor','busca','estatica','simples','dupla','pilha-fila-deque','fila-circular','arvore-b','arvore-bmais','smoothsort','arvore-decisao','hash','union-find','bfs-dfs','dijkstra','agm'])
   DESAFIOS[id] = [[id, 'Três vidas, combo de até ×5 e níveis cada vez mais rápidos. A janela de erro explica a jogada certa.']];
 DESAFIOS.hash = [['taverna', 'Comece devagar: a partir da onda 2 aparecem as retiradas com lápide, e na onda 3 vem o rehash.']];
 DESAFIOS.dijkstra = [['dragao', 'A cada dois covis vencidos você recupera uma vida. Os desafios rápidos valem bônus e não custam vida.']];
@@ -408,7 +410,7 @@ function anel(fr){
   const c = 2 * Math.PI * 4.5;
   return `<svg class="anel" viewBox="0 0 12 12" aria-hidden="true"><circle class="f" cx="6" cy="6" r="4.5"/><circle class="v" cx="6" cy="6" r="4.5" stroke-dasharray="${(fr*c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 6 6)"/></svg>`;
 }
-const CURTO = {ponteiros:'Ponteiros', vetor:'Vetor', estatica:'Lista estática', simples:'Lista simples', dupla:'Lista dupla', 'pilha-fila-deque':'Pilha, fila e deque', 'fila-circular':'Fila circular', bst:'ABB', avl:'AVL', 'rubro-negra':'Rubro-negra', splay:'Splay', 'arvore-b':'Árvore B', 'arvore-bmais':'Árvore B+', heap:'Heap', smoothsort:'Smoothsort', trie:'Trie', 'arvore-decisao':'Árvore de decisão', hash:'Tabela hash', 'union-find':'Union-Find', 'bfs-dfs':'BFS e DFS', dijkstra:'Dijkstra', agm:'AGM'};
+const CURTO = {ponteiros:'Ponteiros', struct:'Struct', vetor:'Vetor', busca:'Busca', estatica:'Lista estática', simples:'Lista simples', dupla:'Lista dupla', 'pilha-fila-deque':'Pilha, fila e deque', 'fila-circular':'Fila circular', bst:'ABB', avl:'AVL', 'rubro-negra':'Rubro-negra', splay:'Splay', 'arvore-b':'Árvore B', 'arvore-bmais':'Árvore B+', heap:'Heap', smoothsort:'Smoothsort', trie:'Trie', 'arvore-decisao':'Árvore de decisão', hash:'Tabela hash', 'union-find':'Union-Find', 'bfs-dfs':'BFS e DFS', dijkstra:'Dijkstra', agm:'AGM'};
 function curto(t){ const m = MODS.find(x => x.titulo === t); return (m && CURTO[m.id]) || t; }
 function desenharNav(){
   let h = '', era = -1;
@@ -443,7 +445,7 @@ function ligarTopo(raiz){ raiz.querySelectorAll('[data-ir]').forEach(b => b.oncl
 
 /* ---------- Mapa ---------- */
 function vMapa(){
-  let h = `<div class="mapa"><div class="hero"><div class="kick">profjon · trilha de 22 módulos em 7 eras</div>
+  let h = `<div class="mapa"><div class="hero"><div class="kick">profjon · trilha de ${MODS.length} módulos em 7 eras</div>
   <h1>Das variáveis aos grafos: a Oficina de Estruturas de Dados</h1>
   <p>Cada módulo tem três partes. Comece pela teoria, mexa no visualizador e termine resolvendo os exercícios. Todo código aparece em C e em Python, lado a lado.</p>
   <div class="como"><div><b>Teoria</b>Slides com conceito, analogia, implementação comentada e tabela de custos. Tem modo apresentação para projetar em aula.</div>

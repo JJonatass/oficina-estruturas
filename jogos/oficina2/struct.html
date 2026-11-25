@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A Forja das Arcas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(circle at 80% 10%,rgba(255,122,107,.14),transparent 45%),radial-gradient(circle at 15% 90%,rgba(242,169,59,.12),transparent 50%),linear-gradient(#1d1a22,#141219);padding:14px 16px 18px;min-height:340px}
+.palco{display:grid;grid-template-columns:270px 1fr;gap:18px;align-items:start}
+@media (max-width:760px){.palco{grid-template-columns:1fr}}
+.pergaminho{background:#f1e3c2;color:#3a2a17;border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:14px;line-height:1.6;box-shadow:inset 0 0 0 2px #c9a86a,0 6px 18px #0008;white-space:pre;overflow-x:auto}
+.pergaminho .at{background:#f2c14e;border-radius:4px;padding:0 3px;box-shadow:0 0 0 2px #d99a1e}
+.pergaminho .ok{color:#5d7d4a}
+.pergaminho .kw{color:#8b2f1e;font-weight:600}
+.arca{display:grid;gap:5px}
+.linha{display:grid;grid-template-columns:38px repeat(8,minmax(0,1fr));gap:5px}
+.linha .off{font-family:var(--mono);font-size:12px;color:var(--mudo);display:flex;align-items:center;justify-content:flex-end}
+.byte{height:50px;border-radius:8px;border:2px solid #5a4630;background:linear-gradient(#3a2c22,#2c2119);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--mudo);transition:transform .12s,border-color .15s;position:relative;overflow:hidden}
+.byte:hover,.byte:focus{border-color:var(--ouro);transform:translateY(-2px)}
+.byte b{font-family:var(--sans);font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding:0 2px}
+.byte.cheio{cursor:default;transform:none}
+.byte.pad{background:repeating-linear-gradient(45deg,#26222c,#26222c 5px,#332e3a 5px,#332e3a 9px);border-color:#3a3545;cursor:default}
+.byte.k-dica{border-color:var(--ouro);box-shadow:0 0 14px rgba(242,193,78,.6)}
+.byte.errou{animation:ktreme .4s;border-color:var(--verm)}
+.byte.entra{animation:entra .35s ease}
+@keyframes entra{from{transform:scale(.6);opacity:.2}}
+.f0{background:linear-gradient(#3d7ab8,#2a5a8a);border-color:#7fb3e6}.f1{background:linear-gradient(#b07a1e,#80570f);border-color:#f2c14e}
+.f2{background:linear-gradient(#3a8a55,#286640);border-color:#7fd8a4}.f3{background:linear-gradient(#7a55a0,#583c78);border-color:#c3a6e6}
+.f4{background:linear-gradient(#b5503d,#86372a);border-color:#ff9a88}.f5{background:linear-gradient(#2e8a8a,#1f6464);border-color:#7fe0e0}
+.medidor{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:14px;color:var(--mudo)}
+.medidor b{color:var(--ouro)}
+.quiz{display:grid;gap:12px}
+.quiz pre{margin:0;background:#0f0e14;border:1px solid var(--borda);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:15px;line-height:1.55;overflow-x:auto;color:var(--texto)}
+.quiz .tag{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--laranja)}
+.escolhas button code{color:inherit;font-size:15px}
+.escolhas button.errou{animation:ktreme .4s;border-color:var(--verm)}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div id="palco"></div></section>
+  <div class="ordem"><span id="ordem">…</span><div class="escolhas" id="esc"></div></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+let G = null;
+const TIPOS = {char:[1,1], short:[2,2], int:[4,4], float:[4,4], double:[8,8], ptr:[8,8]};
+const NOMES = {char:['ativo','tipo','sexo','letra','turno'], short:['ano','idade','sala','andar'], int:['codigo','qtd','matricula','vidas','nivel'],
+  float:['nota','peso','preco','altura'], double:['saldo','media','x','lat'], ptr:['prox','dono','pai','ant'], arr:['nome','sigla','cor','tag']};
+const POR_RODADA = 4;
+
+/* ---------- montagem das arcas ---------- */
+function gerarStruct(lv){
+  const tipos = lv === 1 ? ['char','int'] : lv === 2 ? ['char','short','int','double'] : ['char','short','int','float','double','ptr','arr'];
+  const n = lv === 1 ? 3 : lv === 2 ? K.pick([3,4]) : K.pick([4,5]);
+  let f, tent = 0;
+  do {
+    const usados = new Set(); f = [];
+    for (let k = 0; k < n; k++) {
+      const t = K.pick(tipos);
+      let nome; do { nome = K.pick(NOMES[t]); } while (usados.has(nome) && usados.size < 18); usados.add(nome);
+      if (t === 'arr') { const q = K.rnd(2, 6); f.push({t, nome, s:q, a:1, decl:`char ${nome}[${q}];`}); }
+      else f.push({t, nome, s:TIPOS[t][0], a:TIPOS[t][1], decl: t === 'ptr' ? `struct Arca *${nome};` : `${t} ${nome};`});
+    }
+    tent++;
+  } while (tent < 30 && (lv > 1 ? !temPadding(f) : false));
+  let off = 0, al = 1;
+  f.forEach((c, i) => { c.cor = i % 6; const p = (c.a - off % c.a) % c.a; off += p; c.off = off; off += c.s; al = Math.max(al, c.a); });
+  const fimDados = off, size = off + (al - off % al) % al;
+  return {f, size, al, fimDados, soma: f.reduce((s, c) => s + c.s, 0)};
+}
+function temPadding(f){ let off = 0; for (const c of f) { if (off % c.a) return true; off += c.s; } return false; }
+
+function desenharArca(){
+  const A = G.arca, total = Math.max(16, Math.ceil((A.size + 1) / 8) * 8 + (A.size % 8 === 0 ? 8 : 0));
+  const dono = Array(total).fill(null);
+  A.f.forEach((c, i) => { if (i < G.k) for (let b = 0; b < c.s; b++) dono[c.off + b] = i; });
+  const limite = G.k < A.f.length ? (G.k === 0 ? 0 : A.f[G.k - 1].off + A.f[G.k - 1].s) : A.size;
+  let grade = '';
+  for (let r = 0; r < total / 8; r++) {
+    grade += `<div class="linha"><span class="off">+${r * 8}</span>`;
+    for (let j = 0; j < 8; j++) {
+      const b = r * 8 + j, d = dono[b];
+      if (d !== null) { const c = A.f[d]; grade += `<span class="byte cheio f${c.cor} ${d === G.k - 1 ? 'entra' : ''}">${b === c.off ? `<b>${c.nome}</b>` : ''}${b}</span>`; }
+      else if (b < limite) grade += `<span class="byte pad" title="padding">${b}</span>`;
+      else grade += `<span class="byte" data-b="${b}" tabindex="0" role="button" aria-label="Byte ${b}">${b}</span>`;
+    }
+    grade += '</div>';
+  }
+  const linhas = A.f.map((c, i) => `    <span class="${i === G.k && G.fase === 'pos' ? 'at' : i < G.k ? 'ok' : ''}">${c.decl}</span>`).join('\n');
+  $('#palco').innerHTML = `<div class="palco"><div><div class="pergaminho"><span class="kw">typedef struct</span> Arca {\n${linhas}\n} Arca;</div>
+    <div class="medidor"><span>campos <b>${G.k}/${A.f.length}</b></span><span>próximo byte livre <b>${limite}</b></span></div></div>
+    <div class="arca" id="arca">${grade}</div></div>`;
+  $('#arca').querySelectorAll('.byte[data-b]').forEach(el => {
+    el.onclick = () => byte(+el.dataset.b, el);
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); byte(+el.dataset.b, el); } };
+  });
+}
+function botoes(lista){
+  $('#esc').innerHTML = lista.map((b, k) => `<button data-k="${k}"><kbd>${k + 1}</kbd>${b.t}</button>`).join('');
+  $('#esc').querySelectorAll('button').forEach(el => el.onclick = () => lista[+el.dataset.k].f(el));
+  G.botoes = lista;
+}
+const tempo = () => Math.max(4, 10.5 - G.nivel * 1.1);
+
+/* ---------- fluxo ---------- */
+function novaRodada(){
+  if (G.rodada >= POR_RODADA) {
+    K.timer.parar(); G.nivel++; G.rodada = 0;
+    if (G.nivel % 2 === 1) K.vida();
+    K.subirNivel(G.nivel, G.nivel === 2 ? 'Chegam short e double' : G.nivel === 3 ? 'Ponteiros e vetores de char' : 'A forja acelera');
+    return setTimeout(novaRodada, 1100);
+  }
+  G.rodada++;
+  const tipo = G.rodada % 2 === 1 ? 'arca' : K.pick(['acesso', 'copia']);
+  if (tipo === 'arca') { G.arca = gerarStruct(Math.min(G.nivel, 3)); G.k = 0; G.fase = 'pos'; botoes([]); passoPos(); }
+  else if (tipo === 'acesso') acesso();
+  else copia();
+}
+function passoPos(){
+  desenharArca();
+  const c = G.arca.f[G.k];
+  $('#ordem').innerHTML = `Em que byte começa <code>${c.decl.replace(';','')}</code>? <span class="sub">tamanho ${c.s} · alinhamento ${c.a}</span>`;
+  K.turno(tempo(), () => posErrada(null, true), () => {
+    const livre = G.k === 0 ? 0 : G.arca.f[G.k - 1].off + G.arca.f[G.k - 1].s;
+    return [`O próximo byte livre é ${livre}. Ele é múltiplo de ${c.a}?`, `Byte ${c.off}.`];
+  });
+}
+function byte(b, el){
+  if (!K.s.rodando || K.s.ocupado || !G || G.fase !== 'pos') return;
+  const c = G.arca.f[G.k];
+  if (b !== c.off) return posErrada(el);
+  K.acerto(el, 80); K.SFX.passo();
+  const livre = G.k === 0 ? 0 : G.arca.f[G.k - 1].off + G.arca.f[G.k - 1].s;
+  if (c.off > livre) K.flutua(`${c.off - livre} B de padding`, el, 'var(--laranja)');
+  avancaCampo();
+}
+function avancaCampo(){
+  G.k++;
+  if (G.k < G.arca.f.length) return passoPos();
+  G.fase = 'size'; desenharArca(); perguntaSize();
+}
+function posErrada(el, esgotou){
+  if (el) K.anima(el, 'errou');
+  const c = G.arca.f[G.k], livre = G.k === 0 ? 0 : G.arca.f[G.k - 1].off + G.arca.f[G.k - 1].s;
+  const html = c.off === livre
+    ? `<p>O próximo byte livre era o <b>${livre}</b>, e ${livre} já é múltiplo de ${c.a} (o alinhamento de <code>${c.decl.replace(';','')}</code>). O campo começa ali, sem padding.</p>`
+    : `<p><code>${c.decl.replace(';','')}</code> precisa começar num byte múltiplo de <b>${c.a}</b>. O próximo byte livre era ${livre}, que não serve; o primeiro múltiplo de ${c.a} a partir dele é <b>${c.off}</b>. Os ${c.off - livre} bytes do meio viram <b>padding</b>.</p>`;
+  K.erro(html, avancaCampo, {kicker: esgotou ? 'A brasa esfriou' : 'Compartimento errado'});
+}
+function perguntaSize(){
+  const A = G.arca;
+  const ops = new Set([A.size]);
+  [A.soma, A.fimDados, A.size + A.al, A.size + 4, A.size - A.al, A.soma + 1].forEach(x => { if (x > 0 && ops.size < 4) ops.add(x); });
+  const lista = K.shuffle([...ops]).map(v => ({t: `${v} bytes`, v, f: el => respSize(v, el)}));
+  $('#ordem').innerHTML = `Arca montada. Quanto vale <code>sizeof(Arca)</code>? <span class="sub">os campos somam ${A.soma} bytes</span>`;
+  botoes(lista);
+  K.turno(tempo() + 2, () => sizeErrado(null, true), () => [`O tamanho total precisa ser múltiplo do maior alinhamento (${A.al}).`, `${A.size} bytes.`]);
+}
+function respSize(v, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'size') return;
+  if (v !== G.arca.size) return sizeErrado(el);
+  G.fase = 'fim'; K.timer.parar(); K.acerto(el, 140);
+  if (G.arca.size === G.arca.soma) K.flutua('sem desperdício!', el, 'var(--verdeC)');
+  setTimeout(novaRodada, 650);
+}
+function sizeErrado(el, esgotou){
+  if (el) K.anima(el, 'errou');
+  const A = G.arca, fim = A.size - A.fimDados;
+  K.erro(`<p>Os dados terminam no byte ${A.fimDados}. O maior alinhamento da arca é <b>${A.al}</b>, então o tamanho é arredondado para o próximo múltiplo de ${A.al}: <b>${A.size} bytes</b>${fim ? ` (${fim} de padding final)` : ''}.</p><p>O padding final garante que, num vetor <code>Arca v[2]</code>, o <code>v[1]</code> também comece alinhado.</p>`,
+    () => { G.fase = 'fim'; setTimeout(novaRodada, 200); }, {kicker: esgotou ? 'A brasa esfriou' : 'Medida errada'});
+}
+
+/* ---------- rodadas rápidas ---------- */
+const ACESSOS = [
+  ['Mude a nota do aluno <code>a</code>.', 'a.nota = 9;', ['a-&gt;nota = 9;', '*a.nota = 9;', 'a[nota] = 9;'], 'Com a própria variável (não um ponteiro), o acesso é com ponto.'],
+  ['Mude a nota pelo ponteiro <code>p</code>.', 'p-&gt;nota = 9;', ['p.nota = 9;', '*p.nota = 9;', '&amp;p-&gt;nota = 9;'], '<code>p</code> guarda um endereço: use a seta, que equivale a <code>(*p).nota</code>.'],
+  ['Mude a nota pelo ponteiro <code>p</code>, sem usar a seta.', '(*p).nota = 9;', ['*p.nota = 9;', 'p.nota = 9;', '*(p.nota) = 9;'], 'Os parênteses são obrigatórios: sem eles, o ponto é aplicado antes e o compilador lê <code>*(p.nota)</code>.'],
+  ['Mude a nota do <b>terceiro</b> aluno de <code>turma</code>.', 'turma[2].nota = 9;', ['turma.nota[2] = 9;', 'turma[3].nota = 9;', 'turma-&gt;nota[2] = 9;'], 'Índice primeiro, campo depois. O terceiro elemento é o de índice 2.'],
+  ['Passe <code>a</code> para <code>void bonificar(Aluno *x)</code>.', 'bonificar(&amp;a);', ['bonificar(a);', 'bonificar(*a);', 'bonificar(a.nota);'], 'A função espera um endereço: <code>&amp;a</code>.'],
+  ['Leia a matrícula do aluno apontado por <code>q</code>.', 'q-&gt;matricula', ['q.matricula', '*q-&gt;matricula', '&amp;q.matricula'], '<code>q</code> é ponteiro: seta.'],
+  ['Qual declaração de nó de lista compila?', 'typedef struct No { int v; struct No *prox; } No;', ['typedef struct { int v; No *prox; } No;', 'typedef struct No { int v; struct No prox; } No;'], 'Dentro das chaves o apelido <code>No</code> ainda não existe, e o campo precisa ser um <b>ponteiro</b> (uma struct não pode conter a si mesma).']
+];
+function acesso(){
+  G.fase = 'quiz';
+  const [enun, certo, errados, exp] = K.pick(ACESSOS);
+  G.exp = `<p>Resposta: <code>${certo}</code></p><p>${exp}</p>`;
+  $('#palco').innerHTML = `<div class="quiz"><span class="tag">Ponto ou seta?</span><pre>Aluno a;            /* uma struct */
+Aluno *p = &amp;a;      /* um ponteiro para ela */
+Aluno turma[30];    /* um vetor de structs */
+Aluno *q = &amp;turma[4];</pre></div>`;
+  $('#ordem').innerHTML = enun;
+  botoes(K.shuffle([certo, ...errados]).map(t => ({t:`<code>${t}</code>`, certo: t === certo, f: el => respQuiz(t === certo, el)})));
+  K.turno(tempo() + 3, () => quizErrado(null, true), () => ['É uma variável ou um ponteiro?', 'Variável: ponto. Ponteiro: seta.']);
+}
+const COPIAS = [
+  {l:'C', cod:'Ponto a = {V, 1};\nPonto b = a;\nb.x = 0;', mesmo:false, exp:'Em C, atribuir uma struct <b>copia todos os bytes</b>: <code>b</code> é independente.'},
+  {l:'C', cod:'Ponto a = {V, 1};\nPonto *b = &amp;a;\nb-&gt;x = 0;', mesmo:true, exp:'<code>b</code> é um ponteiro para <code>a</code>: <code>b-&gt;x</code> altera o próprio <code>a</code>.'},
+  {l:'C', cod:'void zera(Ponto p) { p.x = 0; }\n\nPonto a = {V, 1};\nzera(a);', mesmo:false, exp:'Passagem por valor: a função recebeu uma <b>cópia</b> e zerou a cópia.'},
+  {l:'C', cod:'void zera(Ponto *p) { p-&gt;x = 0; }\n\nPonto a = {V, 1};\nzera(&amp;a);', mesmo:true, exp:'Passagem por ponteiro: a função recebeu o endereço de <code>a</code> e alterou o original.'},
+  {l:'Python', cod:'a = Ponto(V, 1)\nb = a\nb.x = 0', mesmo:true, exp:'Em Python, <code>b = a</code> não copia: os dois nomes apontam para o <b>mesmo objeto</b>.'},
+  {l:'Python', cod:'a = Ponto(V, 1)\nb = copy(a)\nb.x = 0', mesmo:false, exp:'<code>copy(a)</code> cria um objeto novo: mudar <code>b</code> não afeta <code>a</code>.'},
+  {l:'Python', cod:'def zera(p):\n    p.x = 0\n\na = Ponto(V, 1)\nzera(a)', mesmo:true, exp:'A função recebe uma referência para o mesmo objeto e altera o campo dele.'},
+  {l:'Python', cod:'def troca(p):\n    p = Ponto(0, 0)\n\na = Ponto(V, 1)\ntroca(a)', mesmo:false, exp:'<code>p = Ponto(0, 0)</code> só faz o nome local <code>p</code> apontar para outro objeto. O objeto de <code>a</code> não foi tocado.'}
+];
+function copia(){
+  G.fase = 'quiz';
+  const q = K.pick(COPIAS), v = K.rnd(3, 9), cod = q.cod.replace('V', v);
+  G.exp = `<p>${q.exp} Por isso <code>a.x</code> ${q.mesmo ? 'vira <b>0</b>' : `continua <b>${v}</b>`}.</p>`;
+  $('#palco').innerHTML = `<div class="quiz"><span class="tag">Cópia ou o mesmo? · ${q.l}</span><pre>${cod}</pre></div>`;
+  $('#ordem').innerHTML = `Quanto vale <code>a.x</code> no fim?`;
+  botoes(K.shuffle([v, 0]).map(x => ({t:`<code>${x}</code>`, certo: (x === 0) === q.mesmo, f: el => respQuiz((x === 0) === q.mesmo, el)})));
+  K.turno(tempo() + 2, () => quizErrado(null, true), () => [q.l === 'C' ? 'Houve cópia dos bytes ou só um endereço?' : 'Em Python, variáveis são referências.', q.mesmo ? 'Mexeram no próprio a.' : 'Mexeram numa cópia (ou num nome local).']);
+}
+function respQuiz(ok, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'quiz') return;
+  if (!ok) return quizErrado(el);
+  G.fase = 'fim'; K.timer.parar(); K.acerto(el, 120); setTimeout(novaRodada, 600);
+}
+function quizErrado(el, esgotou){
+  if (el) K.anima(el, 'errou');
+  K.erro(G.exp, () => { G.fase = 'fim'; setTimeout(novaRodada, 200); }, {kicker: esgotou ? 'O tempo acabou' : 'Resposta errada'});
+}
+
+K.init({
+  id:'struct', titulo:'A Forja das Arcas', kicker:'Masmorra · Struct', vidas:3, comecar:'Acender a forja',
+  ajuda:`<p>O ferreiro anão forja <b>arcas</b> (structs) com compartimentos de 1 byte. Cada campo do pergaminho precisa caber num compartimento <b>alinhado</b>.</p>
+  <ol><li><b>Montar a arca:</b> clique no byte onde o campo destacado começa. <code>char</code> começa em qualquer byte, <code>short</code> em par, <code>int</code> e <code>float</code> em múltiplo de 4, <code>double</code> e ponteiros em múltiplo de 8. O que sobrar no meio vira padding.</li>
+  <li><b>Medir:</b> responda o <code>sizeof</code> da arca pronta.</li>
+  <li><b>Ponto ou seta</b> e <b>Cópia ou o mesmo?</b>: rodadas rápidas entre uma arca e outra.</li></ol>`,
+  tecla(e){ if (G && G.botoes && /^[1-9]$/.test(e.key)) { const el = $('#esc').querySelectorAll('button')[+e.key - 1]; const b = G.botoes[+e.key - 1]; if (b) b.f(el); } },
+  iniciar(){ G = {nivel:1, rodada:0}; novaRodada(); },
+  auto(){
+    if (!G) return;
+    const bts = $('#esc').querySelectorAll('button');
+    if (G.fase === 'pos') { const c = G.arca.f[G.k]; byte(c.off, $(`.byte[data-b="${c.off}"]`)); return true; }
+    if (G.fase === 'size') { const i = G.botoes.findIndex(b => b.v === G.arca.size); G.botoes[i].f(bts[i]); return true; }
+    if (G.fase === 'quiz') {
+      const i = G.botoes.findIndex(b => b.certo); if (i >= 0) { G.botoes[i].f(bts[i]); return true; }
+    }
+  }
+});
+})();
+</script>
+</body>
+</html>

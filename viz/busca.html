@@ -1,0 +1,626 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Busca Sequencial e Binária</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"], .op-pill[data-op="insert-start"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot, .op-pill[data-op="insert-start"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove-start"], .op-pill[data-op="shrink"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove-start"] .dot, .op-pill[data-op="shrink"] .dot{background:var(--rust);}
+  .op-pill[data-op="shift-right"], .op-pill[data-op="shift-left"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="shift-right"] .dot, .op-pill[data-op="shift-left"] .dot{background:var(--violet);}
+  .op-pill[data-op="search-start"], .op-pill[data-op="compare"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search-start"] .dot, .op-pill[data-op="compare"] .dot{background:var(--accent);}
+  .op-pill[data-op="found"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="found"] .dot{background:var(--success);}
+  .op-pill[data-op="bad"], .op-pill[data-op="not-found"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot, .op-pill[data-op="not-found"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .sl-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .sl-svg, .sl-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .sl-cell-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease, x .28s ease; }
+  .sl-cell-rect.occupied{ fill:var(--accent-soft); }
+  .sl-cell-rect.empty{ fill:var(--paper); stroke-dasharray:3 3; }
+  .sl-cell[data-state="new"] .sl-cell-rect{ stroke:var(--gold); stroke-width:2.8; fill:var(--gold-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .sl-cell[data-state="source"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.6; }
+  .sl-cell[data-state="dest"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.8; fill:var(--violet-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .sl-cell[data-state="cursor"] .sl-cell-rect{ stroke:var(--accent); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .sl-cell[data-state="found"] .sl-cell-rect{ stroke:var(--success); stroke-width:2.8; fill:var(--success-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+  .sl-cell[data-state="bad"] .sl-cell-rect{ stroke:var(--rust); stroke-width:2.4; }
+  .sl-cell-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .sl-cell-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .sl-cell-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .sl-cell-index.boundary{ fill:var(--accent-ink); font-weight:600; }
+  .sl-boundary-line{ stroke:var(--accent); stroke-width:1.6; stroke-dasharray:4 3; }
+  .sl-boundary-label{ font-size:9px; fill:var(--accent-ink); text-anchor:middle; font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sl-cursor-arrow{ fill:var(--accent); }
+  .sl-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.shift{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold); background:var(--gold-soft);}
+  .legend .swatch.found{border-color:var(--success); background:var(--success-soft);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+  .legend .swatch.empty{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-sw button[aria-pressed="true"]:hover{color:var(--paper);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+<style>
+  .seg{display:inline-flex; border:1px solid var(--line-strong); border-radius:9px; overflow:hidden;}
+  .seg button{border:0; border-radius:0; border-right:1px solid var(--line-strong);}
+  .seg button:last-child{border-right:0;}
+  .seg button[aria-pressed="true"]{background:var(--ink); color:var(--paper);}
+  select{font-family:'IBM Plex Mono',monospace; font-size:0.85rem; border:1px solid var(--line-strong); border-radius:8px; padding:7px 8px; background:var(--paper); color:var(--ink);}
+  .lane{display:flex; flex-direction:column; gap:6px;}
+  .lane-h{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .lane-h .nome{font-family:'IBM Plex Mono',monospace; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  .lane-h .cont{font-family:'IBM Plex Mono',monospace; font-size:0.86rem; color:var(--ink-soft);}
+  .lane-h .cont b{color:var(--accent-ink); font-size:1.05rem;}
+  .lane-h .cont.fim b{color:var(--success);}
+  .lane-h .cont.falhou b{color:var(--rust);}
+  .bs-svg{display:block; width:100%; height:auto;}
+  .bs-cell rect{fill:var(--accent-soft); stroke:var(--line-strong); stroke-width:1.4; transition:fill .25s ease, stroke .25s ease, opacity .3s ease;}
+  .bs-cell text.v{font-weight:600; font-size:13px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); transition:opacity .3s ease;}
+  .bs-cell text.i{font-size:9px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint);}
+  .bs-cell.fora rect{fill:var(--paper); stroke-dasharray:3 3; opacity:.55;}
+  .bs-cell.fora text.v{opacity:.35;}
+  .bs-cell.visto rect{fill:var(--card);}
+  .bs-cell.visto text.v{opacity:.5;}
+  .bs-cell.atual rect{fill:var(--gold-soft); stroke:var(--gold); stroke-width:2.8;}
+  .bs-cell.achou rect{fill:var(--success-soft); stroke:var(--success); stroke-width:3;}
+  .bs-cell.errado rect{stroke:var(--rust); stroke-width:2.6;}
+  .bs-ptr text{font-size:10px; font-weight:600; text-anchor:middle; font-family:'IBM Plex Mono',monospace;}
+  .bs-ptr path{stroke-width:1.6; fill:none;}
+  .bs-ptr.ini text{fill:var(--accent-ink);} .bs-ptr.ini path{stroke:var(--accent);}
+  .bs-ptr.fim text{fill:var(--violet);} .bs-ptr.fim path{stroke:var(--violet);}
+  .bs-ptr.meio text{fill:var(--gold);} .bs-ptr.meio path{stroke:var(--gold);}
+  .bs-ptr.i text{fill:var(--gold);} .bs-ptr.i path{stroke:var(--gold);}
+  .aviso{display:flex; gap:8px; align-items:center; font-size:0.84rem; color:var(--rust); background:var(--rust-soft); border-radius:8px; padding:7px 12px;}
+  .alvo-box{display:flex; align-items:center; gap:8px; font-size:0.9rem;}
+  .alvo-box b{font-family:'IBM Plex Mono',monospace; font-size:1.05rem; color:var(--gold);}
+</style>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Fundamentos · busca em vetor</span>
+    <h1>Busca Sequencial e Binária</h1>
+    <p class="prose">Duas formas de achar um valor <code>x</code> num vetor. A <strong>sequencial</strong> olha as posições uma por uma e funciona em qualquer vetor. A <strong>binária</strong> compara <code>x</code> com o elemento do meio e descarta metade a cada passo, mas só dá a resposta certa se o vetor estiver <strong>ordenado</strong>. Rode as duas lado a lado no modo <strong>Corrida</strong> e compare os contadores de comparações.</p>
+  </header>
+
+  <section class="struct-block" data-lang="c" aria-label="As duas buscas em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">As duas buscas em código</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+    <pre class="code so-c" aria-label="C"><code><span class="ty">int</span> busca_seq(<span class="kw">const</span> <span class="ty">int</span> v[], <span class="ty">int</span> n, <span class="ty">int</span> x) {
+    <span class="kw">for</span> (<span class="ty">int</span> i = <span class="nm">0</span>; i &lt; n; i++)
+        <span class="kw">if</span> (v[i] == x) <span class="kw">return</span> i;
+    <span class="kw">return</span> <span class="nm">-1</span>;
+}
+
+<span class="ty">int</span> busca_bin(<span class="kw">const</span> <span class="ty">int</span> v[], <span class="ty">int</span> n, <span class="ty">int</span> x) {
+    <span class="ty">int</span> ini = <span class="nm">0</span>, fim = n - <span class="nm">1</span>;
+    <span class="kw">while</span> (ini &lt;= fim) {
+        <span class="ty">int</span> meio = ini + (fim - ini) / <span class="nm">2</span>;
+        <span class="kw">if</span> (v[meio] == x) <span class="kw">return</span> meio;
+        <span class="kw">if</span> (v[meio] &lt; x) ini = meio + <span class="nm">1</span>;  <span class="cm">/* descarta a esquerda */</span>
+        <span class="kw">else</span>             fim = meio - <span class="nm">1</span>;  <span class="cm">/* descarta a direita */</span>
+    }
+    <span class="kw">return</span> <span class="nm">-1</span>;
+}</code></pre>
+    <pre class="code so-py" aria-label="Python"><code><span class="kw">def</span> busca_seq(v, x):
+    <span class="kw">for</span> i <span class="kw">in</span> range(len(v)):
+        <span class="kw">if</span> v[i] == x:
+            <span class="kw">return</span> i
+    <span class="kw">return</span> <span class="nm">-1</span>
+
+<span class="kw">def</span> busca_bin(v, x):
+    ini, fim = <span class="nm">0</span>, len(v) - <span class="nm">1</span>
+    <span class="kw">while</span> ini &lt;= fim:
+        meio = (ini + fim) // <span class="nm">2</span>
+        <span class="kw">if</span> v[meio] == x:
+            <span class="kw">return</span> meio
+        <span class="kw">if</span> v[meio] &lt; x:
+            ini = meio + <span class="nm">1</span>   <span class="cm"># descarta a esquerda</span>
+        <span class="kw">else</span>:
+            fim = meio - <span class="nm">1</span>   <span class="cm"># descarta a direita</span>
+    <span class="kw">return</span> <span class="nm">-1</span></code></pre>
+    </div>
+    <p class="struct-note so-c">Cada volta do laço é uma <strong>comparação</strong>: é isso que os contadores do visualizador medem. Na binária, <code>ini + (fim - ini) / 2</code> evita estourar o <code>int</code> em vetores enormes.</p>
+    <p class="struct-note so-py">Cada volta do laço é uma <strong>comparação</strong>: é isso que os contadores do visualizador medem. Em Python o <code>int</code> não estoura, então <code>(ini + fim) // 2</code> é seguro.</p>
+  </section>
+
+  <section class="card" aria-label="Visualizador das buscas">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="alvo-box">Procurando <b id="alvoTxt">?</b></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="aviso" id="aviso" hidden>⚠ O vetor está desordenado. A busca binária pode descartar justamente a metade onde o valor está.</div>
+
+    <div class="lane" id="laneSeq">
+      <div class="lane-h"><span class="nome">Busca sequencial</span><span class="cont" id="contSeq">comparações: <b>0</b></span></div>
+      <svg class="bs-svg" id="svgSeq" role="img" aria-label="Vetor na busca sequencial"></svg>
+    </div>
+    <div class="lane" id="laneBin">
+      <div class="lane-h"><span class="nome">Busca binária</span><span class="cont" id="contBin">comparações: <b>0</b></span></div>
+      <svg class="bs-svg" id="svgBin" role="img" aria-label="Vetor na busca binária"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch occ"></span>ainda candidato</span>
+      <span class="item"><span class="swatch new"></span>sendo comparado</span>
+      <span class="item"><span class="swatch empty"></span>descartado</span>
+      <span class="item"><span class="swatch found"></span>encontrado</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="btnReset" title="Voltar ao início">⟲ Reiniciar</button>
+        <button id="btnPrev" title="Passo anterior">◀ Voltar</button>
+        <button id="btnNext" title="Próxima comparação">Passo ▶</button>
+        <button class="primary" id="btnPlay">▶ Rodar</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade
+          <input type="range" class="mini" id="speed" min="150" max="1500" value="700" step="10">
+        </label>
+      </div>
+      <div class="controls-row">
+        <div class="seg" role="group" aria-label="Modo">
+          <button data-modo="seq" aria-pressed="true">Sequencial</button>
+          <button data-modo="bin" aria-pressed="false">Binária</button>
+          <button data-modo="corrida" aria-pressed="false">Corrida</button>
+        </div>
+        <div class="spacer"></div>
+        <label class="small">Alvo
+          <input type="number" id="alvoInput" style="width:72px;">
+        </label>
+        <button id="btnBuscar">Buscar</button>
+      </div>
+      <div class="controls-row">
+        <button id="btnAlvoRand">Alvo aleatório</button>
+        <button id="btnAlvoFim">Alvo no fim</button>
+        <button id="btnAlvoAus" class="danger">Alvo ausente</button>
+        <div class="spacer"></div>
+        <label class="small">Elementos
+          <select id="tamSel"><option>8</option><option selected>15</option><option>31</option><option>63</option></select>
+        </label>
+        <button class="violet" id="btnNovo">🎲 Novo vetor</button>
+        <button class="violet" id="btnEmbaralhar">Embaralhar</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Custo de cada busca</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Busca</th><th>Melhor caso</th><th>Pior caso</th><th>Exige</th></tr></thead>
+        <tbody>
+          <tr><td class="op">Sequencial</td><td class="mono">1 comparação</td><td class="mono">n · O(n)</td><td>Nada: funciona com ou sem ordem, em vetor ou lista encadeada.</td></tr>
+          <tr><td class="op">Binária</td><td class="mono">1 comparação</td><td class="mono">⌊log₂ n⌋ + 1 · O(log n)</td><td>Vetor ordenado e acesso <code>v[i]</code> em O(1).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Dobrar o vetor</span>
+      <h3>+n contra +1</h3>
+      <p class="prose">Com 15 elementos, a binária faz no máximo 4 comparações; com 31, 5; com 63, 6. Cada vez que o vetor dobra, ela ganha só uma comparação a mais, enquanto a sequencial dobra o trabalho.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">O preço</span>
+      <h3>Manter o vetor ordenado</h3>
+      <p class="prose">Ordenar custa O(n log n) e inserir mantendo a ordem custa O(n). Para uma busca só, a sequencial sai mais barata; para muitas, ordenar uma vez e usar a binária compensa.</p>
+    </div>
+  </section>
+
+  <footer>Visualizador didático. Cada comparação conta uma visita a um elemento do vetor. Na busca binária, o meio é calculado como ⌊(ini + fim) / 2⌋.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var E = { modo:'seq', n:15, v:[], ordenado:true, alvo:0, frames:[], k:0, timer:null };
+
+  function rnd(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+  function novoVetor(){
+    var pool = [], max = E.n * 4 + 6, s = {};
+    while (pool.length < E.n){ var x = rnd(1, max); if (!s[x]){ s[x]=1; pool.push(x); } }
+    pool.sort(function(a,b){ return a-b; });
+    E.v = pool; E.ordenado = true;
+  }
+  function embaralhar(){
+    var v = E.v.slice();
+    for (var i=v.length-1;i>0;i--){ var j=rnd(0,i); var t=v[i]; v[i]=v[j]; v[j]=t; }
+    E.v = v; E.ordenado = false;
+  }
+  function ausente(){
+    var s = {}; E.v.forEach(function(x){ s[x]=1; });
+    var cands = []; var max = Math.max.apply(null, E.v);
+    for (var x=1; x<=max+3; x++) if (!s[x]) cands.push(x);
+    return cands[rnd(0,cands.length-1)];
+  }
+
+  /* ---- simulações: lista de estados, um por comparação ---- */
+  function simSeq(v, x){
+    var est = [{k:0, idx:-1, visto:0, res:null}];
+    for (var i=0;i<v.length;i++){
+      var ok = v[i] === x;
+      est.push({k:i+1, idx:i, visto:i, res: ok ? 'achou' : (i===v.length-1 ? 'falhou' : null),
+        msg: 'v['+i+'] = '+v[i]+(ok ? ' é igual a '+x+': achou na posição '+i+'.' : ' ≠ '+x+(i===v.length-1 ? '. Chegou ao fim do vetor: '+x+' não está aqui.' : '. Avança para a próxima posição.'))});
+      if (ok) break;
+    }
+    if (v.length===0) est.push({k:0, idx:-1, visto:0, res:'falhou', msg:'Vetor vazio.'});
+    return est;
+  }
+  function simBin(v, x){
+    var ini=0, fim=v.length-1, est=[{k:0, ini:0, fim:v.length-1, meio:-1, ini2:0, fim2:v.length-1, res:null}], k=0;
+    while (ini <= fim){
+      var meio = Math.floor((ini+fim)/2), m;
+      k++;
+      if (v[meio] === x){
+        est.push({k:k, ini:ini, fim:fim, meio:meio, ini2:meio, fim2:meio, res:'achou',
+          msg:'meio = ⌊('+ini+' + '+fim+') / 2⌋ = '+meio+'. v['+meio+'] = '+v[meio]+' é igual a '+x+': achou na posição '+meio+'.'});
+        return est;
+      }
+      var ni=ini, nf=fim;
+      if (v[meio] < x){ ni = meio+1; m = 'v['+meio+'] = '+v[meio]+' < '+x+': '+x+' só pode estar à direita, então ini = meio + 1 = '+ni+'.'; }
+      else { nf = meio-1; m = 'v['+meio+'] = '+v[meio]+' > '+x+': '+x+' só pode estar à esquerda, então fim = meio − 1 = '+nf+'.'; }
+      var acabou = ni > nf;
+      est.push({k:k, ini:ini, fim:fim, meio:meio, ini2:ni, fim2:nf, res: acabou ? 'falhou' : null,
+        msg:'meio = ⌊('+ini+' + '+fim+') / 2⌋ = '+meio+'. '+m+(acabou ? ' Agora ini > fim: o intervalo ficou vazio e '+x+' não está no vetor.' : '')});
+      ini = ni; fim = nf;
+    }
+    if (v.length===0) est.push({k:0, ini:0, fim:-1, meio:-1, ini2:0, fim2:-1, res:'falhou', msg:'Vetor vazio.'});
+    return est;
+  }
+
+  function montar(){
+    pausar();
+    var s = (E.modo !== 'bin') ? simSeq(E.v, E.alvo) : null;
+    var b = (E.modo !== 'seq') ? simBin(E.v, E.alvo) : null;
+    var tot = Math.max(s ? s.length : 0, b ? b.length : 0);
+    E.frames = [];
+    for (var i=0;i<tot;i++) E.frames.push({ s: s ? s[Math.min(i, s.length-1)] : null, b: b ? b[Math.min(i, b.length-1)] : null, i:i,
+      sNovo: s && i < s.length, bNovo: b && i < b.length });
+    E.k = 0;
+    $('scrubber').max = E.frames.length-1;
+    desenhar();
+  }
+
+  /* ---- desenho ---- */
+  function geom(n){
+    var cols = n <= 16 ? n : 16, rows = Math.ceil(n/cols), cw = 54, ch = 38, top = 26, rowH = top + ch + 18;
+    return {cols:cols, rows:rows, cw:cw, ch:ch, top:top, rowH:rowH, W: cols*cw + 8, H: rows*rowH + 4};
+  }
+  function el(tag, at, pai){ var e = document.createElementNS(SVGNS, tag); for (var k in at) e.setAttribute(k, at[k]); if (pai) pai.appendChild(e); return e; }
+  function pos(g, i){ var c = i % g.cols, r = Math.floor(i / g.cols); return {x: 4 + c*g.cw, y: r*g.rowH + g.top}; }
+
+  function lane(svg, tipo, st){
+    var g = geom(E.v.length);
+    svg.setAttribute('viewBox', '0 0 '+g.W+' '+g.H);
+    svg.style.maxWidth = (g.W*1.05)+'px';
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var ptrs = {};
+    E.v.forEach(function(val, i){
+      var p = pos(g, i), cls = 'bs-cell';
+      if (tipo === 'seq' && st){
+        if (st.res === 'achou' && i === st.idx) cls += ' achou';
+        else if (st.res === 'falhou' && i === st.idx) cls += ' visto errado';
+        else if (i === st.idx) cls += ' atual';
+        else if (st.idx >= 0 && i < st.idx) cls += ' visto';
+        else if (st.res === 'falhou') cls += ' fora';
+      }
+      if (tipo === 'bin' && st){
+        if (st.res === 'achou' && i === st.meio) cls += ' achou';
+        else if (i === st.meio) cls += ' atual';
+        else if (st.meio >= 0 ? (i < st.ini2 || i > st.fim2) : false) cls += ' fora';
+        if (!E.ordenado && st.res === 'falhou' && val === E.alvo) cls += ' errado';
+      }
+      var gr = el('g', {'class': cls}, svg);
+      el('rect', {x:p.x+2, y:p.y, width:g.cw-4, height:g.ch, rx:6}, gr);
+      var t = el('text', {'class':'v', x:p.x + g.cw/2, y:p.y + g.ch/2}, gr); t.textContent = val;
+      var ti = el('text', {'class':'i', x:p.x + g.cw/2, y:p.y + g.ch + 9}, gr); ti.textContent = i;
+    });
+    function seta(i, nome, cls, dx){
+      if (i < 0 || i >= E.v.length) return;
+      var p = pos(g, i), x = p.x + g.cw/2 + (dx||0);
+      var gr = el('g', {'class':'bs-ptr '+cls}, svg);
+      var t = el('text', {x:x, y:p.y - 14}, gr); t.textContent = nome;
+      el('path', {d:'M'+x+' '+(p.y-11)+' L'+x+' '+(p.y-2)+' M'+(x-3)+' '+(p.y-6)+' L'+x+' '+(p.y-2)+' L'+(x+3)+' '+(p.y-6)}, gr);
+    }
+    if (tipo === 'seq' && st && st.idx >= 0) seta(st.idx, 'i', 'i');
+    if (tipo === 'bin' && st && st.res !== 'falhou'){
+      var ini = st.meio >= 0 ? st.ini : st.ini, fim = st.meio >= 0 ? st.fim : st.fim;
+      var rot = {};
+      function add(i, nome, cls){ (rot[i] = rot[i] || []).push([nome, cls]); }
+      add(ini, 'ini', 'ini'); add(fim, 'fim', 'fim'); if (st.meio >= 0) add(st.meio, 'meio', 'meio');
+      Object.keys(rot).forEach(function(i){
+        var l = rot[i]; i = +i;
+        if (l.length === 1) seta(i, l[0][0], l[0][1]);
+        else { var nome = l.map(function(a){ return a[0]; }).join('·'); var cls = l.some(function(a){return a[1]==='meio';}) ? 'meio' : l[0][1]; seta(i, nome, cls); }
+      });
+    }
+  }
+
+  function desenhar(){
+    var f = E.frames[E.k] || {s:null, b:null};
+    $('laneSeq').hidden = E.modo === 'bin';
+    $('laneBin').hidden = E.modo === 'seq';
+    $('aviso').hidden = E.ordenado || E.modo === 'seq';
+    $('alvoTxt').textContent = E.alvo;
+    if (E.modo !== 'bin') lane($('svgSeq'), 'seq', f.s);
+    if (E.modo !== 'seq') lane($('svgBin'), 'bin', f.b);
+    function cont(id, st){
+      var c = $(id); c.className = 'cont' + (st && st.res === 'achou' ? ' fim' : st && st.res === 'falhou' ? ' falhou' : '');
+      c.innerHTML = 'comparações: <b>'+(st ? st.k : 0)+'</b>' + (st && st.res === 'achou' ? ' · achou' : st && st.res === 'falhou' ? ' · não achou' : '');
+    }
+    if (f.s) cont('contSeq', f.s);
+    if (f.b) cont('contBin', f.b);
+    $('scrubber').value = E.k;
+    $('stepCounter').textContent = 'Passo ' + E.k + ' / ' + (E.frames.length-1);
+    $('btnPrev').disabled = E.k === 0; $('btnReset').disabled = E.k === 0;
+    $('btnNext').disabled = E.k >= E.frames.length-1;
+    /* mensagem e pílula */
+    var op = 'info', lab = 'Pronto', msg;
+    var sts = [f.s, f.b].filter(Boolean);
+    var fim = sts.every(function(s){ return s.res; });
+    if (E.k === 0){
+      lab = 'Início';
+      msg = E.modo === 'seq' ? 'A busca sequencial vai olhar v[0], v[1], v[2]… até achar '+E.alvo+' ou chegar ao fim. Use <b>Passo</b> ou <b>Rodar</b>.'
+        : E.modo === 'bin' ? 'A busca binária começa com o vetor inteiro como intervalo: ini = 0 e fim = '+(E.v.length-1)+'. Use <b>Passo</b> ou <b>Rodar</b>.'
+        : 'Corrida: a cada passo, cada busca faz uma comparação. Quem achar (ou desistir) com menos comparações vence.';
+    } else if (E.modo === 'corrida'){
+      var partes = [];
+      if (f.sNovo && f.s.msg) partes.push('<b>Sequencial:</b> ' + f.s.msg);
+      if (f.bNovo && f.b.msg) partes.push('<b>Binária:</b> ' + f.b.msg);
+      if (fim && E.k === E.frames.length-1){
+        var a = f.s.k, b = f.b.k;
+        partes.push('<b>Placar:</b> sequencial '+a+' × binária '+b+' comparações.' + (a===b ? ' Empate.' : ' A '+(a<b?'sequencial':'binária')+' venceu.'));
+      }
+      msg = partes.join('<br>'); op = 'compare'; lab = 'Comparando';
+    } else {
+      var st = E.modo === 'seq' ? f.s : f.b; msg = st.msg; op = 'compare'; lab = 'Comparação ' + st.k;
+    }
+    if (E.k > 0 && fim){
+      var ach = sts.some(function(s){ return s.res === 'achou'; });
+      op = ach ? 'found' : 'not-found'; lab = ach ? 'Encontrado' : 'Não encontrado';
+      var presente = E.v.indexOf(E.alvo);
+      if (f.b && f.b.res === 'falhou' && presente >= 0)
+        msg += '<br><b>Atenção:</b> '+E.alvo+' está na posição '+presente+'! Num vetor desordenado, a busca binária descartou a metade errada.';
+    }
+    $('opPill').dataset.op = op; $('opLabel').textContent = lab;
+    $('message').innerHTML = msg;
+  }
+
+  /* ---- reprodução ---- */
+  function pausar(){ if (E.timer){ clearInterval(E.timer); E.timer = null; } $('btnPlay').textContent = '▶ Rodar'; }
+  function rodar(){
+    if (E.timer){ pausar(); return; }
+    if (E.k >= E.frames.length-1) E.k = 0;
+    $('btnPlay').textContent = '❚❚ Pausar';
+    E.timer = setInterval(function(){ if (E.k >= E.frames.length-1){ pausar(); return; } E.k++; desenhar(); }, +$('speed').value);
+    E.k = Math.min(E.k+1, E.frames.length-1); desenhar();
+  }
+  function erro(t){ var e = $('errorText'); e.textContent = t || ''; e.hidden = !t; }
+
+  $('btnPlay').onclick = rodar;
+  $('btnNext').onclick = function(){ pausar(); if (E.k < E.frames.length-1){ E.k++; desenhar(); } };
+  $('btnPrev').onclick = function(){ pausar(); if (E.k > 0){ E.k--; desenhar(); } };
+  $('btnReset').onclick = function(){ pausar(); E.k = 0; desenhar(); };
+  $('scrubber').oninput = function(){ pausar(); E.k = +this.value; desenhar(); };
+  $('speed').oninput = function(){ if (E.timer){ pausar(); rodar(); } };
+  document.querySelectorAll('.seg button').forEach(function(b){
+    b.onclick = function(){
+      E.modo = b.dataset.modo;
+      document.querySelectorAll('.seg button').forEach(function(x){ x.setAttribute('aria-pressed', x === b); });
+      montar();
+    };
+  });
+  function setAlvo(x){ E.alvo = x; $('alvoInput').value = x; erro(''); montar(); }
+  $('btnBuscar').onclick = function(){
+    var x = parseInt($('alvoInput').value, 10);
+    if (isNaN(x)) { erro('Digite um número inteiro para buscar.'); return; }
+    setAlvo(x);
+  };
+  $('alvoInput').onkeydown = function(e){ if (e.key === 'Enter') $('btnBuscar').onclick(); };
+  $('btnAlvoRand').onclick = function(){ setAlvo(E.v[rnd(0, E.v.length-1)]); };
+  $('btnAlvoFim').onclick = function(){ setAlvo(E.ordenado ? E.v[E.v.length-1] : E.v[E.v.length-1]); };
+  $('btnAlvoAus').onclick = function(){ setAlvo(ausente()); };
+  $('tamSel').onchange = function(){ E.n = +this.value; novoVetor(); atualizaEmb(); setAlvo(E.v[rnd(0, E.v.length-1)]); };
+  $('btnNovo').onclick = function(){ novoVetor(); atualizaEmb(); setAlvo(E.v[rnd(0, E.v.length-1)]); };
+  function atualizaEmb(){ $('btnEmbaralhar').textContent = E.ordenado ? 'Embaralhar' : 'Ordenar'; }
+  $('btnEmbaralhar').onclick = function(){
+    if (E.ordenado) embaralhar(); else { E.v.sort(function(a,b){ return a-b; }); E.ordenado = true; }
+    atualizaEmb(); montar();
+  };
+  document.addEventListener('keydown', function(e){
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'ArrowRight') $('btnNext').onclick();
+    else if (e.key === 'ArrowLeft') $('btnPrev').onclick();
+    else if (e.key === ' ') { e.preventDefault(); rodar(); }
+  });
+
+  novoVetor();
+  setAlvo(E.v[Math.floor(E.n * 0.7)]);
+  window.__busca = E;
+})();
+</script>
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
+</body></html>

@@ -1,0 +1,536 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Struct na memória</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"], .op-pill[data-op="insert-start"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot, .op-pill[data-op="insert-start"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove-start"], .op-pill[data-op="shrink"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove-start"] .dot, .op-pill[data-op="shrink"] .dot{background:var(--rust);}
+  .op-pill[data-op="shift-right"], .op-pill[data-op="shift-left"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="shift-right"] .dot, .op-pill[data-op="shift-left"] .dot{background:var(--violet);}
+  .op-pill[data-op="search-start"], .op-pill[data-op="compare"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search-start"] .dot, .op-pill[data-op="compare"] .dot{background:var(--accent);}
+  .op-pill[data-op="found"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="found"] .dot{background:var(--success);}
+  .op-pill[data-op="bad"], .op-pill[data-op="not-found"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot, .op-pill[data-op="not-found"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .sl-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .sl-svg, .sl-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .sl-cell-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease, x .28s ease; }
+  .sl-cell-rect.occupied{ fill:var(--accent-soft); }
+  .sl-cell-rect.empty{ fill:var(--paper); stroke-dasharray:3 3; }
+  .sl-cell[data-state="new"] .sl-cell-rect{ stroke:var(--gold); stroke-width:2.8; fill:var(--gold-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .sl-cell[data-state="source"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.6; }
+  .sl-cell[data-state="dest"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.8; fill:var(--violet-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .sl-cell[data-state="cursor"] .sl-cell-rect{ stroke:var(--accent); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .sl-cell[data-state="found"] .sl-cell-rect{ stroke:var(--success); stroke-width:2.8; fill:var(--success-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+  .sl-cell[data-state="bad"] .sl-cell-rect{ stroke:var(--rust); stroke-width:2.4; }
+  .sl-cell-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .sl-cell-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .sl-cell-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .sl-cell-index.boundary{ fill:var(--accent-ink); font-weight:600; }
+  .sl-boundary-line{ stroke:var(--accent); stroke-width:1.6; stroke-dasharray:4 3; }
+  .sl-boundary-label{ font-size:9px; fill:var(--accent-ink); text-anchor:middle; font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sl-cursor-arrow{ fill:var(--accent); }
+  .sl-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.shift{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold); background:var(--gold-soft);}
+  .legend .swatch.found{border-color:var(--success); background:var(--success-soft);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+  .legend .swatch.empty{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-sw button[aria-pressed="true"]:hover{color:var(--paper);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+<style>
+  .st-grid{display:flex; flex-direction:column; gap:4px;}
+  .st-row{display:grid; grid-template-columns:46px repeat(8, minmax(0,1fr)); gap:4px; align-items:stretch;}
+  .st-off{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--ink-faint); display:flex; align-items:center; justify-content:flex-end; padding-right:4px;}
+  .st-b{height:46px; border-radius:6px; border:1.5px solid transparent; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; cursor:pointer; position:relative; transition:transform .15s ease, box-shadow .15s ease; min-width:0; overflow:hidden;}
+  .st-b .nm{font-weight:600; font-size:0.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; padding:0 3px;}
+  .st-b .ix{font-size:0.62rem; opacity:.6;}
+  .st-b.pad{background:repeating-linear-gradient(45deg, var(--paper), var(--paper) 4px, var(--line) 4px, var(--line) 6px); border-color:var(--line-strong); border-style:dashed; color:var(--ink-faint); cursor:default;}
+  .st-b.sel{box-shadow:0 0 0 2.5px var(--ink); transform:translateY(-1px);}
+  .st-b.fora{opacity:.35;}
+  .st-sep{grid-column:1 / -1; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--accent-ink); padding:6px 0 2px 50px; border-top:1px dashed var(--line-strong); margin-top:4px;}
+  .c0{background:#DCEBF7;border-color:#3D7AB8;color:#17426B} .c1{background:#F6E6CC;border-color:#B07A1E;color:#5D3E08}
+  .c2{background:#E0F0E4;border-color:#3A8A55;color:#1B4A2A} .c3{background:#EEE3F5;border-color:#7A55A0;color:#3F2557}
+  .c4{background:#F8DDD8;border-color:#B5503D;color:#5F2117} .c5{background:#DDF1F1;border-color:#2E8A8A;color:#104747}
+  .c6{background:#F3F0D5;border-color:#8C8124;color:#47410A} .c7{background:#E9E9EF;border-color:#5C5C78;color:#2C2C40}
+  :root[data-theme="dark"] .st-b:not(.pad){filter:brightness(.78) saturate(1.1);}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .st-b:not(.pad){filter:brightness(.78) saturate(1.1);} }
+  .st-cols{display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:18px; align-items:start;}
+  @media (max-width:820px){ .st-cols{grid-template-columns:1fr;} }
+  .st-side{display:flex; flex-direction:column; gap:12px;}
+  .st-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .st-stat{border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--paper);}
+  .st-stat span{display:block; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--ink-faint);}
+  .st-stat b{font-family:'IBM Plex Mono',monospace; font-size:1.25rem;}
+  .st-stat.big{grid-column:1 / -1; border-color:var(--accent); background:var(--accent-soft);}
+  .st-stat.big b{color:var(--accent-ink);}
+  .st-stat.waste b{color:var(--rust);}
+  .st-fields{display:flex; flex-direction:column; gap:6px;}
+  .st-f{display:grid; grid-template-columns:12px 1fr auto; gap:8px; align-items:center; border:1px solid var(--line); border-radius:8px; padding:6px 8px; background:var(--card); cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:0.8rem;}
+  .st-f.sel{border-color:var(--ink);}
+  .st-f .sw{width:12px; height:12px; border-radius:3px; border:1.5px solid;}
+  .st-f .acts{display:flex; gap:2px;}
+  .st-f .acts button{padding:2px 7px; font-size:0.78rem; border-radius:6px;}
+  .st-f small{color:var(--ink-faint);}
+  select{font-family:'IBM Plex Mono',monospace; font-size:0.85rem; border:1px solid var(--line-strong); border-radius:8px; padding:7px 8px; background:var(--paper); color:var(--ink);}
+  .seg{display:inline-flex; flex-wrap:wrap; border:1px solid var(--line-strong); border-radius:9px; overflow:hidden;}
+  .seg button{border:0; border-radius:0; border-right:1px solid var(--line-strong);}
+  .seg button:last-child{border-right:0;}
+  .seg button[aria-pressed="true"]{background:var(--ink); color:var(--paper);}
+</style>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Fundamentos · registros</span>
+    <h1>Struct na memória</h1>
+    <p class="prose">Uma <code>struct</code> guarda seus campos <strong>em sequência</strong>, na ordem da declaração. Para que cada campo comece num endereço alinhado, o compilador insere bytes vazios de <strong>padding</strong>. Monte structs, clique nos campos para ver o <code>offsetof</code> de cada um e descubra por que <code>sizeof</code> nem sempre é a soma dos tamanhos.</p>
+  </header>
+
+  <section class="struct-block" data-lang="c" aria-label="Declaração da struct em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">A struct atual em código</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+      <pre class="code so-c" aria-label="C"><code id="codC"></code></pre>
+      <pre class="code so-py" aria-label="Python"><code id="codPy"></code></pre>
+    </div>
+    <p class="struct-note so-c">Em C, a ordem dos campos define o layout na memória, e <code>sizeof</code> inclui o padding. O código acima é gerado a partir dos campos que você montar.</p>
+    <p class="struct-note so-py">Uma <code>@dataclass</code> declara os mesmos campos, mas o Python guarda cada valor como um objeto à parte: não há padding visível nem <code>sizeof</code> fixo. Quando o layout importa (arquivos binários, rede, C), usa-se o módulo <code>struct</code> ou <code>ctypes</code>.</p>
+  </section>
+
+  <section class="card" aria-label="Visualizador do layout da struct">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Layout</span></span>
+      <span class="step-counter">8 bytes por linha · plataforma de 64 bits típica</span>
+    </div>
+
+    <div class="controls-row">
+      <span class="small" style="font-size:.76rem;color:var(--ink-soft)">Modelo</span>
+      <div class="seg" role="group" aria-label="Modelos" id="presets"></div>
+    </div>
+
+    <div class="st-cols">
+      <div class="st-grid" id="grid" aria-label="Bytes da struct"></div>
+      <div class="st-side">
+        <div class="st-stats">
+          <div class="st-stat big"><span>sizeof(<i id="nomeS">Aluno</i>)</span><b id="sSize">0</b></div>
+          <div class="st-stat"><span>Soma dos campos</span><b id="sSoma">0</b></div>
+          <div class="st-stat waste"><span>Padding</span><b id="sPad">0</b></div>
+          <div class="st-stat"><span>Alinhamento</span><b id="sAl">1</b></div>
+          <div class="st-stat"><span>Campos</span><b id="sN">0</b></div>
+        </div>
+        <div class="st-fields" id="campos"></div>
+      </div>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <div class="controls-row">
+        <label class="small">Tipo
+          <select id="tipoSel">
+            <option value="char">char</option><option value="short">short</option><option value="int" selected>int</option>
+            <option value="float">float</option><option value="double">double</option><option value="long long">long long</option>
+            <option value="ptr">ponteiro</option><option value="char[]">char[N]</option><option value="int[]">int[N]</option>
+          </select>
+        </label>
+        <label class="small" id="nBox" hidden>N <input type="number" id="nInput" value="4" min="1" max="32" style="width:60px;"></label>
+        <label class="small">Nome <input type="text" id="nomeInput" placeholder="campo" style="width:110px;"></label>
+        <button class="primary" id="btnAdd">+ Campo</button>
+        <div class="spacer"></div>
+        <button class="violet" id="btnOrdenar">Ordenar por alinhamento</button>
+      </div>
+      <div class="controls-row">
+        <label class="small"><input type="checkbox" id="chkVet"> Mostrar vetor[2]</label>
+        <div class="spacer"></div>
+        <button class="danger" id="btnLimpar">Limpar campos</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>Tamanho e alinhamento dos tipos</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Tipo</th><th>Tamanho</th><th>Alinhamento</th><th>Observação</th></tr></thead>
+        <tbody>
+          <tr><td class="op">char</td><td class="mono">1</td><td class="mono">1</td><td>Cabe em qualquer endereço; por isso <code>char[N]</code> também alinha em 1.</td></tr>
+          <tr><td class="op">short</td><td class="mono">2</td><td class="mono">2</td><td>Começa em endereço par.</td></tr>
+          <tr><td class="op">int, float</td><td class="mono">4</td><td class="mono">4</td><td>Começa em múltiplo de 4.</td></tr>
+          <tr><td class="op">double, long long, ponteiro</td><td class="mono">8</td><td class="mono">8</td><td>Começa em múltiplo de 8 nas plataformas de 64 bits.</td></tr>
+          <tr><td class="op">struct</td><td class="mono">soma + padding</td><td class="mono">o maior dos campos</td><td>O tamanho total é arredondado para um múltiplo do alinhamento, por causa dos vetores.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Acessar um campo</span>
+      <h3>Endereço + deslocamento</h3>
+      <p class="prose"><code>p-&gt;nota</code> vira, na compilação, “o endereço em <code>p</code> mais <code>offsetof(Aluno, nota)</code>”. É uma conta só, O(1), como o <code>v[i]</code> de um vetor.</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Vetor de structs</span>
+      <h3>turma[i].campo</h3>
+      <p class="prose">O endereço é <code>base + i × sizeof(Aluno) + offsetof(Aluno, campo)</code>. Por isso o padding final existe: sem ele, o segundo elemento começaria desalinhado.</p>
+    </div>
+  </section>
+
+  <footer>Visualizador didático. Tamanhos e alinhamentos das plataformas de 64 bits mais comuns (Linux, macOS e Windows com x86-64 ou ARM64). Outros compiladores e diretivas como <code>#pragma pack</code> podem mudar o layout.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var TIPOS = {
+    'char':{s:1,a:1}, 'short':{s:2,a:2}, 'int':{s:4,a:4}, 'float':{s:4,a:4},
+    'double':{s:8,a:8}, 'long long':{s:8,a:8}, 'ptr':{s:8,a:8}
+  };
+  var PRESETS = [
+    {id:'aluno', rot:'Aluno', nome:'Aluno', f:[{t:'char[]',n:20,nome:'nome'},{t:'int',nome:'matricula'},{t:'float',nome:'nota'}]},
+    {id:'cic', rot:'char · int · char', nome:'S', f:[{t:'char',nome:'c'},{t:'int',nome:'i'},{t:'char',nome:'d'}]},
+    {id:'mist', rot:'Mistura', nome:'Registro', f:[{t:'char',nome:'ativo'},{t:'double',nome:'saldo'},{t:'short',nome:'ano'},{t:'char',nome:'tipo'},{t:'int',nome:'conta'}]},
+    {id:'ponto', rot:'Ponto', nome:'Ponto', f:[{t:'double',nome:'x'},{t:'double',nome:'y'}]},
+    {id:'no', rot:'No (lista)', nome:'No', f:[{t:'int',nome:'valor'},{t:'ptr',nome:'prox',alvo:'No'}]}
+  ];
+  var E = { nome:'Aluno', f:[], sel:-1, vet:false, preset:'aluno', cor:0 };
+
+  function info(f){
+    if (f.t === 'char[]') return {s:f.n, a:1};
+    if (f.t === 'int[]') return {s:4*f.n, a:4};
+    return TIPOS[f.t];
+  }
+  function tipoC(f){
+    if (f.t === 'ptr') return (f.alvo ? 'struct ' + f.alvo : 'void') + ' *';
+    if (f.t === 'char[]') return 'char';
+    if (f.t === 'int[]') return 'int';
+    return f.t;
+  }
+  function declC(f){
+    var suf = (f.t === 'char[]' || f.t === 'int[]') ? '[' + f.n + ']' : '';
+    var t = tipoC(f);
+    return t + (t.slice(-1) === '*' ? '' : ' ') + f.nome + suf;
+  }
+  function tipoPy(f){
+    if (f.t === 'char[]' || f.t === 'char') return 'str';
+    if (f.t === 'int[]') return 'list[int]';
+    if (f.t === 'float' || f.t === 'double') return 'float';
+    if (f.t === 'ptr') return f.alvo ? '"' + f.alvo + ' | None"' : 'object';
+    return 'int';
+  }
+  function layout(){
+    var off = 0, al = 1, bytes = [];
+    E.f.forEach(function(f, k){
+      var x = info(f), pad = (x.a - off % x.a) % x.a;
+      for (var p = 0; p < pad; p++) bytes.push({pad:true});
+      off += pad; f.off = off; f.size = x.s; f.al = x.a;
+      for (var b = 0; b < x.s; b++) bytes.push({k:k, b:b});
+      off += x.s; al = Math.max(al, x.a);
+    });
+    var fim = (al - off % al) % al;
+    for (var q = 0; q < fim; q++) bytes.push({pad:true, final:true});
+    return {bytes:bytes, size:off + fim, soma:E.f.reduce(function(s, f){ return s + f.size; }, 0), al:al, padFinal:fim};
+  }
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+  function codigo(L){
+    var precisaTag = E.f.some(function(f){ return f.t === 'ptr' && f.alvo === E.nome; });
+    var c = '<span class="kw">typedef struct</span>' + (precisaTag ? ' <span class="ty">' + E.nome + '</span>' : '') + ' {\n';
+    var larg = Math.max.apply(null, [10].concat(E.f.map(function(f){ return declC(f).length + 1; })));
+    E.f.forEach(function(f){
+      var d = declC(f) + ';';
+      c += '    ' + esc(d) + ' '.repeat(Math.max(1, larg - d.length + 2)) + '<span class="cm">/* offset ' + f.off + ', ' + f.size + ' byte' + (f.size > 1 ? 's' : '') + ' */</span>\n';
+    });
+    if (!E.f.length) c += '    <span class="cm">/* sem campos */</span>\n';
+    c += '} <span class="ty">' + E.nome + '</span>;   <span class="cm">/* sizeof = ' + L.size + ' */</span>';
+    $('codC').innerHTML = c;
+    var py = '<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass\n\n@dataclass\n<span class="kw">class</span> <span class="ty">' + E.nome + '</span>:\n';
+    E.f.forEach(function(f){
+      var com = f.t === 'char[]' ? '  <span class="cm"># texto (em C: char[' + f.n + '])</span>' : f.t === 'ptr' ? ' = <span class="nm">None</span>  <span class="cm"># referência (em C: ponteiro)</span>' : '';
+      py += '    ' + f.nome + ': ' + esc(tipoPy(f)) + com + '\n';
+    });
+    if (!E.f.length) py += '    <span class="kw">pass</span>\n';
+    $('codPy').innerHTML = py.replace(/\n$/, '');
+  }
+
+  function desenhar(){
+    var L = layout();
+    codigo(L);
+    var g = $('grid'), h = '', copias = E.vet ? 2 : 1;
+    if (!E.f.length) h = '<p class="prose">Sem campos. Use <b>+ Campo</b> ou escolha um modelo.</p>';
+    for (var c = 0; c < copias; c++) {
+      if (E.vet) h += '<div class="st-sep">v[' + c + '] · começa no byte ' + (c * L.size) + '</div>';
+      for (var r = 0; r < Math.ceil(L.bytes.length / 8); r++) {
+        var base = c * L.size + r * 8;
+        h += '<div class="st-row"><span class="st-off">+' + base + '</span>';
+        for (var j = 0; j < 8; j++) {
+          var b = L.bytes[r * 8 + j];
+          if (!b) { h += '<span></span>'; continue; }
+          if (b.pad) { h += '<span class="st-b pad" title="padding' + (b.final ? ' final' : '') + '">·</span>'; continue; }
+          var f = E.f[b.k];
+          var cls = 'st-b c' + (f.cor % 8) + (E.sel === b.k ? ' sel' : '') + (E.sel >= 0 && E.sel !== b.k ? ' fora' : '');
+          h += '<span class="' + cls + '" data-k="' + b.k + '" title="' + esc(declC(f)) + ' · byte ' + (f.off + b.b) + '">' + (b.b === 0 ? '<span class="nm">' + esc(f.nome) + '</span>' : '') + '<span class="ix">' + (base + j) + '</span></span>';
+        }
+        h += '</div>';
+      }
+    }
+    g.innerHTML = h;
+    g.querySelectorAll('.st-b[data-k]').forEach(function(el){ el.onclick = function(){ selecionar(+el.dataset.k); }; });
+    $('nomeS').textContent = E.nome;
+    $('sSize').textContent = L.size + ' bytes';
+    $('sSoma').textContent = L.soma;
+    $('sPad').textContent = L.size - L.soma;
+    $('sAl').textContent = L.al;
+    $('sN').textContent = E.f.length;
+    $('campos').innerHTML = E.f.map(function(f, k){
+      return '<div class="st-f' + (E.sel === k ? ' sel' : '') + '" data-k="' + k + '"><span class="sw c' + (f.cor % 8) + '"></span><span>' + esc(declC(f)) + ' <small>· ' + f.size + 'B @' + f.off + '</small></span><span class="acts">' +
+        '<button data-a="up" title="Subir" ' + (k === 0 ? 'disabled' : '') + '>↑</button><button data-a="down" title="Descer" ' + (k === E.f.length - 1 ? 'disabled' : '') + '>↓</button><button data-a="del" class="danger" title="Remover">×</button></span></div>';
+    }).join('');
+    $('campos').querySelectorAll('.st-f').forEach(function(el){
+      var k = +el.dataset.k;
+      el.onclick = function(e){
+        var a = e.target.dataset && e.target.dataset.a;
+        if (a === 'up') { troca(k, k - 1); return; }
+        if (a === 'down') { troca(k, k + 1); return; }
+        if (a === 'del') { E.f.splice(k, 1); E.sel = -1; desenhar(); return; }
+        selecionar(k);
+      };
+    });
+    mensagem(L);
+  }
+  function mensagem(L){
+    var m, op = 'info', lab = 'Layout';
+    if (E.sel >= 0 && E.f[E.sel]) {
+      var f = E.f[E.sel], antes = 0, k = E.sel;
+      var fimAnterior = k === 0 ? 0 : E.f[k - 1].off + E.f[k - 1].size;
+      antes = f.off - fimAnterior;
+      m = '<b>' + esc(declC(f)) + '</b>: <code>offsetof(' + E.nome + ', ' + f.nome + ') = ' + f.off + '</code>, ' + f.size + ' byte' + (f.size > 1 ? 's' : '') + ', alinhamento ' + f.al + '. ';
+      m += antes ? 'Antes dele entraram <b>' + antes + ' byte' + (antes > 1 ? 's' : '') + ' de padding</b>, porque o byte ' + fimAnterior + ' não é múltiplo de ' + f.al + '. ' : (f.off === 0 ? 'É o primeiro campo: começa no byte 0. ' : 'Começa logo após o campo anterior, sem padding. ');
+      m += E.vet ? 'Em <code>v[1].' + f.nome + '</code>, o endereço é base + 1 × ' + L.size + ' + ' + f.off + ' = base + ' + (L.size + f.off) + '.' : 'Com <code>' + E.nome + ' *p</code>, <code>p-&gt;' + f.nome + '</code> é o byte <code>p + ' + f.off + '</code>.';
+      op = 'compare'; lab = 'Campo ' + f.nome;
+    } else if (!E.f.length) {
+      m = 'A struct está vazia. Adicione campos para ver o layout.';
+    } else {
+      var pad = L.size - L.soma;
+      m = 'Os campos somam <b>' + L.soma + ' bytes</b>, mas <code>sizeof(' + E.nome + ')</code> = <b>' + L.size + '</b>. ';
+      m += pad ? 'São ' + pad + ' bytes de padding' + (L.padFinal ? ', ' + L.padFinal + ' deles no fim, para o tamanho ser múltiplo de ' + L.al : '') + '. Clique num campo para ver seu deslocamento.' : 'Não há padding: todos os campos já começam alinhados. Clique num campo para ver seu deslocamento.';
+      if (pad) { op = 'bad'; lab = pad + ' B de padding'; } else { op = 'found'; lab = 'Sem padding'; }
+    }
+    $('opPill').dataset.op = op; $('opLabel').textContent = lab;
+    $('message').innerHTML = m;
+  }
+  function selecionar(k){ E.sel = E.sel === k ? -1 : k; desenhar(); }
+  function troca(a, b){ if (b < 0 || b >= E.f.length) return; var t = E.f[a]; E.f[a] = E.f[b]; E.f[b] = t; E.sel = b; desenhar(); }
+  function carregar(id){
+    var p = PRESETS.filter(function(x){ return x.id === id; })[0];
+    E.preset = id; E.nome = p.nome; E.sel = -1; E.cor = 0;
+    E.f = p.f.map(function(f){ var g = {}; for (var k in f) g[k] = f[k]; g.cor = E.cor++; return g; });
+    $('presets').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.p === id); });
+    desenhar();
+  }
+  function erro(t){ var e = $('errorText'); e.textContent = t || ''; e.hidden = !t; }
+
+  $('presets').innerHTML = PRESETS.map(function(p){ return '<button data-p="' + p.id + '" aria-pressed="false">' + p.rot + '</button>'; }).join('');
+  $('presets').querySelectorAll('button').forEach(function(b){ b.onclick = function(){ erro(''); carregar(b.dataset.p); }; });
+  $('tipoSel').onchange = function(){ $('nBox').hidden = this.value.slice(-2) !== '[]'; };
+  $('btnAdd').onclick = function(){
+    var t = $('tipoSel').value, nome = ($('nomeInput').value || '').trim();
+    if (!nome) nome = 'c' + (E.f.length + 1);
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(nome)) { erro('Use um nome de campo válido: letras, números e _, sem começar com número.'); return; }
+    if (E.f.some(function(f){ return f.nome === nome; })) { erro('Já existe um campo chamado ' + nome + '.'); return; }
+    if (E.f.length >= 12) { erro('Máximo de 12 campos neste visualizador.'); return; }
+    var f = {t:t, nome:nome, cor:E.cor++};
+    if (t.slice(-2) === '[]') { var n = parseInt($('nInput').value, 10); if (!(n >= 1 && n <= 32)) { erro('N deve ficar entre 1 e 32.'); return; } f.n = n; }
+    if (t === 'ptr') f.alvo = E.nome;
+    erro(''); E.f.push(f); E.sel = E.f.length - 1; $('nomeInput').value = ''; desenhar();
+  };
+  $('nomeInput').onkeydown = function(e){ if (e.key === 'Enter') $('btnAdd').onclick(); };
+  $('btnOrdenar').onclick = function(){
+    E.f = E.f.map(function(f, i){ return {f:f, i:i}; }).sort(function(x, y){ return (info(y.f).a - info(x.f).a) || (x.i - y.i); }).map(function(x){ return x.f; });
+    E.sel = -1; desenhar();
+  };
+  $('btnLimpar').onclick = function(){ E.f = []; E.sel = -1; desenhar(); };
+  $('chkVet').onchange = function(){ E.vet = this.checked; desenhar(); };
+
+  carregar('aluno');
+  window.__struct = E;
+})();
+</script>
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
+</body></html>
