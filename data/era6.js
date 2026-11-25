@@ -1,6 +1,6 @@
 /* Era 06: Estruturas especializadas */
 MODS.push({
-id:'trie', n:18, era:5, titulo:'Trie', sub:'Uma árvore por caractere, para buscar prefixos',
+id:'trie', n:19, era:5, titulo:'Trie', sub:'Uma árvore por caractere, para buscar prefixos',
 viz:'viz/trie.html',
 slides:[
 {t:'Prefixos compartilhados', h:`
@@ -228,7 +228,7 @@ print(maior_prefixo(["programa", "progresso", "prova"]))   # pro`}
 });
 
 MODS.push({
-id:'arvore-decisao', n:19, era:5, titulo:'Árvore de Decisão (Gini)', sub:'Perguntas sucessivas que separam os dados',
+id:'arvore-decisao', n:20, era:5, titulo:'Árvore de Decisão (Gini)', sub:'Perguntas sucessivas que separam os dados',
 viz:'viz/arvore-decisao.html',
 slides:[
 {t:'Uma árvore que aprende', h:`
@@ -377,7 +377,7 @@ print(majoritaria(["limão", "laranja", "laranja"]))   # laranja`}
 });
 
 MODS.push({
-id:'hash', n:20, era:5, titulo:'Tabela Hash', sub:'Acesso O(1) em média, até as colisões',
+id:'hash', n:21, era:5, titulo:'Tabela Hash', sub:'Acesso O(1) em média, até as colisões',
 viz:'viz/hash.html',
 slides:[
 {t:'Do valor direto para a posição', h:`

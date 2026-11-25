@@ -1,0 +1,544 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Alocação dinâmica no heap</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"], .op-pill[data-op="insert-start"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot, .op-pill[data-op="insert-start"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove-start"], .op-pill[data-op="shrink"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove-start"] .dot, .op-pill[data-op="shrink"] .dot{background:var(--rust);}
+  .op-pill[data-op="shift-right"], .op-pill[data-op="shift-left"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="shift-right"] .dot, .op-pill[data-op="shift-left"] .dot{background:var(--violet);}
+  .op-pill[data-op="search-start"], .op-pill[data-op="compare"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search-start"] .dot, .op-pill[data-op="compare"] .dot{background:var(--accent);}
+  .op-pill[data-op="found"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="found"] .dot{background:var(--success);}
+  .op-pill[data-op="bad"], .op-pill[data-op="not-found"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot, .op-pill[data-op="not-found"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .sl-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .sl-svg, .sl-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .sl-cell-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease, x .28s ease; }
+  .sl-cell-rect.occupied{ fill:var(--accent-soft); }
+  .sl-cell-rect.empty{ fill:var(--paper); stroke-dasharray:3 3; }
+  .sl-cell[data-state="new"] .sl-cell-rect{ stroke:var(--gold); stroke-width:2.8; fill:var(--gold-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .sl-cell[data-state="source"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.6; }
+  .sl-cell[data-state="dest"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.8; fill:var(--violet-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .sl-cell[data-state="cursor"] .sl-cell-rect{ stroke:var(--accent); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .sl-cell[data-state="found"] .sl-cell-rect{ stroke:var(--success); stroke-width:2.8; fill:var(--success-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+  .sl-cell[data-state="bad"] .sl-cell-rect{ stroke:var(--rust); stroke-width:2.4; }
+  .sl-cell-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .sl-cell-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .sl-cell-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .sl-cell-index.boundary{ fill:var(--accent-ink); font-weight:600; }
+  .sl-boundary-line{ stroke:var(--accent); stroke-width:1.6; stroke-dasharray:4 3; }
+  .sl-boundary-label{ font-size:9px; fill:var(--accent-ink); text-anchor:middle; font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sl-cursor-arrow{ fill:var(--accent); }
+  .sl-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.shift{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold); background:var(--gold-soft);}
+  .legend .swatch.found{border-color:var(--success); background:var(--success-soft);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+  .legend .swatch.empty{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-sw button[aria-pressed="true"]:hover{color:var(--paper);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+<style>
+  .hp-cols{display:grid; grid-template-columns:200px minmax(0,1fr); gap:18px; align-items:start;}
+  @media (max-width:760px){ .hp-cols{grid-template-columns:1fr;} }
+  .hp-tit{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint); margin-bottom:6px;}
+  .pilha{display:flex; flex-direction:column; gap:8px;}
+  .var{border:1.5px solid var(--line-strong); border-radius:10px; padding:8px 10px; background:var(--card); cursor:pointer; display:grid; gap:2px; font-family:'IBM Plex Mono',monospace;}
+  .var .nm{font-weight:600; font-size:0.95rem;}
+  .var .ad{font-size:0.8rem; color:var(--ink-soft);}
+  .var.sel{border-color:var(--ink); box-shadow:0 0 0 2px var(--ink) inset;}
+  .var.pend{border-color:var(--rust); background:var(--rust-soft);}
+  .var.pend .ad{color:var(--rust);}
+  .heap{display:grid; grid-template-columns:repeat(16, minmax(0,1fr)); gap:4px;}
+  .cel{height:52px; border-radius:6px; border:1.5px dashed var(--line-strong); background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; position:relative; min-width:0; transition:background .25s ease, border-color .25s ease;}
+  .cel .v{font-weight:600; font-size:0.8rem;}
+  .cel .v.lixo{color:var(--ink-faint); font-style:italic;}
+  .cel .a{font-size:0.56rem; color:var(--ink-faint); position:absolute; bottom:2px;}
+  .cel .tag{position:absolute; top:-16px; left:0; font-size:0.66rem; font-weight:700; white-space:nowrap;}
+  .cel.usado{border-style:solid;}
+  .cel.inicio{border-left-width:4px;}
+  .cel.vazou{outline:2px dashed var(--rust); outline-offset:-5px;}
+  .cel.mexido{animation:pisca .8s ease 2;}
+  @keyframes pisca{50%{box-shadow:0 0 0 3px var(--rust);}}
+  .heapwrap{padding-top:18px;}
+  .b0{background:#DCEBF7;border-color:#3D7AB8;color:#17426B} .b1{background:#F6E6CC;border-color:#B07A1E;color:#5D3E08}
+  .b2{background:#E0F0E4;border-color:#3A8A55;color:#1B4A2A} .b3{background:#EEE3F5;border-color:#7A55A0;color:#3F2557}
+  .b4{background:#DDF1F1;border-color:#2E8A8A;color:#104747} .b5{background:#F3F0D5;border-color:#8C8124;color:#47410A}
+  :root[data-theme="dark"] .cel.usado{filter:brightness(.8) saturate(1.1);}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .cel.usado{filter:brightness(.8) saturate(1.1);} }
+  .tag.t0{color:#3D7AB8} .tag.t1{color:#B07A1E} .tag.t2{color:#3A8A55} .tag.t3{color:#7A55A0} .tag.t4{color:#2E8A8A} .tag.t5{color:#8C8124}
+  .tag.vz{color:var(--rust);}
+  .log{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; display:flex; flex-direction:column; gap:3px; max-height:220px; overflow:auto;}
+  .log div{padding:3px 8px; border-radius:6px;}
+  .log div.ult{background:var(--accent-soft);}
+  .log div.err{color:var(--rust);}
+  select{font-family:'IBM Plex Mono',monospace; font-size:0.85rem; border:1px solid var(--line-strong); border-radius:8px; padding:7px 8px; background:var(--paper); color:var(--ink);}
+  .cen{display:flex; flex-wrap:wrap; gap:6px;}
+</style>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Fundamentos · memória dinâmica</span>
+    <h1>Alocação dinâmica no heap</h1>
+    <p class="prose">À esquerda, as variáveis ponteiro (<code>p</code>, <code>q</code>, <code>r</code>), que moram na pilha. À direita, o <strong>heap</strong>: 32 posições de um <code>int</code> cada. Peça blocos com <code>malloc</code> e <code>calloc</code>, mude o tamanho com <code>realloc</code>, devolva com <code>free</code> e veja o que acontece quando um bloco perde todos os ponteiros (vazamento) ou quando se usa um ponteiro depois do <code>free</code>.</p>
+  </header>
+
+  <section class="struct-block" data-lang="c" aria-label="Operações executadas em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">O que foi executado</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+      <pre class="code so-c" aria-label="C"><code id="logC"></code></pre>
+      <pre class="code so-py" aria-label="Python"><code id="logPy"></code></pre>
+    </div>
+    <p class="struct-note so-c">Cada botão vira uma linha de C. As alocações são de <code>int</code>, então <code>malloc(4 * sizeof(int))</code> ocupa 4 posições do heap.</p>
+    <p class="struct-note so-py">O equivalente em Python mostra o que a linguagem faz por você: não há lixo, nem <code>free</code>, nem ponteiro pendente. O coletor de lixo libera um objeto quando nenhum nome aponta mais para ele.</p>
+  </section>
+
+  <section class="card" aria-label="Visualizador do heap">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="usoTxt">0 de 32 posições em uso</span>
+    </div>
+
+    <div class="hp-cols">
+      <div>
+        <div class="hp-tit">Pilha · variáveis</div>
+        <div class="pilha" id="pilha"></div>
+      </div>
+      <div>
+        <div class="hp-tit">Heap · 32 inteiros</div>
+        <div class="heapwrap"><div class="heap" id="heap"></div></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch occ"></span>bloco alocado</span>
+      <span class="item"><span class="swatch empty"></span>livre</span>
+      <span class="item"><span class="swatch bad"></span>vazou (sem ponteiro) ou ponteiro inválido</span>
+      <span class="item"><i style="font-style:italic;color:var(--ink-faint)">?</i>&nbsp;lixo (não inicializado)</span>
+    </div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <div class="controls-row">
+        <label class="small">Variável
+          <select id="varSel"><option>p</option><option>q</option><option>r</option></select>
+        </label>
+        <label class="small">n <input type="number" id="nInput" value="4" min="1" max="32" style="width:64px;"></label>
+        <button class="primary" id="bMalloc">malloc</button>
+        <button class="primary" id="bCalloc">calloc</button>
+        <button id="bRealloc">realloc</button>
+        <button class="danger" id="bFree">free</button>
+        <button id="bNull">= NULL</button>
+      </div>
+      <div class="controls-row">
+        <button id="bEscreve">[0] = valor</button>
+        <label class="small">Copiar para
+          <select id="destSel"><option>q</option><option>p</option><option>r</option></select>
+        </label>
+        <button id="bCopia">copiar ponteiro</button>
+        <div class="spacer"></div>
+        <button class="danger" id="bZerar">Limpar tudo</button>
+      </div>
+      <div class="controls-row">
+        <span class="small" style="font-size:.76rem;color:var(--ink-soft)">Cenários</span>
+        <div class="cen" id="cenarios"></div>
+        <div class="spacer"></div>
+        <button class="primary" id="bPasso" hidden>Próximo passo ▶</button>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:14px;">
+    <h2>As quatro funções</h2>
+    <div class="bigo-wrap">
+      <table class="bigo">
+        <thead><tr><th>Função</th><th>O que faz</th><th>Conteúdo</th><th>Se falhar</th></tr></thead>
+        <tbody>
+          <tr><td class="op">malloc(bytes)</td><td>Reserva um bloco.</td><td>Indefinido (lixo).</td><td>Devolve NULL.</td></tr>
+          <tr><td class="op">calloc(qtd, tam)</td><td>Reserva qtd × tam bytes.</td><td>Tudo zerado.</td><td>Devolve NULL.</td></tr>
+          <tr><td class="op">realloc(p, bytes)</td><td>Muda o tamanho: no lugar, se couber; senão aloca outro, copia e libera o antigo.</td><td>Mantém o que cabia; o resto é lixo.</td><td>Devolve NULL e o bloco antigo continua válido.</td></tr>
+          <tr><td class="op">free(p)</td><td>Devolve o bloco ao heap.</td><td>Não pode mais ser usado.</td><td><code>free(NULL)</code> não faz nada; liberar duas vezes é erro grave.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Visualizador didático. O alocador usa a estratégia <i>first fit</i> (o primeiro espaço livre que couber) e não mostra os cabeçalhos que os alocadores reais guardam junto de cada bloco.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var N = 32, BASE = 0x5000;
+  var E;
+  function hex(i){ return '0x' + (BASE + 4 * i).toString(16).toUpperCase(); }
+  function reset(){
+    E = { cel: Array.from({length:N}, function(){ return {b:null, v:null}; }), blocos:{}, prox:1, cor:0,
+          vars:{p:{i:null, b:null}, q:{i:null, b:null}, r:{i:null, b:null}}, logC:[], logPy:[], mexido:-1, cen:null, passo:0 };
+  }
+  function vivo(id){ return id && E.blocos[id] && E.blocos[id].vivo; }
+  function apontados(){ var s = {}; ['p','q','r'].forEach(function(k){ var v = E.vars[k]; if (vivo(v.b)) s[v.b] = 1; }); return s; }
+  function marcarVazamentos(){
+    var ap = apontados(), novos = [];
+    Object.keys(E.blocos).forEach(function(id){ var b = E.blocos[id]; if (b.vivo && !b.vazou && !ap[id]) { b.vazou = true; novos.push(b); } });
+    return novos;
+  }
+  function livreEm(ini, n, ignorar){
+    if (ini < 0 || ini + n > N) return false;
+    for (var i = ini; i < ini + n; i++) if (E.cel[i].b !== null && E.cel[i].b !== ignorar) return false;
+    return true;
+  }
+  function firstFit(n){ for (var i = 0; i + n <= N; i++) if (livreEm(i, n)) return i; return -1; }
+  function criar(n, zero){
+    var ini = firstFit(n); if (ini < 0) return null;
+    var id = E.prox++, b = {id:id, ini:ini, n:n, vivo:true, cor:E.cor++ % 6};
+    E.blocos[id] = b;
+    for (var i = ini; i < ini + n; i++) E.cel[i] = {b:id, v: zero ? 0 : null};
+    return b;
+  }
+  function liberar(b){ b.vivo = false; for (var i = b.ini; i < b.ini + b.n; i++) E.cel[i] = {b:null, v:null}; }
+  function log(c, py, err){ E.logC.push({t:c, err:err}); E.logPy.push({t:py, err:err}); }
+  function msg(html, op, lab){ $('message').innerHTML = html; $('opPill').dataset.op = op || 'info'; $('opLabel').textContent = lab || 'Pronto'; }
+  function extraVaz(){
+    var vz = marcarVazamentos();
+    return vz.length ? ' <b>Vazamento:</b> o bloco em ' + hex(vz[0].ini) + ' ficou sem nenhum ponteiro. Ninguém mais consegue chamar <code>free</code> nele.' : '';
+  }
+
+  /* ---------- operações ---------- */
+  function opAlloc(x, n, zero){
+    var nome = zero ? 'calloc' : 'malloc';
+    var c = zero ? x + ' = calloc(' + n + ', sizeof(int));' : x + ' = malloc(' + n + ' * sizeof(int));';
+    var b = criar(n, zero);
+    if (!b) { E.vars[x] = {i:null, b:null}; log(c + '   /* NULL! */', x + ' = [' + (zero ? '0' : 'None') + '] * ' + n + '   # MemoryError', true);
+      msg('Não há ' + n + ' posições livres seguidas: <code>' + nome + '</code> devolveu <b>NULL</b>. Por isso todo retorno de alocação precisa ser verificado.' + extraVaz(), 'bad', 'NULL'); return; }
+    E.vars[x] = {i:b.ini, b:b.id};
+    log(c, x + ' = [' + (zero ? '0' : 'None') + '] * ' + n + (zero ? '' : '   # sem lixo em Python'));
+    msg('<code>' + nome + '</code> achou ' + n + ' posições livres a partir de <b>' + hex(b.ini) + '</b> (first fit) e devolveu esse endereço para <code>' + x + '</code>. ' + (zero ? 'O calloc zerou tudo.' : 'O conteúdo é <b>lixo</b>: o que estava ali antes. Não leia sem escrever primeiro.') + extraVaz(), 'insert', nome);
+  }
+  function opRealloc(x, n){
+    var v = E.vars[x], c = 'tmp = realloc(' + x + ', ' + n + ' * sizeof(int)); if (tmp) ' + x + ' = tmp;';
+    if (v.i === null) { var c2 = x + ' = realloc(NULL, ' + n + ' * sizeof(int));'; var b0 = criar(n, false);
+      if (!b0) { log(c2 + '   /* NULL! */', x + ' = [None] * ' + n, true); msg('Sem espaço: devolveu NULL.', 'bad', 'NULL'); return; }
+      E.vars[x] = {i:b0.ini, b:b0.id}; log(c2, x + ' = [None] * ' + n);
+      msg('<code>realloc(NULL, …)</code> funciona como <code>malloc</code>: novo bloco em ' + hex(b0.ini) + '.', 'insert', 'realloc'); return; }
+    if (!vivo(v.b)) { log(c + '   /* ERRO */', '# impossível em Python', true);
+      msg('<b>Comportamento indefinido:</b> <code>' + x + '</code> aponta para um bloco que já foi liberado. <code>realloc</code> só aceita NULL ou um ponteiro vivo.', 'bad', 'Ponteiro inválido'); return; }
+    var b = E.blocos[v.b], antigo = b.n;
+    if (n === antigo) { log(c, '# mesmo tamanho'); msg('Mesmo tamanho: nada muda.', 'info', 'realloc'); return; }
+    if (n < antigo) {
+      for (var i = b.ini + n; i < b.ini + antigo; i++) E.cel[i] = {b:null, v:null};
+      b.n = n; log(c, 'del ' + x + '[' + n + ':]');
+      msg('Encolher sempre cabe no lugar: o bloco continua em ' + hex(b.ini) + ' e as últimas ' + (antigo - n) + ' posições voltam a ficar livres.', 'shrink', 'Encolheu'); return; }
+    if (livreEm(b.ini + antigo, n - antigo)) {
+      for (var j = b.ini + antigo; j < b.ini + n; j++) E.cel[j] = {b:b.id, v:null};
+      b.n = n; log(c, x + '.extend([None] * ' + (n - antigo) + ')');
+      msg('As posições logo depois estavam livres: o bloco <b>cresceu no lugar</b>, ainda em ' + hex(b.ini) + '. As ' + (n - antigo) + ' posições novas têm lixo.', 'insert', 'Cresceu no lugar'); return; }
+    var valores = [];
+    for (var k = 0; k < antigo; k++) valores.push(E.cel[b.ini + k].v);
+    var nb = criar(n, false);
+    if (!nb) { log(c + '   /* tmp == NULL */', x + '.extend([None] * ' + (n - antigo) + ')   # MemoryError', true);
+      msg('Não há ' + n + ' posições livres seguidas: <code>realloc</code> devolveu <b>NULL</b>. Como o resultado foi para <code>tmp</code>, <code>' + x + '</code> continua apontando para o bloco antigo, intacto.', 'bad', 'NULL'); return; }
+    for (var m = 0; m < antigo; m++) E.cel[nb.ini + m].v = valores[m];
+    nb.cor = b.cor; liberar(b);
+    var orfaos = ['p','q','r'].filter(function(k2){ return k2 !== x && E.vars[k2].b === b.id; });
+    E.vars[x] = {i:nb.ini, b:nb.id};
+    log(c, x + '.extend([None] * ' + (n - antigo) + ')');
+    msg('Não cabia no lugar: o <code>realloc</code> reservou um bloco novo em <b>' + hex(nb.ini) + '</b>, <b>copiou</b> os ' + antigo + ' valores e liberou o antigo em ' + hex(b.ini) + '.' +
+      (orfaos.length ? ' <b>Atenção:</b> <code>' + orfaos.join('</code> e <code>') + '</code> ainda guarda' + (orfaos.length > 1 ? 'm' : '') + ' o endereço antigo e agora é um <b>ponteiro pendente</b>.' : ''), orfaos.length ? 'bad' : 'shift-right', 'Mudou de endereço');
+  }
+  function opFree(x){
+    var v = E.vars[x];
+    if (v.i === null) { log('free(' + x + ');   /* free(NULL): nada */', x + ' = None'); msg('<code>free(NULL)</code> é permitido e não faz nada.', 'info', 'free(NULL)'); return; }
+    if (!vivo(v.b)) { log('free(' + x + ');   /* DOUBLE FREE */', '# impossível em Python', true);
+      msg('<b>Double free!</b> Esse bloco já tinha sido liberado. Num programa real, isso corrompe o controle do heap e pode derrubar o programa ou abrir uma falha de segurança. Fazer <code>' + x + ' = NULL</code> logo após o free evita o problema, porque <code>free(NULL)</code> é inofensivo.', 'bad', 'Double free'); return; }
+    var b = E.blocos[v.b]; liberar(b);
+    var outros = ['p','q','r'].filter(function(k){ return E.vars[k].b === b.id; });
+    log('free(' + x + ');', x + ' = None   # sem free: o coletor de lixo libera');
+    msg('O bloco em ' + hex(b.ini) + ' voltou a ficar livre. Mas <code>' + outros.join('</code>, <code>') + '</code> continua' + (outros.length > 1 ? 'm' : '') + ' guardando ' + hex(b.ini) + ': agora é um <b>ponteiro pendente</b>. Use <b>= NULL</b>.', 'remove-start', 'free');
+  }
+  function opNull(x){
+    E.vars[x] = {i:null, b:null}; log(x + ' = NULL;', x + ' = None');
+    msg('<code>' + x + '</code> não aponta para mais nada.' + extraVaz(), 'info', '= NULL');
+    if (Object.keys(E.blocos).some(function(id){ return E.blocos[id].vazou && E.blocos[id].vivo; })) $('opPill').dataset.op = 'bad';
+  }
+  function opEscreve(x){
+    var v = E.vars[x], val = Math.floor(Math.random() * 90) + 10;
+    if (v.i === null) { log(x + '[0] = ' + val + ';   /* NULL! */', '# TypeError: None', true); msg('<code>' + x + '</code> é NULL: escrever ali derruba o programa (<i>segmentation fault</i>).', 'bad', 'NULL'); return; }
+    if (!vivo(v.b)) {
+      var c = E.cel[v.i], dono = c.b;
+      log(x + '[0] = ' + val + ';   /* USO DEPOIS DO FREE */', '# impossível em Python', true);
+      E.mexido = v.i;
+      if (dono !== null) { c.v = val; msg('<b>Uso depois do free!</b> <code>' + x + '</code> aponta para ' + hex(v.i) + ', que agora pertence a <b>outro bloco</b>. A escrita estragou um dado que não era dela, sem nenhum aviso.', 'bad', 'Uso depois do free'); }
+      else msg('<b>Uso depois do free!</b> ' + hex(v.i) + ' está livre. Hoje parece funcionar, mas o próximo malloc pode receber esse espaço.', 'bad', 'Uso depois do free');
+      return; }
+    E.cel[v.i].v = val; E.mexido = -1;
+    log(x + '[0] = ' + val + ';', x + '[0] = ' + val);
+    msg('Escreveu ' + val + ' em ' + hex(v.i) + ', a primeira posição do bloco de <code>' + x + '</code>.', 'found', 'Escrita');
+  }
+  function opCopia(x, y){
+    if (x === y) { erro('Escolha uma variável de destino diferente.'); return; }
+    E.vars[y] = {i:E.vars[x].i, b:E.vars[x].b};
+    log(y + ' = ' + x + ';', y + ' = ' + x + '   # mesmo objeto');
+    msg('<code>' + y + '</code> recebeu o mesmo endereço de <code>' + x + '</code>. Os dois apontam para o mesmo bloco: nada foi copiado no heap.' + extraVaz(), 'info', 'Cópia de ponteiro');
+  }
+
+  /* ---------- cenários ---------- */
+  var CEN = {
+    move: {t:'realloc que muda', fim:'Resumo: depois de um <code>realloc</code>, só o ponteiro que recebeu o retorno é confiável. Qualquer cópia do endereço antigo (aqui, <code>r</code>) precisa ser atualizada.', p:[
+      ['p', 'malloc', 3], ['q', 'malloc', 2], ['p', 'copia', 'r'], ['p', 'realloc', 6]]},
+    vaz: {t:'Vazamento', fim:'Resumo: o primeiro bloco continua ocupado até o programa terminar, e não há como liberá-lo. Antes de reaproveitar <code>p</code>, era preciso chamar <code>free(p)</code>.', p:[['p', 'malloc', 4], ['p', 'malloc', 3], ['p', 'free'], ['p', 'null']]},
+    uaf: {t:'Usar depois do free', fim:'Resumo: a escrita por <code>p</code> depois do free mudou o primeiro valor do bloco de <code>q</code>, sem nenhum erro aparente. Fazer <code>p = NULL</code> logo após o <code>free</code> transformaria esse bug silencioso num erro imediato e fácil de achar.', p:[['p', 'malloc', 4], ['p', 'escreve'], ['p', 'free'], ['q', 'malloc', 4], ['p', 'escreve'], ['p', 'null']]},
+    dfree: {t:'Double free', fim:'Resumo: <code>p</code> e <code>q</code> eram o mesmo bloco, então ele só podia ser liberado uma vez. Defina quem é o “dono” do bloco e só ele chama <code>free</code>.', p:[['p', 'malloc', 3], ['p', 'copia', 'q'], ['p', 'free'], ['q', 'free']]},
+    dobra: {t:'Vetor que dobra', fim:'Resumo: o vetor passou por 1, 2, 4, 8 e 16 posições. Às vezes cresceu no lugar, às vezes mudou de endereço e copiou tudo. Mesmo assim, o total de cópias fica abaixo de 2n.', p:[['p', 'calloc', 1], ['q', 'malloc', 1], ['p', 'realloc', 2], ['p', 'realloc', 4], ['r', 'malloc', 2], ['p', 'realloc', 8], ['p', 'realloc', 16]]}
+  };
+  function executar(op){
+    var x = op[0];
+    if (op[1] === 'malloc') opAlloc(x, op[2], false);
+    else if (op[1] === 'calloc') opAlloc(x, op[2], true);
+    else if (op[1] === 'realloc') opRealloc(x, op[2]);
+    else if (op[1] === 'free') opFree(x);
+    else if (op[1] === 'null') opNull(x);
+    else if (op[1] === 'escreve') opEscreve(x);
+    else if (op[1] === 'copia') opCopia(x, op[2]);
+  }
+  function iniciarCen(id){
+    reset(); E.cen = id; E.passo = 0; $('bPasso').hidden = false; desenhar();
+    msg('Cenário <b>' + CEN[id].t + '</b>: clique em <b>Próximo passo</b>.', 'info', CEN[id].t);
+  }
+  function passo(){
+    var c = CEN[E.cen]; if (!c) return;
+    executar(c.p[E.passo]); E.passo++;
+    if (E.passo >= c.p.length) { $('bPasso').hidden = true; E.cen = null; $('message').innerHTML += '<br><br>' + c.fim; }
+    desenhar();
+  }
+
+  /* ---------- desenho ---------- */
+  function desenhar(){
+    var ap = {}; ['p','q','r'].forEach(function(k){ var v = E.vars[k]; if (v.i !== null) (ap[v.i] = ap[v.i] || []).push(k); });
+    var h = '';
+    for (var i = 0; i < N; i++) {
+      var c = E.cel[i], b = c.b !== null ? E.blocos[c.b] : null, cls = 'cel', tag = '';
+      if (b) { cls += ' usado b' + b.cor; if (i === b.ini) cls += ' inicio'; if (b.vazou) cls += ' vazou'; }
+      if (i === E.mexido) cls += ' mexido';
+      if (ap[i]) { var ruim = ap[i].some(function(k){ return !vivo(E.vars[k].b); }); tag = '<span class="tag ' + (!ruim && b ? 't' + b.cor : 'vz') + '">' + ap[i].join(',') + '</span>'; }
+      else if (b && b.vazou && i === b.ini) tag = '<span class="tag vz">vazou</span>';
+      var val = b ? (c.v === null ? '<span class="v lixo">?</span>' : '<span class="v">' + c.v + '</span>') : (c.v !== null ? '<span class="v">' + c.v + '</span>' : '');
+      h += '<div class="' + cls + '" title="' + hex(i) + '">' + tag + val + '<span class="a">' + (BASE + 4 * i).toString(16).toUpperCase() + '</span></div>';
+    }
+    $('heap').innerHTML = h;
+    var sel = $('varSel').value;
+    $('pilha').innerHTML = ['p','q','r'].map(function(k){
+      var v = E.vars[k], pend = v.i !== null && !vivo(v.b);
+      var ad = v.i === null ? 'NULL' : hex(v.i) + (pend ? ' ✗ inválido' : '');
+      return '<div class="var' + (k === sel ? ' sel' : '') + (pend ? ' pend' : '') + '" data-k="' + k + '"><span class="nm">int *' + k + '</span><span class="ad">' + ad + '</span></div>';
+    }).join('');
+    $('pilha').querySelectorAll('.var').forEach(function(el){ el.onclick = function(){ $('varSel').value = el.dataset.k; desenhar(); }; });
+    var uso = E.cel.filter(function(c){ return c.b !== null; }).length;
+    $('usoTxt').textContent = uso + ' de ' + N + ' posições em uso';
+    function lg(arr){ return arr.length ? arr.slice(-12).map(function(l, i, a){ return (l.err ? '<span style="color:var(--rust)">' : '') + esc(l.t) + (l.err ? '</span>' : ''); }).join('\n') : '<span class="cm">/* nada ainda */</span>'; }
+    $('logC').innerHTML = lg(E.logC);
+    $('logPy').innerHTML = E.logPy.length ? lg(E.logPy) : '<span class="cm"># nada ainda</span>';
+  }
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function erro(t){ var e = $('errorText'); e.textContent = t || ''; e.hidden = !t; }
+  function lerN(){ var n = parseInt($('nInput').value, 10); if (!(n >= 1 && n <= 32)) { erro('n deve ficar entre 1 e 32.'); return null; } erro(''); return n; }
+  function acao(f){ return function(){ E.cen = null; $('bPasso').hidden = true; E.mexido = -1; f(); desenhar(); }; }
+
+  $('bMalloc').onclick = acao(function(){ var n = lerN(); if (n) opAlloc($('varSel').value, n, false); });
+  $('bCalloc').onclick = acao(function(){ var n = lerN(); if (n) opAlloc($('varSel').value, n, true); });
+  $('bRealloc').onclick = acao(function(){ var n = lerN(); if (n) opRealloc($('varSel').value, n); });
+  $('bFree').onclick = acao(function(){ erro(''); opFree($('varSel').value); });
+  $('bNull').onclick = acao(function(){ erro(''); opNull($('varSel').value); });
+  $('bEscreve').onclick = acao(function(){ erro(''); opEscreve($('varSel').value); });
+  $('bCopia').onclick = acao(function(){ erro(''); opCopia($('varSel').value, $('destSel').value); });
+  $('bZerar').onclick = function(){ reset(); erro(''); $('bPasso').hidden = true; desenhar(); msg('Heap vazio. Escolha uma variável e um n, e clique em <b>malloc</b> ou <b>calloc</b>.', 'info', 'Início'); };
+  $('varSel').onchange = desenhar;
+  $('bPasso').onclick = passo;
+  $('cenarios').innerHTML = Object.keys(CEN).map(function(id){ return '<button data-c="' + id + '">' + CEN[id].t + '</button>'; }).join('');
+  $('cenarios').querySelectorAll('button').forEach(function(b){ b.onclick = function(){ erro(''); iniciarCen(b.dataset.c); }; });
+
+  reset(); desenhar();
+  msg('Heap vazio. Escolha uma variável e um n, e clique em <b>malloc</b> ou <b>calloc</b>. Ou rode um dos cenários prontos.', 'info', 'Início');
+  window.__aloc = function(){ return E; };
+})();
+</script>
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
+</body></html>

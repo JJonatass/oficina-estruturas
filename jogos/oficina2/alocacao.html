@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Guarda-Volumes da Masmorra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+.cena{background:radial-gradient(ellipse at 50% 0%,rgba(127,216,164,.10),transparent 60%),linear-gradient(#1a1d22,#131217);padding:14px 16px 18px;min-height:330px}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-family:var(--mono);font-size:14px;color:var(--mudo)}
+.topo b{color:var(--ouro)}
+.estante{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;background:linear-gradient(#4a3322,#3a271a);border:3px solid #2a1a10;border-radius:12px;padding:10px 10px 6px}
+.nicho{height:64px;border-radius:8px;background:#1d1612;border:2px solid #120d0a;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:transform .12s,border-color .15s}
+.nicho:hover,.nicho:focus{border-color:var(--ouro);transform:translateY(-2px)}
+.nicho .i{position:absolute;bottom:2px;font:600 10px var(--mono);color:#7a6a5a}
+.nicho .s{font-size:24px;line-height:1}
+.nicho .t{font:800 12px var(--sans);color:#fff}
+.nicho.ocup{border-style:solid}
+.nicho.ini{border-left-width:5px}
+.nicho.k-dica{border-color:var(--ouro);box-shadow:0 0 14px rgba(242,193,78,.6)}
+.nicho.errou{animation:ktreme .4s;border-color:var(--verm)}
+.nicho.alvo{box-shadow:0 0 0 3px var(--ouro) inset}
+.nicho.novo{animation:entra .35s ease}
+@keyframes entra{from{transform:scale(.5);opacity:.3}}
+.c0{background:#2a5a8a;border-color:#7fb3e6}.c1{background:#80570f;border-color:#f2c14e}.c2{background:#286640;border-color:#7fd8a4}
+.c3{background:#583c78;border-color:#c3a6e6}.c4{background:#86372a;border-color:#ff9a88}.c5{background:#1f6464;border-color:#7fe0e0}
+.diag{display:grid;gap:10px}
+.diag pre{margin:0;background:#0f0e14;border:1px solid var(--borda);border-radius:12px;padding:14px 16px;font-family:var(--mono);font-size:15.5px;line-height:1.55;overflow-x:auto}
+.diag .tag{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--laranja)}
+.escolhas button.errou{animation:ktreme .4s;border-color:var(--verm)}
+@media (max-width:700px){.estante{grid-template-columns:repeat(8,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main class="jogo">
+  <section class="cena"><div id="palco"></div></section>
+  <div class="ordem"><span id="ordem">…</span><div class="escolhas" id="esc"></div></div>
+</main>
+<script src="kit.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const N = 24, ICON = ['🎒','🗡️','🛡️','📜','🧪','💰'];
+let G = null;
+
+/* ---------- a estante (heap) ---------- */
+function livre(ini, n, ign){ if (ini < 0 || ini + n > N) return false; for (let i = ini; i < ini + n; i++) if (G.s[i] !== null && G.s[i] !== ign) return false; return true; }
+function firstFit(n){ for (let i = 0; i + n <= N; i++) if (livre(i, n)) return i; return -1; }
+function ocupar(ini, n){ const id = G.prox++; const b = {id, ini, n, vivo:true, cor:id % 6, nome:String.fromCharCode(64 + ((id - 1) % 26) + 1)}; G.b[id] = b; for (let i = ini; i < ini + n; i++) G.s[i] = id; return b; }
+function soltar(b){ b.vivo = false; for (let i = b.ini; i < b.ini + b.n; i++) G.s[i] = null; }
+const vivos = () => Object.values(G.b).filter(b => b.vivo);
+const uso = () => G.s.filter(x => x !== null).length;
+
+function desenhar(){
+  let h = `<div class="topo"><span>estante: <b>${uso()}</b> de ${N} nichos ocupados</span><span>${G.info || ''}</span></div><div class="estante" id="est">`;
+  for (let i = 0; i < N; i++) {
+    const id = G.s[i], b = id ? G.b[id] : null;
+    const cls = 'nicho' + (b ? ` ocup c${b.cor}` + (i === b.ini ? ' ini' : '') : '') + (G.destaque && G.destaque.includes(i) ? ' alvo' : '') + (G.novos && G.novos.includes(i) ? ' novo' : '');
+    h += `<div class="${cls}" data-i="${i}" tabindex="0" role="button" aria-label="Nicho ${i}${b ? ' do ticket ' + b.nome : ' livre'}">${b ? `<span class="s">${i === b.ini ? ICON[b.cor] : '·'}</span>${i === b.ini ? `<span class="t">${b.nome}</span>` : ''}` : ''}<span class="i">${i}</span></div>`;
+  }
+  $('#palco').innerHTML = h + '</div>';
+  $('#est').querySelectorAll('.nicho').forEach(el => {
+    el.onclick = () => nicho(+el.dataset.i, el);
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nicho(+el.dataset.i, el); } };
+  });
+  G.novos = null;
+}
+function botoes(lista){
+  $('#esc').innerHTML = lista.map((b, k) => `<button data-k="${k}"><kbd>${k + 1}</kbd>${b.t}</button>`).join('');
+  $('#esc').querySelectorAll('button').forEach(el => el.onclick = () => lista[+el.dataset.k].f(el));
+  G.botoes = lista;
+}
+const tempo = () => Math.max(4, 11 - G.nivel * 1.1);
+
+/* ---------- rodadas ---------- */
+function novaRodada(){
+  G.destaque = null; G.info = '';
+  if (G.rodada >= 5) {
+    K.timer.parar(); G.nivel++; G.rodada = 0;
+    if (G.nivel % 2 === 1) K.vida();
+    K.subirNivel(G.nivel, G.nivel === 2 ? 'Chegam os pedidos de realloc' : G.nivel === 3 ? 'A estante começa cheia' : 'Os aventureiros têm pressa');
+    return setTimeout(novaRodada, 1100);
+  }
+  G.rodada++;
+  manutencao();
+  const tipos = G.nivel === 1 ? ['malloc','malloc','free','diag'] : ['malloc','malloc','free','realloc','realloc','diag','diag'];
+  let t = K.pick(tipos);
+  if (t === 'free' && !vivos().length) t = 'malloc';
+  if (t === 'realloc' && !prepararRealloc()) t = 'malloc';
+  ({malloc: rMalloc, free: rFree, realloc: rRealloc, diag: rDiag})[t]();
+}
+function manutencao(){
+  const alvo = G.nivel >= 3 ? 0.62 : 0.4;
+  let k = 0;
+  while (uso() > N * (alvo + 0.15) && k++ < 6) { const b = K.pick(vivos()); soltar(b); G.info = `o ticket ${b.nome} foi devolvido`; }
+  while (uso() < N * alvo && k++ < 12) { const n = K.rnd(1, 3), i = firstFit(n); if (i < 0) break; const lacuna = K.rnd(0, 2); if (livre(i + lacuna, n)) ocupar(i + lacuna, n); else ocupar(i, n); }
+}
+function rMalloc(){
+  G.fase = 'malloc';
+  const maior = G.nivel >= 3 && Math.random() < 0.25;
+  G.n = maior ? K.rnd(6, 9) : K.rnd(1, G.nivel === 1 ? 3 : 5);
+  G.esp = firstFit(G.n);
+  desenhar();
+  $('#ordem').innerHTML = `<code>malloc</code>: um aventureiro pede <b>${G.n}</b> nicho${G.n > 1 ? 's' : ''} seguidos. Onde começa o bloco (first fit)?`;
+  botoes([{t:'Não cabe: NULL', f: el => respMalloc(-1, el)}]);
+  K.turno(tempo(), () => erroMalloc(null, true), () => ['First fit: o <b>primeiro</b> espaço livre, da esquerda para a direita, onde caibam todos.', G.esp < 0 ? 'Não há espaço: NULL.' : `Nicho ${G.esp}.`]);
+}
+function respMalloc(i, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'malloc') return;
+  if (i !== G.esp) return erroMalloc(el);
+  G.fase = 'fim'; K.timer.parar(); K.acerto(el, 90);
+  if (i >= 0) { const b = ocupar(i, G.n); G.novos = range(b.ini, b.n); desenhar(); K.flutua(`ticket ${b.nome}`, el, 'var(--verdeC)'); }
+  else K.flutua('devolveu NULL', el, 'var(--verdeC)');
+  setTimeout(novaRodada, 650);
+}
+function erroMalloc(el, esg){
+  if (el) K.anima(el, 'errou');
+  const html = G.esp < 0
+    ? `<p>Não existem <b>${G.n}</b> nichos livres <b>seguidos</b> na estante, mesmo que o total de nichos livres seja ${N - uso()}. O <code>malloc</code> devolve <code>NULL</code>, e é por isso que todo retorno precisa ser verificado.</p><p>Espaço livre picado em pedaços pequenos se chama <b>fragmentação</b>.</p>`
+    : `<p>No <b>first fit</b>, o alocador procura da esquerda para a direita e usa o <b>primeiro</b> trecho livre com ${G.n} nicho${G.n > 1 ? 's' : ''} seguidos: ele começa no nicho <b>${G.esp}</b>.</p>`;
+  K.erro(html, () => { if (G.esp >= 0) { const b = ocupar(G.esp, G.n); G.novos = range(b.ini, b.n); } G.fase = 'fim'; desenhar(); setTimeout(novaRodada, 200); }, {kicker: esg ? 'O aventureiro cansou de esperar' : 'Nicho errado'});
+}
+function rFree(){
+  G.fase = 'free';
+  const mortos = Object.values(G.b).filter(b => !b.vivo);
+  G.duplo = G.nivel >= 2 && mortos.length && Math.random() < 0.3;
+  G.alvoB = G.duplo ? K.pick(mortos) : K.pick(vivos());
+  desenhar();
+  $('#ordem').innerHTML = `<code>free</code>: devolvam o ticket <b>${G.alvoB.nome}</b>. Clique no bloco dele.`;
+  botoes([{t:'Já foi devolvido: double free!', f: el => respFree(null, el)}]);
+  K.turno(tempo(), () => erroFree(null, true), () => [`Procure o ticket ${G.alvoB.nome} na estante.`, G.duplo ? 'Ele não está lá: já foi liberado.' : `Começa no nicho ${G.alvoB.ini}.`]);
+}
+function respFree(i, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'free') return;
+  const ok = G.duplo ? i === null : (i !== null && G.s[i] === G.alvoB.id);
+  if (!ok) return erroFree(el);
+  G.fase = 'fim'; K.timer.parar(); K.acerto(el, G.duplo ? 130 : 70);
+  if (!G.duplo) { soltar(G.alvoB); desenhar(); K.flutua('liberado', el, 'var(--verdeC)'); }
+  else K.flutua('free recusado', el, 'var(--verdeC)');
+  setTimeout(novaRodada, 650);
+}
+function erroFree(el, esg){
+  if (el) K.anima(el, 'errou');
+  const html = G.duplo
+    ? `<p>O ticket <b>${G.alvoB.nome}</b> já tinha sido devolvido: liberar de novo é um <b>double free</b>, que corrompe o controle do heap. Depois de <code>free(p)</code>, faça <code>p = NULL</code>; aí um segundo <code>free(p)</code> vira <code>free(NULL)</code>, que é inofensivo.</p>`
+    : `<p>O ticket <b>${G.alvoB.nome}</b> ocupa os nichos ${G.alvoB.ini} a ${G.alvoB.ini + G.alvoB.n - 1}. ${el && el.tagName === 'BUTTON' ? 'Ele ainda estava na estante, então o free era válido.' : 'Liberar o bloco de outra pessoa seria um desastre.'}</p>`;
+  K.erro(html, () => { if (!G.duplo) soltar(G.alvoB); G.fase = 'fim'; desenhar(); setTimeout(novaRodada, 200); }, {kicker: esg ? 'O tempo acabou' : 'Devolução errada'});
+}
+function prepararRealloc(){
+  const cands = K.shuffle(vivos());
+  for (const b of cands) {
+    const novo = b.n + K.rnd(1, 3), noLugar = livre(b.ini + b.n, novo - b.n), outro = firstFit(novo);
+    if (noLugar || outro >= 0) { G.rb = b; G.rn = novo; G.noLugar = noLugar; G.rdest = noLugar ? b.ini : outro; return true; }
+  }
+  return false;
+}
+function rRealloc(){
+  G.fase = 'realloc1'; G.destaque = range(G.rb.ini, G.rb.n); desenhar();
+  $('#ordem').innerHTML = `<code>realloc</code>: o ticket <b>${G.rb.nome}</b> quer passar de ${G.rb.n} para <b>${G.rn}</b> nichos.`;
+  botoes([{t:'Cresce no lugar', f: el => respR1(true, el)}, {t:'Precisa mudar de lugar', f: el => respR1(false, el)}]);
+  K.turno(tempo() + 1, () => erroR(null, true), () => ['Olhe os nichos logo à direita do bloco.', G.noLugar ? `Os ${G.rn - G.rb.n} seguintes estão livres.` : 'Não há espaço logo depois.']);
+}
+function respR1(noLugar, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'realloc1') return;
+  if (noLugar !== G.noLugar) return erroR(el);
+  if (noLugar) { G.fase = 'fim'; K.timer.parar(); K.acerto(el, 110); aplicarRealloc(); return setTimeout(novaRodada, 650); }
+  K.acerto(el, 60); G.fase = 'realloc2'; botoes([]);
+  $('#ordem').innerHTML = `Não cabe no lugar. Onde começa o bloco novo de <b>${G.rn}</b> nichos (first fit)? Os dados serão copiados e o bloco antigo, liberado.`;
+  K.turno(tempo(), () => erroR(null, true), () => ['O bloco antigo continua ocupado enquanto o novo é escolhido.', `Nicho ${G.rdest}.`]);
+}
+function aplicarRealloc(){
+  const b = G.rb;
+  if (G.noLugar) { for (let i = b.ini + b.n; i < b.ini + G.rn; i++) G.s[i] = b.id; G.novos = range(b.ini + b.n, G.rn - b.n); b.n = G.rn; }
+  else { const nb = {...b}; for (let i = b.ini; i < b.ini + b.n; i++) G.s[i] = null; nb.ini = G.rdest; nb.n = G.rn; G.b[b.id] = nb; for (let i = nb.ini; i < nb.ini + nb.n; i++) G.s[i] = b.id; G.novos = range(nb.ini, nb.n); }
+  G.destaque = null; desenhar();
+}
+function erroR(el, esg){
+  if (el) K.anima(el, 'errou');
+  const b = G.rb, extra = G.rn - b.n;
+  const html = G.noLugar
+    ? `<p>Os ${extra} nicho${extra > 1 ? 's' : ''} logo depois do bloco ${b.nome} (a partir do ${b.ini + b.n}) estavam livres: o <code>realloc</code> só <b>estica</b> o bloco, sem copiar nada, e o endereço continua o mesmo.</p>`
+    : `<p>Logo depois do bloco ${b.nome} não havia ${extra} nicho${extra > 1 ? 's' : ''} livres. O <code>realloc</code> reserva um bloco novo de ${G.rn} com first fit, enquanto o antigo ainda está ocupado: ele começa no nicho <b>${G.rdest}</b>. Depois <b>copia</b> os dados e libera o antigo. Todo ponteiro para o endereço antigo fica inválido.</p>`;
+  K.erro(html, () => { G.fase = 'fim'; aplicarRealloc(); setTimeout(novaRodada, 200); }, {kicker: esg ? 'O tempo acabou' : 'realloc errado'});
+}
+function nicho(i, el){
+  if (!K.s.rodando || K.s.ocupado || !G) return;
+  if (G.fase === 'malloc') return respMalloc(i, el);
+  if (G.fase === 'free') return respFree(i, el);
+  if (G.fase === 'realloc2') {
+    if (i !== G.rdest) return erroR(el);
+    G.fase = 'fim'; K.timer.parar(); K.acerto(el, 120); aplicarRealloc(); K.flutua('copiado!', el, 'var(--verdeC)');
+    setTimeout(novaRodada, 650);
+  }
+}
+
+/* ---------- diagnóstico ---------- */
+const CAT = ['Vazamento', 'Ponteiro pendente', 'Double free', 'Está correto'];
+const DIAG = [
+  [0, 'int *v = malloc(10 * sizeof *v);\nv = malloc(20 * sizeof *v);\nfree(v);', 'O primeiro bloco perdeu o único ponteiro quando <code>v</code> recebeu o segundo malloc. Só o segundo é liberado.'],
+  [0, 'void registrar(void) {\n    char *s = malloc(100);\n    strcpy(s, "ok");\n}   /* a função termina aqui */', '<code>s</code> é local: some quando a função termina, e o bloco fica sem ponteiro e sem free.'],
+  [0, 'v = realloc(v, 2 * n * sizeof *v);\nif (v == NULL) return;', 'Se o realloc falhar, <code>v</code> vira NULL e o endereço do bloco antigo se perde. Use uma variável <code>tmp</code>.'],
+  [1, 'free(p);\nprintf("%d\\n", p->valor);', 'Ler <code>p-&gt;valor</code> depois do <code>free</code> usa memória que já não é sua.'],
+  [1, 'No *n = head;\nfree(head);\nhead = n->prox;', '<code>n</code> e <code>head</code> apontavam para o mesmo nó. Depois do free, <code>n-&gt;prox</code> lê um nó já liberado. Guarde <code>prox</code> <b>antes</b> do free.'],
+  [1, 'int *q = p;\np = realloc(p, 50 * sizeof *p);  /* mudou de lugar */\nq[0] = 7;', 'Se o realloc moveu o bloco, <code>q</code> ainda guarda o endereço antigo, que foi liberado.'],
+  [2, 'int *a = malloc(8 * sizeof *a);\nint *b = a;\nfree(a);\nfree(b);', '<code>a</code> e <code>b</code> são o mesmo bloco: ele foi liberado duas vezes.'],
+  [2, 'free(v);\nif (erro) {\n    free(v);\n    return;\n}', 'Se <code>erro</code> for verdadeiro, <code>v</code> é liberado pela segunda vez.'],
+  [3, 'free(v);\nv = NULL;\nfree(v);', 'Parece double free, mas <code>v</code> virou NULL, e <code>free(NULL)</code> não faz nada.'],
+  [3, 'int *tmp = realloc(v, novo * sizeof *v);\nif (tmp) v = tmp;', 'O padrão certo: se o realloc falhar, <code>v</code> continua válido.'],
+  [3, 'No *prox = n->prox;\nfree(n);\nn = prox;', '<code>prox</code> foi guardado antes do free, então nada é lido de memória liberada.'],
+  [3, 'char *s = malloc(strlen(t) + 1);\nif (s) strcpy(s, t);\n/* ... */\nfree(s);', 'Espaço para o texto e para o <code>\\0</code>, verificação de NULL e free no fim.']
+];
+function rDiag(){
+  G.fase = 'diag';
+  const [cat, cod, exp] = K.pick(DIAG);
+  G.cat = cat; G.exp = `<p>Resposta: <b>${CAT[cat]}</b>.</p><p>${exp}</p>`;
+  $('#palco').innerHTML = `<div class="diag"><span class="tag">O inspetor da masmorra · diagnóstico</span><pre>${K.esc(cod)}</pre></div>`;
+  $('#ordem').innerHTML = 'O que há de errado neste trecho?';
+  botoes(CAT.map((t, k) => ({t, certo: k === cat, f: el => respDiag(k, el)})));
+  K.turno(tempo() + 4, () => erroDiag(null, true), () => ['Siga cada bloco: quem aponta para ele, e quando ele é liberado?', `É ${CAT[cat].toLowerCase()}.`]);
+}
+function respDiag(k, el){
+  if (!K.s.rodando || K.s.ocupado || G.fase !== 'diag') return;
+  if (k !== G.cat) return erroDiag(el);
+  G.fase = 'fim'; K.timer.parar(); K.acerto(el, 130); setTimeout(novaRodada, 600);
+}
+function erroDiag(el, esg){
+  if (el) K.anima(el, 'errou');
+  K.erro(G.exp, () => { G.fase = 'fim'; setTimeout(novaRodada, 200); }, {kicker: esg ? 'O tempo acabou' : 'Diagnóstico errado'});
+}
+function range(a, n){ return Array.from({length:n}, (_, k) => a + k); }
+
+K.init({
+  id:'alocacao', titulo:'O Guarda-Volumes da Masmorra', kicker:'Masmorra · Alocação dinâmica', vidas:3, comecar:'Abrir o guarda-volumes',
+  ajuda:`<p>A estante do guarda-volumes é o <b>heap</b>: 24 nichos. Cada aventureiro recebe um <b>ticket</b> (o ponteiro) para o seu bloco.</p>
+  <ol><li><b>malloc:</b> clique no nicho onde começa o bloco pedido, usando <i>first fit</i> (o primeiro espaço livre que couber). Se não houver espaço seguido, responda <b>NULL</b>.</li>
+  <li><b>free:</b> clique no bloco do ticket. Se ele já foi devolvido, denuncie o <b>double free</b>.</li>
+  <li><b>realloc:</b> diga se o bloco cresce no lugar ou precisa mudar; se mudar, escolha onde começa o bloco novo.</li>
+  <li><b>Diagnóstico:</b> classifique o trecho de código: vazamento, ponteiro pendente, double free ou correto.</li></ol>`,
+  tecla(e){ if (G && G.botoes && /^[1-9]$/.test(e.key)) { const el = $('#esc').querySelectorAll('button')[+e.key - 1]; const b = G.botoes[+e.key - 1]; if (b) b.f(el); } },
+  iniciar(){ G = {nivel:1, rodada:0, s:Array(N).fill(null), b:{}, prox:1}; novaRodada(); },
+  auto(){
+    if (!G) return;
+    const bts = $('#esc').querySelectorAll('button'), cel = i => $(`.nicho[data-i="${i}"]`);
+    if (G.fase === 'malloc') { G.esp < 0 ? respMalloc(-1, bts[0]) : respMalloc(G.esp, cel(G.esp)); return true; }
+    if (G.fase === 'free') { G.duplo ? respFree(null, bts[0]) : respFree(G.alvoB.ini, cel(G.alvoB.ini)); return true; }
+    if (G.fase === 'realloc1') { respR1(G.noLugar, bts[G.noLugar ? 0 : 1]); return true; }
+    if (G.fase === 'realloc2') { nicho(G.rdest, cel(G.rdest)); return true; }
+    if (G.fase === 'diag') { respDiag(G.cat, bts[G.cat]); return true; }
+  }
+});
+})();
+</script>
+</body>
+</html>

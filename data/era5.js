@@ -1,6 +1,6 @@
 /* Era 05: Heaps e ordenação */
 MODS.push({
-id:'heap', n:16, era:4, titulo:'Heap', sub:'Um vetor que se comporta como árvore',
+id:'heap', n:17, era:4, titulo:'Heap', sub:'Um vetor que se comporta como árvore',
 viz:'viz/heap.html',
 slides:[
 {t:'Uma árvore sem ponteiros', h:`
@@ -221,7 +221,7 @@ print(k_esimo_maior([3, 2, 1, 5, 6, 4], 2))   # 5`}
 });
 
 MODS.push({
-id:'smoothsort', n:17, era:4, titulo:'Smoothsort', sub:'Uma floresta de heaps de Leonardo',
+id:'smoothsort', n:18, era:4, titulo:'Smoothsort', sub:'Uma floresta de heaps de Leonardo',
 viz:'viz/smoothsort.html',
 slides:[
 {t:'Heapsort que percebe a ordem', h:`

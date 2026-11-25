@@ -408,7 +408,7 @@ def distancia(a, b):
 
 def medio(a, b):
     return Ponto((a.x + b.x) / 2, (a.y + b.y) / 2)`},
-{t:'Buscar por matrícula', enun:'Dado um vetor de <code>Aluno</code>, devolva um <b>ponteiro</b> para o aluno com a matrícula pedida, ou <code>NULL</code> se não existir. Em Python, devolva o objeto ou <code>None</code>.', dica:'É a busca sequencial do módulo anterior, comparando só o campo <code>matricula</code>. Devolva <code>&amp;v[i]</code>, não <code>v[i]</code>, para quem chamou poder alterar o aluno.',
+{t:'Buscar por matrícula', enun:'Dado um vetor de <code>Aluno</code>, devolva um <b>ponteiro</b> para o aluno com a matrícula pedida, ou <code>NULL</code> se não existir. Em Python, devolva o objeto ou <code>None</code>.', dica:'É uma busca sequencial (o módulo de Busca aprofunda o assunto), comparando só o campo <code>matricula</code>. Devolva <code>&amp;v[i]</code>, não <code>v[i]</code>, para quem chamou poder alterar o aluno.',
 c:`#include <stddef.h>   /* NULL */
 
 typedef struct { char nome[20]; int matricula; float nota; } Aluno;
@@ -451,7 +451,258 @@ py:`def ordenar_por_nota(turma):
 });
 
 MODS.push({
-id:'vetor', n:3, era:0, titulo:'Lista Sequencial (Vetor)', sub:'Acesso direto por índice, inserção cara no meio',
+id:'alocacao', n:3, era:0, titulo:'Alocação Dinâmica', sub:'malloc, calloc, realloc e free: memória sob demanda',
+viz:'viz/alocacao.html',
+slides:[
+{t:'Pilha e heap', h:`
+<p class="lead">Variáveis locais moram na <b>pilha</b>: o tamanho é decidido na compilação e tudo some quando a função termina. Quando o tamanho só é conhecido durante a execução, ou quando o dado precisa sobreviver à função que o criou, pede-se memória ao <b>heap</b>.</p>
+<div class="cards">
+<div class="card"><b>Pilha (automática)</b><code>int v[100];</code> dentro de uma função. Rápida, liberada sozinha, mas de tamanho fixo e com vida curta.</div>
+<div class="card"><b>Heap (dinâmica)</b><code>int *v = malloc(n * sizeof *v);</code> O tamanho vem em tempo de execução e o bloco vive até alguém chamar <code>free</code>.</div>
+</div>
+<div class="objetivos"><b>Ao final deste módulo você vai</b><ul>
+<li>usar <code>malloc</code>, <code>calloc</code>, <code>realloc</code> e <code>free</code> corretamente;</li>
+<li>montar um vetor que cresce dobrando a capacidade;</li>
+<li>reconhecer vazamento, ponteiro pendente e <i>double free</i>.</li></ul></div>
+<div class="analogia"><b>Analogia</b>O heap é o guarda-volumes da masmorra: você pede um espaço do tamanho que precisa e recebe um <b>ticket</b> (o ponteiro). Quem perde o ticket nunca mais recupera o espaço; quem devolve o espaço e continua usando o ticket mexe nas coisas de outra pessoa.</div>`},
+{t:'malloc e free', h:`
+<div class="duo"><pre data-l="c">#include &lt;stdlib.h&gt;
+
+int n = 5;
+int *v = malloc(n * sizeof *v);   // n inteiros, conteúdo indefinido (lixo)
+if (v == NULL) {                  // sem memória: sempre verifique
+    perror("malloc");
+    exit(1);
+}
+for (int i = 0; i &lt; n; i++) v[i] = i * 10;
+
+free(v);                          // devolve o bloco ao heap
+v = NULL;                         // evita usar o endereço antigo</pre><pre data-l="py">n = 5
+v = [None] * n        # o Python pede a memória por você
+for i in range(n):
+    v[i] = i * 10
+
+v = None              # nenhum free: quando ninguém mais aponta
+                      # para a lista, o coletor de lixo a libera</pre></div>
+<div class="cards">
+<div class="card"><b>Tamanho em bytes</b><code>malloc</code> recebe bytes. Escreva <code>n * sizeof *v</code>: se o tipo de <code>v</code> mudar, a conta continua certa.</div>
+<div class="card"><b>Devolve void *</b>Em C não precisa de <i>cast</i>: o <code>void *</code> se converte sozinho para <code>int *</code>.</div>
+<div class="card"><b>Pode falhar</b>Sem memória disponível, devolve <code>NULL</code>.</div>
+</div>`},
+{t:'calloc e structs no heap', h:`
+<div class="duo"><pre data-l="c">int *zeros = calloc(n, sizeof *zeros);   // n inteiros, todos 0
+
+Aluno *a = malloc(sizeof *a);            // uma struct no heap
+if (a) {
+    strcpy(a-&gt;nome, "Ana");
+    a-&gt;nota = 9.5f;
+}
+free(a);
+free(zeros);</pre><pre data-l="py">zeros = [0] * n                           # já nasce zerada
+
+a = Aluno("Ana", 101, 9.5)               # todo objeto Python já vive
+                                         # no heap; a é uma referência</pre></div>
+<div class="cards">
+<div class="card"><b>malloc(total)</b>Um argumento, em bytes. Conteúdo indefinido.</div>
+<div class="card"><b>calloc(qtd, tamanho)</b>Dois argumentos. Zera todos os bytes e confere se <code>qtd × tamanho</code> estoura.</div>
+</div>
+<p>Uma função que cria uma struct com <code>malloc</code> e devolve o ponteiro é o padrão de todo nó de lista ou árvore: o nó continua existindo depois que a função termina.</p>`},
+{t:'realloc: mudar o tamanho', h:`
+<div class="duo"><pre data-l="c">int *tmp = realloc(v, novo * sizeof *v);
+if (tmp == NULL) {
+    // falhou: v continua válido e com os dados antigos
+} else {
+    v = tmp;   // pode ser o mesmo endereço ou um novo
+}</pre><pre data-l="py">v.extend([None] * (novo - len(v)))   # crescer
+del v[novo:]                         # encolher
+# por baixo, a list faz o equivalente a um realloc</pre></div>
+<div class="cards">
+<div class="card"><b>Cresce no lugar</b>Se os bytes logo depois do bloco estão livres, o bloco só aumenta.</div>
+<div class="card"><b>Muda de endereço</b>Senão, aloca outro bloco, <b>copia</b> os dados e libera o antigo. Todo ponteiro para o endereço antigo fica inválido.</div>
+<div class="card"><b>Casos especiais</b><code>realloc(NULL, t)</code> é um <code>malloc(t)</code>. Os bytes novos não são zerados.</div>
+</div>
+<div class="alerta"><b>Erro clássico.</b> <code>v = realloc(v, t);</code> Se o realloc falhar, devolve <code>NULL</code>, você perde o único endereço do bloco antigo e ele vaza. Guarde o resultado numa variável temporária.</div>`},
+{t:'O vetor que dobra', h:`
+<p>Um vetor dinâmico guarda <code>tamanho</code> (quantos elementos há) e <code>capacidade</code> (quantos cabem). Quando enche, chama <code>realloc</code> com o <b>dobro</b> da capacidade.</p>
+<div class="duo"><pre data-l="c">if (v-&gt;tamanho == v-&gt;capacidade) {
+    int nova = v-&gt;capacidade ? 2 * v-&gt;capacidade : 1;
+    int *tmp = realloc(v-&gt;dados, nova * sizeof *tmp);
+    if (!tmp) return 0;
+    v-&gt;dados = tmp;
+    v-&gt;capacidade = nova;
+}
+v-&gt;dados[v-&gt;tamanho++] = x;</pre><pre data-l="py">if self.tamanho == len(self.dados):
+    nova = 2 * len(self.dados) if self.dados else 1
+    novos = [0] * nova
+    novos[:self.tamanho] = self.dados
+    self.dados = novos
+self.dados[self.tamanho] = x
+self.tamanho += 1</pre></div>
+<table class="cmp"><thead><tr><th>Estratégia</th><th>Cópias para inserir 1.000 elementos</th><th>Custo por inserção</th></tr></thead><tbody>
+<tr><td>Crescer de 1 em 1</td><td>499.500</td><td>O(n)</td></tr>
+<tr><td>Dobrar a capacidade</td><td>1.023</td><td>O(1) amortizado</td></tr></tbody></table>
+<div class="free">É assim que funcionam a <code>list</code> do Python, o <code>vector</code> do C++ e o <code>ArrayList</code> do Java. O Python cresce um pouco menos que o dobro, mas a ideia é a mesma.</div>`},
+{t:'Os erros clássicos', h:`
+<div class="cards">
+<div class="card"><b>Vazamento (memory leak)</b>Perder o último ponteiro de um bloco sem chamar <code>free</code>. O bloco fica ocupado até o programa acabar.</div>
+<div class="card"><b>Ponteiro pendente</b>Usar <code>p</code> depois de <code>free(p)</code>. O endereço continua em <code>p</code>, mas o espaço já pode pertencer a outro dado.</div>
+<div class="card"><b>Double free</b>Chamar <code>free</code> duas vezes no mesmo bloco. Corrompe o controle do heap.</div>
+<div class="card"><b>Tamanho errado</b><code>malloc(n)</code> em vez de <code>malloc(n * sizeof(int))</code> reserva n <b>bytes</b>, não n inteiros.</div>
+<div class="card"><b>Não verificar NULL</b>Se a alocação falhar, o próximo acesso derruba o programa.</div>
+<div class="card"><b>Ler lixo</b>Usar o conteúdo de um <code>malloc</code> sem inicializar.</div>
+</div>
+<div class="free">Ferramentas que pegam esses erros: compile com <code>gcc -fsanitize=address -g</code> ou rode com <code>valgrind ./programa</code>. Em Python, vazamento e ponteiro pendente praticamente não existem, porque o coletor de lixo só libera o que ninguém mais referencia.</div>`}
+],
+codigo:{nota:'Um vetor dinâmico de inteiros: começa com calloc, cresce dobrando com realloc e termina com free.',
+c:`#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+    int *dados;
+    int tamanho;
+    int capacidade;
+} Vetor;
+
+int iniciar(Vetor *v, int cap) {
+    v->dados = calloc(cap, sizeof *v->dados);    /* começa zerado */
+    v->tamanho = 0;
+    v->capacidade = v->dados ? cap : 0;
+    return v->dados != NULL;
+}
+
+int empurrar(Vetor *v, int x) {
+    if (v->tamanho == v->capacidade) {
+        int nova = v->capacidade ? 2 * v->capacidade : 1;
+        int *tmp = realloc(v->dados, nova * sizeof *tmp);
+        if (!tmp) return 0;                       /* v->dados continua válido */
+        v->dados = tmp;
+        v->capacidade = nova;
+        printf("  realloc: capacidade %d\\n", nova);
+    }
+    v->dados[v->tamanho++] = x;
+    return 1;
+}
+
+void liberar(Vetor *v) {
+    free(v->dados);
+    v->dados = NULL;
+    v->tamanho = v->capacidade = 0;
+}
+
+int main(void) {
+    Vetor v;
+    if (!iniciar(&v, 2)) return 1;
+    for (int i = 1; i <= 10; i++) empurrar(&v, i * i);
+    printf("tamanho %d, capacidade %d, último %d\\n",
+           v.tamanho, v.capacidade, v.dados[v.tamanho - 1]);
+    liberar(&v);
+    return 0;
+}`,
+py:`class VetorDinamico:
+    def __init__(self, capacidade=2):
+        self.dados = [0] * capacidade             # como o calloc: começa zerado
+        self.tamanho = 0
+
+    def empurrar(self, x):
+        if self.tamanho == len(self.dados):
+            nova = 2 * len(self.dados) if self.dados else 1
+            novos = [0] * nova                    # "realloc": um bloco maior...
+            novos[:self.tamanho] = self.dados     # ...e a cópia do antigo
+            self.dados = novos
+            print(f"  realloc: capacidade {nova}")
+        self.dados[self.tamanho] = x
+        self.tamanho += 1
+
+
+v = VetorDinamico(2)
+for i in range(1, 11):
+    v.empurrar(i * i)
+print(f"tamanho {v.tamanho}, capacidade {len(v.dados)}, último {v.dados[v.tamanho - 1]}")
+# na prática, a list já faz tudo isso: v = []; v.append(x)`},
+custo:[['malloc / free','O(1)*','Depende do alocador; tratamos como constante'],['calloc(n, t)','O(n)','Além de reservar, zera todos os bytes'],['realloc que muda de endereço','O(n)','Copia o bloco inteiro'],['Inserir no fim, dobrando','O(1) amortizado','As cópias somam menos de 2n'],['Inserir no fim, crescendo de 1 em 1','O(n)','Cada inserção pode copiar tudo']],
+pratica:[
+{t:'malloc e calloc', d:'Com a variável <b>p</b>, faça <b>malloc</b> de 4 inteiros. Com <b>q</b>, faça <b>calloc</b> de 4.', obs:'O que aparece dentro de cada bloco? Por que o malloc mostra <code>?</code>'},
+{t:'realloc no lugar ou mudando', d:'Faça <b>realloc</b> de <b>p</b> para 6. Depois use o cenário <b>realloc que muda</b>.', obs:'Quando o bloco cresceu no lugar e quando mudou de endereço? O que acontece com outro ponteiro que guardava o endereço antigo?'},
+{t:'Vazamento', d:'Rode o cenário <b>Vazamento</b> e avance passo a passo.', obs:'Qual bloco ficou sem nenhum ponteiro? Ainda dá para chamar <code>free</code> nele?'},
+{t:'Ponteiro pendente e double free', d:'Rode os cenários <b>Usar depois do free</b> e <b>Double free</b>.', obs:'Por que <code>p</code> ainda guarda um endereço depois do free? Como <code>p = NULL</code> evitaria os dois erros?'}
+],
+quiz:[
+{q:'Qual a diferença entre <code>malloc(n * sizeof(int))</code> e <code>calloc(n, sizeof(int))</code>?', ops:['Nenhuma','O calloc zera a memória e confere se a multiplicação estoura','O malloc é mais seguro','O calloc aloca na pilha'], ok:1, exp:'Os dois reservam o mesmo espaço no heap; o calloc entrega tudo zerado.'},
+{q:'Por que <code>v = realloc(v, novo);</code> é perigoso?', ops:['Porque é lento','Se o realloc falhar, devolve NULL e o endereço do bloco antigo se perde: vazamento','Porque realloc não pode crescer','Porque apaga os dados'], ok:1, exp:'Guarde o resultado em <code>tmp</code> e só atribua a <code>v</code> se não for NULL.'},
+{q:'Logo depois de <code>free(p);</code>, o que <code>p</code> guarda?', ops:['NULL, automaticamente','O mesmo endereço, agora inválido: um ponteiro pendente','Um endereço novo','O valor 0'], ok:1, exp:'O <code>free</code> não mexe na variável. Por isso é boa prática fazer <code>p = NULL</code> em seguida.'},
+{q:'Um vetor dinâmico que dobra a capacidade quando enche. Quanto custa inserir n elementos no fim?', ops:['O(n²)','O(n) no total, ou O(1) amortizado por inserção','O(n log n)','O(log n)'], ok:1, exp:'As cópias feitas nos realloc somam 1 + 2 + 4 + … &lt; 2n.'},
+{q:'Qual linha reserva espaço para 10 structs <code>Aluno</code>?', ops:['<code>malloc(10)</code>','<code>malloc(sizeof(Aluno))</code>','<code>malloc(10 * sizeof(Aluno))</code>','<code>malloc(sizeof(10 * Aluno))</code>'], ok:2, exp:'<code>malloc</code> recebe bytes: quantidade × tamanho de cada elemento.'}
+],
+prog:[
+{t:'Copiar uma string', enun:'Escreva <code>char *copiar(const char *s)</code>, que devolve uma cópia de <code>s</code> num bloco novo do heap (quem chamar faz o <code>free</code>). Devolva <code>NULL</code> se a alocação falhar. Em Python, faça o equivalente para uma lista: crie uma lista nova e copie elemento a elemento.', dica:'Reserve <code>strlen(s) + 1</code> bytes: o <code>+ 1</code> é para o <code>\\0</code> do fim. Depois use <code>memcpy</code> ou um laço.',
+c:`#include <stdlib.h>
+#include <string.h>
+
+char *copiar(const char *s) {
+    size_t n = strlen(s) + 1;          /* + 1 para o '\\0' */
+    char *c = malloc(n);               /* sizeof(char) é sempre 1 */
+    if (c == NULL) return NULL;
+    memcpy(c, s, n);
+    return c;                          /* quem chamou faz free(c) */
+}`,
+py:`def copiar(v):
+    c = [None] * len(v)                # um "bloco" novo
+    for i, x in enumerate(v):
+        c[i] = x
+    return c                           # o mesmo que v[:] ou list(v)`},
+{t:'Matriz dinâmica', enun:'Crie uma matriz <code>linhas × colunas</code> de inteiros zerados, com o tamanho lido em tempo de execução, e uma função que a libera.', dica:'Aloque um vetor de <code>linhas</code> ponteiros e, para cada linha, um vetor de <code>colunas</code> inteiros com <code>calloc</code>. Para liberar, faça o caminho inverso: primeiro cada linha, depois o vetor de ponteiros. Em Python, cuidado com <code>[[0] * c] * l</code>: as linhas viram a mesma lista.',
+c:`#include <stdlib.h>
+
+void liberar_matriz(int **m, int linhas) {
+    if (!m) return;
+    for (int i = 0; i < linhas; i++) free(m[i]);
+    free(m);
+}
+
+int **criar_matriz(int linhas, int colunas) {
+    int **m = malloc(linhas * sizeof *m);
+    if (!m) return NULL;
+    for (int i = 0; i < linhas; i++) {
+        m[i] = calloc(colunas, sizeof *m[i]);
+        if (!m[i]) {                       /* falhou no meio: desfaz */
+            liberar_matriz(m, i);
+            return NULL;
+        }
+    }
+    return m;
+}`,
+py:`def criar_matriz(linhas, colunas):
+    # uma lista nova por linha; [[0] * colunas] * linhas repetiria
+    # a MESMA lista em todas as linhas
+    return [[0] * colunas for _ in range(linhas)]`},
+{t:'Filtrar e encolher', enun:'Receba um vetor de <code>n</code> inteiros e devolva um vetor <b>novo</b>, do tamanho exato, só com os números pares. O tamanho do resultado volta por <code>*m</code>.', dica:'Aloque <code>n</code> posições (o pior caso), copie os pares e, no fim, use <code>realloc</code> para encolher até a quantidade usada. Se nenhum par sobrar, libere o bloco e devolva <code>NULL</code>.',
+c:`#include <stdlib.h>
+
+int *filtrar_pares(const int *v, int n, int *m) {
+    *m = 0;
+    if (n <= 0) return NULL;
+    int *r = malloc(n * sizeof *r);
+    if (!r) return NULL;
+    for (int i = 0; i < n; i++)
+        if (v[i] % 2 == 0) r[(*m)++] = v[i];
+    if (*m == 0) { free(r); return NULL; }
+    int *tmp = realloc(r, *m * sizeof *r);   /* encolher quase sempre dá certo */
+    return tmp ? tmp : r;
+}`,
+py:`def filtrar_pares(v):
+    r = [None] * len(v)                # pior caso
+    m = 0
+    for x in v:
+        if x % 2 == 0:
+            r[m] = x
+            m += 1
+    del r[m:]                          # "realloc" para o tamanho exato
+    return r                           # o mesmo que [x for x in v if x % 2 == 0]`}
+]
+});
+
+MODS.push({
+id:'vetor', n:4, era:0, titulo:'Lista Sequencial (Vetor)', sub:'Acesso direto por índice, inserção cara no meio',
 viz:'viz/lista-vetor.html',
 slides:[
 {t:'Uma sequência em memória contígua', h:`
@@ -618,7 +869,7 @@ py:`def inserir_ordenado(dados, tamanho, valor):
 });
 
 MODS.push({
-id:'busca', n:4, era:0, titulo:'Busca Sequencial e Binária', sub:'Olhar um por um ou cortar pela metade',
+id:'busca', n:5, era:0, titulo:'Busca Sequencial e Binária', sub:'Olhar um por um ou cortar pela metade',
 viz:'viz/busca.html',
 slides:[
 {t:'Achar um valor num vetor', h:`
@@ -856,7 +1107,7 @@ py:`def busca_rec(v, x, ini=0, fim=None):
 });
 
 MODS.push({
-id:'estatica', n:5, era:0, titulo:'Lista Encadeada Estática', sub:'Ponteiros simulados por índices dentro de um vetor',
+id:'estatica', n:6, era:0, titulo:'Lista Encadeada Estática', sub:'Ponteiros simulados por índices dentro de um vetor',
 viz:'viz/lista-estatica.html',
 slides:[
 {t:'O meio-termo', h:`
@@ -1049,7 +1300,7 @@ py:`def livres(l):
 });
 
 MODS.push({
-id:'simples', n:6, era:0, titulo:'Lista Encadeada (Simples)', sub:'Nós ligados por ponteiros, sem posição fixa',
+id:'simples', n:7, era:0, titulo:'Lista Encadeada (Simples)', sub:'Nós ligados por ponteiros, sem posição fixa',
 viz:'viz/lista-simples.html',
 slides:[
 {t:'Nós espalhados pela memória', h:`
@@ -1254,7 +1505,7 @@ py:`def tem_ciclo(head):
 });
 
 MODS.push({
-id:'dupla', n:7, era:0, titulo:'Lista Duplamente Encadeada', sub:'Navegação nos dois sentidos',
+id:'dupla', n:8, era:0, titulo:'Lista Duplamente Encadeada', sub:'Navegação nos dois sentidos',
 viz:'viz/lista-dupla.html',
 slides:[
 {t:'Um ponteiro a mais', h:`
@@ -1383,7 +1634,7 @@ l.remover_no(tres)
 print(l.de_tras_pra_frente())   # [4, 2, 1]`},
 custo:[['Inserir/remover no início ou fim','O(1)','Com head e tail'],['Remover nó conhecido','O(1)','Já tem o endereço'],['Buscar por valor','O(n)',''],['Percorrer ao contrário','O(n)','Seguindo prev'],['Memória por nó','2 ponteiros','O dobro da lista simples']],
 pratica:[
-{t:'Remova o fim e conte os passos', d:'Use <b>Remover fim · O(1)</b>.', obs:'Compare com o mesmo botão na lista simples (módulo 6). Qual ponteiro tornou isso possível?'},
+{t:'Remova o fim e conte os passos', d:'Use <b>Remover fim · O(1)</b>.', obs:'Compare com o mesmo botão na lista simples (módulo 7). Qual ponteiro tornou isso possível?'},
 {t:'Percorra de trás para frente', d:'Clique em <b>◀◀ Percorrer de trás pra frente</b>.', obs:'De qual ponteiro o percurso começa?'},
 {t:'Insira numa posição do meio', d:'Use <b>Inserir na posição</b> com um índice central.', obs:'Quantos ponteiros mudaram? Liste cada um.'},
 {t:'Reverta a lista dupla', d:'Use <b>⇄ Reverter lista</b>.', obs:'Reverter aqui é trocar <code>prev</code> e <code>prox</code> de cada nó. O que acontece com head e tail?'}
