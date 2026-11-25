@@ -1,6 +1,6 @@
 # Oficina de Estruturas de Dados · profjon
 
-Material interativo de Estruturas de Dados com 25 módulos organizados em 7 eras, das variáveis aos grafos. Cada módulo tem quatro abas:
+Material interativo de Estruturas de Dados com 26 módulos organizados em 7 eras, das variáveis aos grafos. Cada módulo tem quatro abas:
 
 - **Teoria:** slides com conceito, analogia, implementação em C e Python (com botões para cada linguagem ou lado a lado), tabela de custos e modo apresentação.
 - **Prática:** o visualizador interativo da estrutura, com um roteiro de tarefas e o que observar em cada uma.
@@ -17,7 +17,7 @@ Material interativo de Estruturas de Dados com 25 módulos organizados em 7 eras
 | 02 · Estruturas lineares | Pilha, fila e deque, Fila circular |
 | 03 · Árvores de busca | Árvore binária de busca, AVL, Rubro-negra, Splay |
 | 04 · Árvores multi-via | Árvore B, Árvore B+ |
-| 05 · Heaps e ordenação | Heap, Smoothsort |
+| 05 · Heaps e ordenação | Heap, Código de Huffman, Smoothsort |
 | 06 · Estruturas especializadas | Trie, Árvore de decisão (Gini), Tabela hash |
 | 07 · Conjuntos e grafos | Union-Find, BFS e DFS, Dijkstra, Árvore geradora mínima |
 
@@ -40,7 +40,7 @@ Material interativo de Estruturas de Dados com 25 módulos organizados em 7 eras
 | Splay | O Mercado da Torre, O Herói da Cripta, A Masmorra, Arena das Árvores |
 | Árvore B | Os Cofres do Rei Anão |
 | Árvore B+ | As Galerias da Mina |
-| Heap | A Forja de Huffman |
+| Heap e Huffman | A Forja de Huffman |
 | Smoothsort | O Jardim de Leonardo |
 | Trie | A Biblioteca dos Ecos |
 | Árvore de decisão | O Oráculo das Frutas |

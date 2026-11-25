@@ -1,0 +1,490 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Código de Huffman</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#EEF1EF;
+    --card:#FFFFFF;
+    --ink:#151E1A;
+    --ink-soft:#52605A;
+    --ink-faint:#8B978F;
+    --line:#D7DED9;
+    --line-strong:#BFC9C3;
+    --accent:#146B54;
+    --accent-ink:#0E4E3D;
+    --accent-soft:#E1F0EA;
+    --gold:#966018;
+    --gold-soft:#F6EAD4;
+    --rust:#A2412A;
+    --rust-soft:#F6E1DA;
+    --violet:#5F4C82;
+    --violet-soft:#EAE4F3;
+    --success:#276B45;
+    --success-soft:#DFEFE5;
+    --focus:#146B54;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+      --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+      --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+      --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#121512; --card:#191D19; --ink:#E9EEEA; --ink-soft:#AEB8B1; --ink-faint:#79837C;
+    --line:#2B322D; --line-strong:#3B443C; --accent:#3FBE97; --accent-ink:#8FE0C4; --accent-soft:#173129;
+    --gold:#E0AA4E; --gold-soft:#332711; --rust:#E08267; --rust-soft:#382019;
+    --violet:#B6A1DE; --violet-soft:#292236; --success:#5FCB8D; --success-soft:#173226; --focus:#3FBE97;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline:20px; padding-block:32px 64px;
+    font-size:15px; line-height:1.55;
+  }
+  .wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:40px;}
+  h1,h2,h3{font-family:'IBM Plex Serif', Georgia, serif; font-weight:600; text-wrap:balance; color:var(--ink); margin:0;}
+  h1{font-size:clamp(1.6rem,4vw,2.15rem); letter-spacing:-0.01em;}
+  h2{font-size:1.3rem; margin-bottom:4px;}
+  h3{font-size:1.02rem;}
+  p{margin:0;}
+  code{font-family:'IBM Plex Mono', ui-monospace, monospace; background:var(--accent-soft); color:var(--accent-ink); padding:1px 5px; border-radius:4px; font-size:0.92em;}
+  .prose{max-width:68ch;color:var(--ink-soft);}
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:0.12em;
+    font-size:0.72rem; color:var(--accent-ink); font-weight:500;
+  }
+  a{color:var(--accent-ink);}
+  header{display:flex; flex-direction:column; gap:10px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:22px; display:flex; flex-direction:column; gap:18px;
+  }
+  .statusbar{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;}
+  .op-pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:999px; padding:5px 13px;
+    font-size:0.78rem; font-weight:600; border:1px solid var(--line-strong); color:var(--ink-soft);
+  }
+  .op-pill .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-faint);}
+  .op-pill[data-op="insert"], .op-pill[data-op="insert-start"]{ color:var(--gold); border-color:var(--gold); background:var(--gold-soft);}
+  .op-pill[data-op="insert"] .dot, .op-pill[data-op="insert-start"] .dot{background:var(--gold);}
+  .op-pill[data-op="remove-start"], .op-pill[data-op="shrink"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="remove-start"] .dot, .op-pill[data-op="shrink"] .dot{background:var(--rust);}
+  .op-pill[data-op="shift-right"], .op-pill[data-op="shift-left"]{ color:var(--violet); border-color:var(--violet); background:var(--violet-soft);}
+  .op-pill[data-op="shift-right"] .dot, .op-pill[data-op="shift-left"] .dot{background:var(--violet);}
+  .op-pill[data-op="search-start"], .op-pill[data-op="compare"]{ color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft);}
+  .op-pill[data-op="search-start"] .dot, .op-pill[data-op="compare"] .dot{background:var(--accent);}
+  .op-pill[data-op="found"]{ color:var(--success); border-color:var(--success); background:var(--success-soft);}
+  .op-pill[data-op="found"] .dot{background:var(--success);}
+  .op-pill[data-op="bad"], .op-pill[data-op="not-found"]{ color:var(--rust); border-color:var(--rust); background:var(--rust-soft);}
+  .op-pill[data-op="bad"] .dot, .op-pill[data-op="not-found"] .dot{background:var(--rust);}
+  .op-pill[data-op="info"]{ color:var(--ink-soft); }
+  .step-counter{font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink-faint);}
+
+  .stage-scroll{overflow-x:auto; overflow-y:hidden; padding-block:8px;}
+  .sl-svg{display:block; margin:0 auto;}
+  @media (prefers-reduced-motion: reduce){ .sl-svg, .sl-svg *{ transition:none !important; } }
+  svg text{font-family:'IBM Plex Mono', monospace;}
+
+  .sl-cell-rect{ fill:var(--card); stroke:var(--line-strong); stroke-width:1.6; transition: stroke .2s ease, fill .2s ease, x .28s ease; }
+  .sl-cell-rect.occupied{ fill:var(--accent-soft); }
+  .sl-cell-rect.empty{ fill:var(--paper); stroke-dasharray:3 3; }
+  .sl-cell[data-state="new"] .sl-cell-rect{ stroke:var(--gold); stroke-width:2.8; fill:var(--gold-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--gold) 55%, transparent)); }
+  .sl-cell[data-state="source"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.6; }
+  .sl-cell[data-state="dest"] .sl-cell-rect{ stroke:var(--violet); stroke-width:2.8; fill:var(--violet-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--violet) 55%, transparent)); }
+  .sl-cell[data-state="cursor"] .sl-cell-rect{ stroke:var(--accent); stroke-width:2.8; filter:drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 55%, transparent)); }
+  .sl-cell[data-state="found"] .sl-cell-rect{ stroke:var(--success); stroke-width:2.8; fill:var(--success-soft); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--success) 55%, transparent)); }
+  .sl-cell[data-state="bad"] .sl-cell-rect{ stroke:var(--rust); stroke-width:2.4; }
+  .sl-cell-value{ font-weight:600; font-size:12.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink); }
+  .sl-cell-value.empty{ fill:var(--ink-faint); font-weight:400; }
+  .sl-cell-index{ font-size:9.5px; text-anchor:middle; dominant-baseline:central; fill:var(--ink-faint); }
+  .sl-cell-index.boundary{ fill:var(--accent-ink); font-weight:600; }
+  .sl-boundary-line{ stroke:var(--accent); stroke-width:1.6; stroke-dasharray:4 3; }
+  .sl-boundary-label{ font-size:9px; fill:var(--accent-ink); text-anchor:middle; font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sl-cursor-arrow{ fill:var(--accent); }
+  .sl-section-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; fill:var(--ink-faint); font-family:'IBM Plex Mono',monospace; }
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 18px; font-size:0.76rem; color:var(--ink-soft);}
+  .legend .item{display:flex; align-items:center; gap:6px;}
+  .legend .swatch{width:12px;height:12px;border-radius:4px;border:2px solid transparent; background:var(--card);}
+  .legend .swatch.cursor{border-color:var(--accent);}
+  .legend .swatch.shift{border-color:var(--violet);}
+  .legend .swatch.new{border-color:var(--gold); background:var(--gold-soft);}
+  .legend .swatch.found{border-color:var(--success); background:var(--success-soft);}
+  .legend .swatch.bad{border-color:var(--rust);}
+  .legend .swatch.occ{background:var(--accent-soft); border-color:var(--line-strong);}
+  .legend .swatch.empty{background:var(--paper); border-color:var(--line-strong); border-style:dashed;}
+
+  .message{
+    background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius:10px; padding:13px 16px; color:var(--ink); font-size:0.92rem; min-height:2.6em;
+  }
+
+  .controls{display:flex; flex-direction:column; gap:12px;}
+  .controls-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .scrubber{width:100%; accent-color:var(--accent);}
+  button{
+    font-family:'IBM Plex Sans', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  button:focus-visible, input:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.primary:hover{filter:brightness(1.07); color:#fff;}
+  button.danger{color:var(--rust);} button.danger:hover{border-color:var(--rust); color:var(--rust);}
+  button.violet{color:var(--violet);} button.violet:hover{border-color:var(--violet); color:var(--violet);}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .spacer{flex:1 1 auto; min-width:6px;}
+  label.small{font-size:0.76rem; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  input[type="range"].mini{width:100px; accent-color:var(--accent);}
+  input[type="number"], input[type="text"]{
+    font-family:'IBM Plex Mono', monospace; font-size:0.85rem;
+    border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px;
+    background:var(--paper); color:var(--ink); min-width:0; width:92px;
+  }
+  .error-text{color:var(--rust); font-size:0.78rem;}
+
+  .explain-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .explain-grid{grid-template-columns:1fr;} }
+
+  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:620px){ .compare-grid{grid-template-columns:1fr;} }
+  .compare-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .compare-card .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+
+  .phase-card{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:16px 18px; display:flex; flex-direction:column; gap:8px;}
+  .phase-card .num{font-family:'IBM Plex Mono',monospace; color:var(--ink-faint); font-size:0.78rem;}
+
+  table.bigo{border-collapse:collapse; width:100%; font-size:0.86rem;}
+  table.bigo th, table.bigo td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  table.bigo th{color:var(--ink-faint); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;}
+  table.bigo td.op{font-weight:600;}
+  .bigo-wrap{overflow-x:auto;}
+
+  footer{color:var(--ink-faint); font-size:0.78rem; padding-top:6px; border-top:1px solid var(--line);}
+
+  .struct-block{display:flex; flex-direction:column; gap:10px;}
+  .struct-block .tag{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);}
+  pre.code{
+    margin:0; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-family:'IBM Plex Mono', ui-monospace, monospace; font-size:0.84rem; line-height:1.65; color:var(--ink);
+    tab-size:4;
+  }
+  pre.code code{background:none; padding:0; border-radius:0; color:inherit; font-size:inherit;}
+  pre.code .kw{color:var(--accent-ink); font-weight:600;}
+  pre.code .ty{color:var(--violet);}
+  pre.code .cm{color:var(--ink-faint); font-style:italic;}
+  pre.code .nm{color:var(--gold);}
+
+  .lang-sw{display:flex; gap:4px; flex-wrap:wrap; align-items:center;}
+  .lang-sw .tag{margin-right:auto;}
+  .lang-sw button{font:600 0.78rem 'IBM Plex Mono',monospace; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); border-radius:6px; padding:4px 12px; cursor:pointer;}
+  .lang-sw button.amb{font-weight:500;}
+  .lang-sw button[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .lang-sw button[aria-pressed="true"]:hover{color:var(--paper);}
+  .lang-par{display:grid; gap:10px;}
+  .struct-block[data-lang="c"] .so-py, .struct-block[data-lang="py"] .so-c{display:none;}
+  .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr 1fr;}
+  .struct-block[data-lang="ambos"] .struct-note.so-py{display:none;}
+  @media (max-width:860px){ .struct-block[data-lang="ambos"] .lang-par{grid-template-columns:1fr;} }
+  .struct-note{font-size:0.86rem; color:var(--ink-soft); max-width:68ch;}
+  .struct-note code{white-space:nowrap;}
+</style>
+<style>
+  .hf-svg{display:block; width:100%; height:auto;}
+  .hf-e{stroke:var(--line-strong); stroke-width:2; fill:none; transition:stroke .2s ease;}
+  .hf-e.cam{stroke:var(--accent); stroke-width:3.5;}
+  .hf-bit{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; fill:var(--ink-faint); text-anchor:middle;}
+  .hf-bit.cam{fill:var(--accent-ink);}
+  .hf-n circle, .hf-n rect{fill:var(--card); stroke:var(--line-strong); stroke-width:1.8; transition:fill .2s ease, stroke .2s ease;}
+  .hf-n.folha rect{fill:var(--accent-soft); stroke:var(--accent);}
+  .hf-n text{font-family:'IBM Plex Mono',monospace; text-anchor:middle; dominant-baseline:central;}
+  .hf-n .s{font-weight:700; font-size:14px; fill:var(--ink);}
+  .hf-n .f{font-size:10px; fill:var(--ink-soft);}
+  .hf-n .fi{font-weight:600; font-size:12px; fill:var(--ink);}
+  .hf-n.prox circle, .hf-n.prox rect{stroke:var(--gold); stroke-width:3; fill:var(--gold-soft);}
+  .hf-n.novo circle{stroke:var(--success); stroke-width:3; fill:var(--success-soft);}
+  .hf-n.cam rect{stroke:var(--accent-ink); stroke-width:3;}
+  .freqs{display:flex; flex-wrap:wrap; gap:6px;}
+  .freqs span{font-family:'IBM Plex Mono',monospace; font-size:0.82rem; border:1px solid var(--line-strong); border-radius:999px; padding:3px 10px; background:var(--paper);}
+  .freqs b{color:var(--accent-ink);}
+  .hf-cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  @media (max-width:760px){ .hf-cols{grid-template-columns:1fr;} }
+  table.cod{border-collapse:collapse; width:100%; font-family:'IBM Plex Mono',monospace; font-size:0.85rem;}
+  table.cod td, table.cod th{padding:6px 8px; border-bottom:1px solid var(--line); text-align:left;}
+  table.cod th{font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-faint);}
+  table.cod tr.lin{cursor:pointer;}
+  table.cod tr.lin:hover td, table.cod tr.sel td{background:var(--accent-soft);}
+  .bits{font-family:'IBM Plex Mono',monospace; font-size:0.9rem; line-height:1.9; word-break:break-all;}
+  .bits span{padding:2px 1px; border-radius:4px;}
+  .bits span.p0{background:var(--violet-soft);} .bits span.p1{background:var(--gold-soft);}
+  .bits span.sel{background:var(--accent); color:#fff;}
+  .stats{display:flex; flex-wrap:wrap; gap:8px;}
+  .stats div{border:1px solid var(--line); border-radius:10px; padding:8px 12px; background:var(--paper);}
+  .stats span{display:block; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--ink-faint);}
+  .stats b{font-family:'IBM Plex Mono',monospace; font-size:1.15rem;}
+  .stats .best b{color:var(--success);}
+</style>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Heaps e ordenação · compressão</span>
+    <h1>Código de Huffman</h1>
+    <p class="prose">Digite um texto e acompanhe a construção da árvore: a cada passo, o <strong>min-heap</strong> entrega os dois nós de menor frequência, que viram filhos de um nó novo com a soma. No fim, cada caminho da raiz até uma folha é o código da letra: <code>0</code> para a esquerda, <code>1</code> para a direita.</p>
+  </header>
+
+  <section class="struct-block" data-lang="c" aria-label="Construção da árvore em C e Python">
+    <div class="lang-sw" role="group" aria-label="Linguagem"><span class="tag">O laço que monta a árvore</span><button data-l="c" aria-pressed="true">C</button><button data-l="py" aria-pressed="false">Python</button><button class="amb" data-l="ambos" aria-pressed="false">Lado a lado</button></div>
+    <div class="lang-par">
+    <pre class="code so-c" aria-label="C"><code><span class="cm">/* uma folha por símbolo, ordenadas pela frequência */</span>
+<span class="kw">for</span> (<span class="ty">int</span> c = <span class="nm">0</span>; c &lt; <span class="nm">256</span>; c++)
+    <span class="kw">if</span> (freq[c]) inserir(novo(freq[c], c, <span class="nm">NULL</span>, <span class="nm">NULL</span>));
+
+<span class="kw">while</span> (tam &gt; <span class="nm">1</span>) {
+    <span class="ty">No</span> *a = extrair(), *b = extrair();      <span class="cm">/* os dois menores */</span>
+    inserir(novo(a-&gt;freq + b-&gt;freq, <span class="nm">0</span>, a, b)); <span class="cm">/* o pai volta ao heap */</span>
+}
+<span class="ty">No</span> *raiz = extrair();</code></pre>
+    <pre class="code so-py" aria-label="Python"><code><span class="cm"># uma folha por símbolo, ordenadas pela frequência</span>
+heap = [(f, next(ordem), No(f, c)) <span class="kw">for</span> c, f <span class="kw">in</span> sorted(freq.items())]
+heapq.heapify(heap)
+
+<span class="kw">while</span> len(heap) &gt; <span class="nm">1</span>:
+    fa, _, a = heapq.heappop(heap)          <span class="cm"># os dois menores</span>
+    fb, _, b = heapq.heappop(heap)
+    heapq.heappush(heap, (fa + fb, next(ordem), No(fa + fb, <span class="nm">None</span>, a, b)))
+raiz = heap[<span class="nm">0</span>][<span class="nm">2</span>]</code></pre>
+    </div>
+    <p class="struct-note so-c">O menor sai à esquerda (bit 0) e o segundo menor à direita (bit 1). Empates são desfeitos pela ordem de criação dos nós, como no código do módulo.</p>
+    <p class="struct-note so-py">A tupla <code>(freq, ordem, nó)</code> faz o <code>heapq</code> comparar primeiro a frequência e, nos empates, a ordem de criação. Assim o Python nunca precisa comparar dois objetos <code>No</code>.</p>
+  </section>
+
+  <section class="card" aria-label="Visualizador do código de Huffman">
+    <div class="statusbar">
+      <span class="op-pill" id="opPill" data-op="info"><span class="dot"></span><span id="opLabel">Início</span></span>
+      <span class="step-counter" id="stepCounter">Passo 0 / 0</span>
+    </div>
+
+    <div class="controls-row">
+      <label class="small">Texto <input type="text" id="txt" value="ABRACADABRA" maxlength="60" style="width:260px;"></label>
+      <button class="primary" id="bMontar">Montar</button>
+      <div class="spacer"></div>
+      <span class="small" style="font-size:.76rem;color:var(--ink-soft)">Exemplos</span>
+      <button data-ex="ABRACADABRA">ABRACADABRA</button>
+      <button data-ex="ABCDEFGH">ABCDEFGH</button>
+      <button data-ex="AAAAAAAB">AAAAAAAB</button>
+      <button data-ex="ESTRUTURA DE DADOS">ESTRUTURA DE DADOS</button>
+    </div>
+
+    <div class="freqs" id="freqs"></div>
+
+    <div class="stage-scroll"><svg class="hf-svg" id="svg" role="img" aria-label="Floresta e árvore de Huffman"></svg></div>
+
+    <div class="message" id="message" aria-live="polite">Carregando…</div>
+
+    <div class="controls">
+      <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" step="1" aria-label="Navegar pelos passos">
+      <div class="controls-row">
+        <button id="bReset">⟲ Reiniciar</button>
+        <button id="bPrev">◀ Voltar</button>
+        <button id="bNext">Passo ▶</button>
+        <button class="primary" id="bPlay">▶ Rodar</button>
+        <div class="spacer"></div>
+        <label class="small">Velocidade <input type="range" class="mini" id="speed" min="200" max="1600" value="800" step="10"></label>
+      </div>
+      <div class="error-text" id="errorText" hidden></div>
+    </div>
+
+    <div class="hf-cols" id="resultado" hidden>
+      <div>
+        <h3 style="margin-bottom:8px">Tabela de códigos</h3>
+        <table class="cod"><thead><tr><th>Símbolo</th><th>Freq.</th><th>Código</th><th>Bits</th></tr></thead><tbody id="tab"></tbody></table>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <h3>Texto codificado</h3>
+        <div class="bits" id="bits"></div>
+        <div class="stats" id="stats"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="explain-grid">
+    <div class="phase-card">
+      <span class="num">Por que um heap</span>
+      <h3>Os dois menores, sempre</h3>
+      <p class="prose">A cada fusão é preciso achar os dois nós de menor frequência entre os que sobraram. Com um min-heap, cada extração e cada inserção custam O(log k); com uma lista sem ordem, cada busca custaria O(k).</p>
+    </div>
+    <div class="phase-card">
+      <span class="num">Por que é ótimo</span>
+      <h3>Os raros vão para o fundo</h3>
+      <p class="prose">Cada fusão soma um bit ao código de todos os símbolos abaixo dela. Juntar sempre os dois menores pesos faz os bits extras caírem sobre os símbolos menos usados.</p>
+    </div>
+  </section>
+
+  <footer>Visualizador didático. O menor nó retirado do heap vira o filho da esquerda; empates de frequência são desfeitos pela ordem de criação, como no código do módulo.</footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var E = { nos:[], frames:[], k:0, timer:null, raiz:null, codigos:{}, texto:'', sel:null };
+  function vis(c){ return c === ' ' ? '␣' : c; }
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function menor(a, b){ return a.freq !== b.freq ? a.freq - b.freq : a.ordem - b.ordem; }
+
+  function montar(texto){
+    pausar();
+    E.texto = texto; E.nos = []; E.frames = []; E.sel = null;
+    var freq = {};
+    for (var i = 0; i < texto.length; i++) freq[texto[i]] = (freq[texto[i]] || 0) + 1;
+    var simbolos = Object.keys(freq).sort();
+    var heap = simbolos.map(function(s){ var n = {id:E.nos.length, ordem:E.nos.length, freq:freq[s], s:s, esq:null, dir:null}; E.nos.push(n); return n; });
+    var raizes = heap.slice();
+    function foto(par, novo, msg){ E.frames.push({raizes:raizes.slice().sort(menor), par:par, novo:novo, msg:msg}); }
+    var ordenadas = raizes.slice().sort(menor);
+    foto(ordenadas.length > 1 ? [ordenadas[0].id, ordenadas[1].id] : [], null,
+      'Contamos as frequências e criamos uma <b>folha</b> para cada símbolo. As ' + raizes.length + ' folhas vão para o min-heap, em ordem de frequência. ' + (raizes.length > 1 ? 'Em destaque, os dois menores: serão os primeiros a sair.' : 'Só há um símbolo: ele recebe o código <code>0</code>.'));
+    while (raizes.length > 1) {
+      raizes.sort(menor);
+      var a = raizes.shift(), b = raizes.shift();
+      var p = {id:E.nos.length, ordem:E.nos.length, freq:a.freq + b.freq, s:null, esq:a, dir:b};
+      E.nos.push(p); raizes.push(p);
+      var prox = raizes.slice().sort(menor);
+      foto(prox.length > 1 ? [prox[0].id, prox[1].id] : [], p.id,
+        'Saíram do heap <b>' + rot(a) + '</b> e <b>' + rot(b) + '</b>, os dois menores. Entrou um nó novo com <b>' + a.freq + ' + ' + b.freq + ' = ' + p.freq + '</b>; ' + rot(a) + ' fica à esquerda (bit 0) e ' + rot(b) + ' à direita (bit 1). ' +
+        (prox.length > 1 ? 'Restam ' + prox.length + ' árvores no heap.' : 'Sobrou uma única árvore: é a raiz. Fim da construção!'));
+    }
+    E.raiz = raizes[0];
+    E.codigos = {};
+    (function gerar(n, pref){ if (!n.esq) { E.codigos[n.s] = pref || '0'; return; } gerar(n.esq, pref + '0'); gerar(n.dir, pref + '1'); })(E.raiz, '');
+    E.k = 0;
+    $('scrubber').max = E.frames.length - 1;
+    $('freqs').innerHTML = simbolos.map(function(s){ return '<span>' + esc(vis(s)) + ' <b>' + freq[s] + '</b></span>'; }).join('');
+    desenhar();
+  }
+  function rot(n){ return n.s !== null ? vis(n.s) + '(' + n.freq + ')' : 'nó(' + n.freq + ')'; }
+
+  /* ---------- desenho ---------- */
+  function el(tag, at, pai){ var e = document.createElementNS(SVGNS, tag); for (var k in at) e.setAttribute(k, at[k]); if (pai) pai.appendChild(e); return e; }
+  function desenhar(){
+    var f = E.frames[E.k], svg = $('svg');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var SX = 58, SY = 62, x0 = 34, slot = 0, pos = {}, maxD = 0;
+    function lay(n, d){
+      maxD = Math.max(maxD, d);
+      if (!n.esq) { pos[n.id] = {x: x0 + slot * SX, y: 30 + d * SY}; slot++; return; }
+      lay(n.esq, d + 1); lay(n.dir, d + 1);
+      pos[n.id] = {x:(pos[n.esq.id].x + pos[n.dir.id].x) / 2, y: 30 + d * SY};
+    }
+    f.raizes.forEach(function(r, i){ lay(r, 0); slot += 0.5; });
+    var maxX = 0; Object.keys(pos).forEach(function(k){ maxX = Math.max(maxX, pos[k].x); });
+    var W = Math.max(320, maxX + x0), H = 60 + maxD * SY;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.style.maxWidth = (W * 1.1) + 'px';
+    var cam = {};
+    if (E.sel !== null && E.k === E.frames.length - 1) {
+      var n = E.raiz; var c = E.codigos[E.sel];
+      if (n.esq) for (var i = 0; i < c.length; i++) { var filho = c[i] === '0' ? n.esq : n.dir; cam[filho.id] = true; n = filho; }
+      cam[n.id] = true;
+    }
+    var ge = el('g', {}, svg), gn = el('g', {}, svg);
+    function draw(n){
+      var p = pos[n.id];
+      if (n.esq) {
+        [[n.esq, '0'], [n.dir, '1']].forEach(function(par){
+          var q = pos[par[0].id], noCam = cam[par[0].id];
+          el('line', {'class':'hf-e' + (noCam ? ' cam' : ''), x1:p.x, y1:p.y, x2:q.x, y2:q.y}, ge);
+          var t = el('text', {'class':'hf-bit' + (noCam ? ' cam' : ''), x:(p.x + q.x) / 2 + (par[1] === '0' ? -8 : 8), y:(p.y + q.y) / 2 - 2}, ge); t.textContent = par[1];
+          draw(par[0]);
+        });
+      }
+      var cls = 'hf-n' + (n.esq ? '' : ' folha') + (f.par.indexOf(n.id) >= 0 ? ' prox' : '') + (f.novo === n.id ? ' novo' : '') + (cam[n.id] && !n.esq ? ' cam' : '');
+      var g = el('g', {'class':cls}, gn);
+      if (n.esq) { el('circle', {cx:p.x, cy:p.y, r:17}, g); var t1 = el('text', {'class':'fi', x:p.x, y:p.y}, g); t1.textContent = n.freq; }
+      else { el('rect', {x:p.x - 19, y:p.y - 19, width:38, height:38, rx:8}, g);
+        var t2 = el('text', {'class':'s', x:p.x, y:p.y - 4}, g); t2.textContent = vis(n.s);
+        var t3 = el('text', {'class':'f', x:p.x, y:p.y + 11}, g); t3.textContent = n.freq; }
+    }
+    f.raizes.forEach(draw);
+    var fim = E.k === E.frames.length - 1;
+    $('message').innerHTML = f.msg;
+    $('opPill').dataset.op = fim ? 'found' : (E.k === 0 ? 'info' : 'insert');
+    $('opLabel').textContent = fim ? 'Árvore pronta' : (E.k === 0 ? 'Folhas no heap' : 'Fusão ' + E.k);
+    $('stepCounter').textContent = 'Passo ' + E.k + ' / ' + (E.frames.length - 1);
+    $('scrubber').value = E.k;
+    $('bPrev').disabled = E.k === 0; $('bReset').disabled = E.k === 0; $('bNext').disabled = fim;
+    $('resultado').hidden = !fim;
+    if (fim) resultado();
+  }
+  function resultado(){
+    var simb = Object.keys(E.codigos).sort(), freq = {};
+    for (var i = 0; i < E.texto.length; i++) freq[E.texto[i]] = (freq[E.texto[i]] || 0) + 1;
+    var total = 0;
+    $('tab').innerHTML = simb.map(function(s){
+      var c = E.codigos[s], b = c.length * freq[s]; total += b;
+      return '<tr class="lin' + (E.sel === s ? ' sel' : '') + '" data-s="' + esc(s) + '"><td>' + esc(vis(s)) + '</td><td>' + freq[s] + '</td><td>' + c + '</td><td>' + freq[s] + ' × ' + c.length + ' = ' + b + '</td></tr>';
+    }).join('');
+    $('tab').querySelectorAll('tr.lin').forEach(function(tr){ tr.onclick = function(){ E.sel = E.sel === tr.dataset.s ? null : tr.dataset.s; desenhar(); }; });
+    $('bits').innerHTML = E.texto.split('').map(function(ch, i){ return '<span class="' + (E.sel === ch ? 'sel' : 'p' + (i % 2)) + '" title="' + esc(vis(ch)) + '">' + E.codigos[ch] + '</span>'; }).join('');
+    var k = simb.length, fixo = Math.max(1, Math.ceil(Math.log2(k))) * E.texto.length, ascii = 8 * E.texto.length;
+    $('stats').innerHTML = '<div class="best"><span>Huffman</span><b>' + total + ' bits</b></div><div><span>ASCII (8 por letra)</span><b>' + ascii + ' bits</b></div><div><span>Código fixo (' + Math.max(1, Math.ceil(Math.log2(k))) + ' por letra)</span><b>' + fixo + ' bits</b></div><div><span>Economia sobre o ASCII</span><b>' + Math.round(100 * (1 - total / ascii)) + '%</b></div>';
+    if (E.sel) $('message').innerHTML = 'O código de <b>' + esc(vis(E.sel)) + '</b> é <code>' + E.codigos[E.sel] + '</code>: o caminho destacado da raiz até a folha. Repare que nenhum outro código começa com <code>' + E.codigos[E.sel] + '</code>, porque nenhuma folha fica no meio do caminho de outra.';
+  }
+
+  /* ---------- controles ---------- */
+  function pausar(){ if (E.timer) { clearInterval(E.timer); E.timer = null; } $('bPlay').textContent = '▶ Rodar'; }
+  function rodar(){
+    if (E.timer) { pausar(); return; }
+    if (E.k >= E.frames.length - 1) E.k = 0;
+    $('bPlay').textContent = '❚❚ Pausar';
+    E.timer = setInterval(function(){ if (E.k >= E.frames.length - 1) { pausar(); return; } E.k++; desenhar(); }, +$('speed').value);
+    E.k = Math.min(E.k + 1, E.frames.length - 1); desenhar();
+  }
+  function erro(t){ var e = $('errorText'); e.textContent = t || ''; e.hidden = !t; }
+  function tentar(t){
+    if (t.length < 1) { erro('Digite pelo menos um caractere.'); return; }
+    var dist = {}; for (var i = 0; i < t.length; i++) dist[t[i]] = 1;
+    if (Object.keys(dist).length > 14) { erro('Use no máximo 14 símbolos diferentes, para a árvore caber na tela.'); return; }
+    erro(''); montar(t);
+  }
+  $('bMontar').onclick = function(){ tentar($('txt').value); };
+  $('txt').onkeydown = function(e){ if (e.key === 'Enter') tentar(this.value); };
+  document.querySelectorAll('[data-ex]').forEach(function(b){ b.onclick = function(){ $('txt').value = b.dataset.ex; tentar(b.dataset.ex); }; });
+  $('bPlay').onclick = rodar;
+  $('bNext').onclick = function(){ pausar(); if (E.k < E.frames.length - 1) { E.k++; desenhar(); } };
+  $('bPrev').onclick = function(){ pausar(); if (E.k > 0) { E.k--; desenhar(); } };
+  $('bReset').onclick = function(){ pausar(); E.k = 0; desenhar(); };
+  $('scrubber').oninput = function(){ pausar(); E.k = +this.value; desenhar(); };
+  $('speed').oninput = function(){ if (E.timer) { pausar(); rodar(); } };
+
+  montar('ABRACADABRA');
+  window.__huff = function(){ return E; };
+})();
+</script>
+<script>
+(function(){
+  var K='oficina-ed-profjon-v1-lang', bloco=document.querySelector('.struct-block[data-lang]');
+  if(!bloco) return;
+  function aplica(l){ bloco.dataset.lang=l; bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.l===l); }); }
+  var l='c'; try{ var s=localStorage.getItem(K); if(['c','py','ambos'].indexOf(s)>=0) l=s; }catch(e){}
+  aplica(l);
+  bloco.querySelectorAll('.lang-sw button').forEach(function(b){ b.onclick=function(){ aplica(b.dataset.l); try{ localStorage.setItem(K,b.dataset.l); }catch(e){} }; });
+  window.addEventListener('storage', function(e){ if(e.key===K && ['c','py','ambos'].indexOf(e.newValue)>=0) aplica(e.newValue); });
+})();
+</script>
+</body></html>

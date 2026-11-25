@@ -1,6 +1,6 @@
 /* Era 07: Conjuntos e grafos */
 MODS.push({
-id:'union-find', n:22, era:6, titulo:'Union-Find', sub:'Conjuntos disjuntos em tempo quase constante',
+id:'union-find', n:23, era:6, titulo:'Union-Find', sub:'Conjuntos disjuntos em tempo quase constante',
 viz:'viz/union-find.html',
 slides:[
 {t:'Quem está com quem?', h:`
@@ -21,7 +21,7 @@ slides:[
 <div class="alerta"><b>Limite.</b> O Union-Find só junta. Separar um grupo (desfazer uma união) não é suportado de forma eficiente.</div>`},
 {t:'Onde se usa', h:`
 <div class="cards">
-<div class="card"><b>Kruskal</b>Decide em O(α(n)) se uma aresta fecharia um ciclo (módulo 25).</div>
+<div class="card"><b>Kruskal</b>Decide em O(α(n)) se uma aresta fecharia um ciclo (módulo 26).</div>
 <div class="card"><b>Componentes conexos</b>Quantas "ilhas" um grafo tem, à medida que arestas chegam.</div>
 <div class="card"><b>Redes sociais</b>Agrupar contas que são da mesma pessoa.</div>
 <div class="card"><b>Processamento de imagens</b>Rotular regiões conectadas de pixels.</div>
@@ -173,7 +173,7 @@ py:`def maior_grupo(uf):
 });
 
 MODS.push({
-id:'bfs-dfs', n:23, era:6, titulo:'Grafos: BFS e DFS', sub:'Largura com fila, profundidade com pilha',
+id:'bfs-dfs', n:24, era:6, titulo:'Grafos: BFS e DFS', sub:'Largura com fila, profundidade com pilha',
 viz:'viz/bfs-dfs.html',
 slides:[
 {t:'A estrutura mais geral', h:`
@@ -374,7 +374,7 @@ def bipartido(grafo):
 });
 
 MODS.push({
-id:'dijkstra', n:24, era:6, titulo:'Dijkstra: caminho mínimo', sub:'BFS com pesos e uma fila de prioridade',
+id:'dijkstra', n:25, era:6, titulo:'Dijkstra: caminho mínimo', sub:'BFS com pesos e uma fila de prioridade',
 viz:'viz/dijkstra.html',
 slides:[
 {t:'Quando as arestas têm custo', h:`
@@ -544,7 +544,7 @@ def distancia(grafo, s, destino):
 });
 
 MODS.push({
-id:'agm', n:25, era:6, titulo:'Árvore Geradora Mínima', sub:'Kruskal e Prim: dois caminhos gulosos, mesmo resultado',
+id:'agm', n:26, era:6, titulo:'Árvore Geradora Mínima', sub:'Kruskal e Prim: dois caminhos gulosos, mesmo resultado',
 viz:'viz/agm.html',
 slides:[
 {t:'Ligar tudo gastando o mínimo', h:`

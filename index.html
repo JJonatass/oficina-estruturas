@@ -290,6 +290,7 @@ const DESAFIOS = {
   'rubro-negra':[['heroi','Capítulo da rubro-negra: recolorir ou girar?'], ['perguntas','Andar 3 (rubro-negra).'], ['arena','Desafio individual com perguntas de toda a era.']],
   splay:        [['mercado','A torre inteira é uma splay.'], ['heroi','Capítulo da splay: zig e zag viram feitiços.'], ['perguntas','Andar 4 (splay) e o chefão.'], ['arena','Desafio individual com perguntas de toda a era.']],
   heap:         [['forja','A cada passo, saem do heap os dois menores pesos.']],
+  huffman:      [['forja','Forje a árvore juntando sempre os dois menores pesos, depois codifique uma palavra em bits e decifre outra.']],
   trie:         [['biblioteca','Inserir, buscar, prefixo e autocompletar.']]
 };
 for (const id of ['ponteiros','struct','alocacao','vetor','busca','estatica','simples','dupla','pilha-fila-deque','fila-circular','arvore-b','arvore-bmais','smoothsort','arvore-decisao','hash','union-find','bfs-dfs','dijkstra','agm'])
@@ -411,7 +412,7 @@ function anel(fr){
   const c = 2 * Math.PI * 4.5;
   return `<svg class="anel" viewBox="0 0 12 12" aria-hidden="true"><circle class="f" cx="6" cy="6" r="4.5"/><circle class="v" cx="6" cy="6" r="4.5" stroke-dasharray="${(fr*c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 6 6)"/></svg>`;
 }
-const CURTO = {ponteiros:'Ponteiros', struct:'Struct', alocacao:'Alocação', vetor:'Vetor', busca:'Busca', estatica:'Lista estática', simples:'Lista simples', dupla:'Lista dupla', 'pilha-fila-deque':'Pilha, fila e deque', 'fila-circular':'Fila circular', bst:'ABB', avl:'AVL', 'rubro-negra':'Rubro-negra', splay:'Splay', 'arvore-b':'Árvore B', 'arvore-bmais':'Árvore B+', heap:'Heap', smoothsort:'Smoothsort', trie:'Trie', 'arvore-decisao':'Árvore de decisão', hash:'Tabela hash', 'union-find':'Union-Find', 'bfs-dfs':'BFS e DFS', dijkstra:'Dijkstra', agm:'AGM'};
+const CURTO = {ponteiros:'Ponteiros', struct:'Struct', alocacao:'Alocação', vetor:'Vetor', busca:'Busca', estatica:'Lista estática', simples:'Lista simples', dupla:'Lista dupla', 'pilha-fila-deque':'Pilha, fila e deque', 'fila-circular':'Fila circular', bst:'ABB', avl:'AVL', 'rubro-negra':'Rubro-negra', splay:'Splay', 'arvore-b':'Árvore B', 'arvore-bmais':'Árvore B+', heap:'Heap', huffman:'Huffman', smoothsort:'Smoothsort', trie:'Trie', 'arvore-decisao':'Árvore de decisão', hash:'Tabela hash', 'union-find':'Union-Find', 'bfs-dfs':'BFS e DFS', dijkstra:'Dijkstra', agm:'AGM'};
 function curto(t){ const m = MODS.find(x => x.titulo === t); return (m && CURTO[m.id]) || t; }
 function desenharNav(){
   let h = '', era = -1;
